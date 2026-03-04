@@ -1,5 +1,5 @@
 ---
-name: 查询公司周末值班信息
+name: test-skill
 description: 用于查询公司周末值班人员，以及每个人员的值班范围
 ---
 
