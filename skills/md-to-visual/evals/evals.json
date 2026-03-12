@@ -1,0 +1,54 @@
+{
+  "skill_name": "md-to-visual",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "obsidian-article-to-xiaohongshu",
+      "prompt": "帮我把 input/AI绘制原型的阶段性总结.md 转换成小红书风格的视觉卡片，输出到 mdout/ 文件夹",
+      "expected_output": "在 mdout/ 目录下生成一个 .pen 文件，包含多张竖版卡片：封面页展示文章标题和摘要，内容页按章节分页，每张卡片有统一的暖橙色配色风格和适当的留白",
+      "files": ["input/AI绘制原型的阶段性总结.md"],
+      "assertions": [
+        {
+          "description": "生成 .pen 文件",
+          "type": "file_exists",
+          "target": "mdout/*.pen"
+        },
+        {
+          "description": "文件包含多张卡片（至少3张）",
+          "type": "file_content",
+          "target": "mdout/*.pen",
+          "contains": "1080"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "simple-article-with-headings",
+      "prompt": "创建一个测试用的 Markdown 文章，包含 H1、H2 标题、段落和列表，然后将其转换为 3 张公众号配图",
+      "expected_output": "生成测试 Markdown 文件并转换为视觉卡片，包含封面、正文内容页，风格适合公众号发布",
+      "files": [],
+      "assertions": [
+        {
+          "description": "生成 .pen 文件",
+          "type": "file_exists",
+          "target": "mdout/*.pen"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "long-article-pagination",
+      "prompt": "模拟一个包含 1000 字的长文章，测试分页逻辑是否能正确将其分成多张卡片，确保每张卡片不会超载",
+      "expected_output": "长文章被智能分页成多张卡片，每张卡片内容适中，不会出现文字溢出的情况",
+      "files": [],
+      "assertions": [
+        {
+          "description": "生成多个页面",
+          "type": "file_content",
+          "target": "mdout/*.pen",
+          "contains": "frame"
+        }
+      ]
+    }
+  ]
+}

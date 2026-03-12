@@ -1,0 +1,8 @@
+# Test folders
+/test/input/
+/test/mdout/
+
+# Claude
+/.claude/
+
+/dev

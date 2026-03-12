@@ -1,0 +1,6 @@
+{
+  "instance_url": "https://your-memos-instance.com",
+  "access_token": "your-access-token-here",
+  "default_page_size": 10,
+  "default_visibility": "PRIVATE"
+}
