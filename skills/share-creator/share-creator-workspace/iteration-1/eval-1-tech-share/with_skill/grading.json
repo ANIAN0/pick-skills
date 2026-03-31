@@ -1,0 +1,26 @@
+{
+  "run_id": "eval-1-with_skill",
+  "timestamp": "2026-03-29",
+  "expectations": [
+    {
+      "text": "包含技术原理说明",
+      "passed": false,
+      "evidence": "未生成任何输出文件，停在信息收集阶段等待用户回答"
+    },
+    {
+      "text": "包含代码示例",
+      "passed": false,
+      "evidence": "无产物"
+    },
+    {
+      "text": "时间分配合理",
+      "passed": false,
+      "evidence": "无产物"
+    },
+    {
+      "text": "产物格式正确",
+      "passed": false,
+      "evidence": "无产物"
+    }
+  ]
+}

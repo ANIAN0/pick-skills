@@ -1,0 +1,27 @@
+{
+  "doc_path": "docs/项目最新概况/01登录注册鉴权说明.md",
+  "doc_topic": "用户认证系统 - JWT + bcrypt 登录注册鉴权逻辑",
+  "is_affected": true,
+  "update_needed": true,
+  "reason": "改动修改了 lib/auth/jwt.ts 中的 JWT 令牌过期时间配置，文档第35-36行明确记录了旧的过期时间值，第44行注意事项明确说明'访问令牌15分钟过期'。这些内容需要更新以反映新的配置。",
+  "suggested_updates": [
+    {
+      "section": "后端实现 - JWT 令牌管理",
+      "current_content_summary": "代码片段显示 ACCESS_TOKEN_EXPIRES_IN = '15m', REFRESH_TOKEN_EXPIRES_IN = '7d'",
+      "change_description": "更新代码片段为新的过期时间值: ACCESS_TOKEN_EXPIRES_IN = '30m', REFRESH_TOKEN_EXPIRES_IN = '14d'",
+      "priority": "high"
+    },
+    {
+      "section": "注意事项",
+      "current_content_summary": "第2条说明'访问令牌15分钟过期'",
+      "change_description": "更新为'访问令牌30分钟过期，刷新令牌14天过期'",
+      "priority": "high"
+    },
+    {
+      "section": "创建时间/版本",
+      "current_content_summary": "版本 v1.0, 创建时间 2026-03-15",
+      "change_description": "更新版本号为 v1.1, 添加更新时间 2026-03-29",
+      "priority": "low"
+    }
+  ]
+}

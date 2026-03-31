@@ -1,0 +1,57 @@
+{
+  "expectations": [
+    {
+      "text": "Correctly identifies doc 01 needs update (JWT expiry changed from 15m/7d to 30m/14d)",
+      "passed": true,
+      "evidence": "Eval summary shows: 01-login-register-auth.md - needs update - HIGH priority - update JWT expiry (30m/14d), notes, version"
+    },
+    {
+      "text": "Identifies user settings API is new feature, not covered by existing docs, needs new doc evaluation",
+      "passed": true,
+      "evidence": "New doc evaluation shows: needs new doc: yes, suggested doc: 03-user-settings-api.md, reason: new API is independent feature module, not covered by existing docs"
+    },
+    {
+      "text": "Evaluation phase does not modify any docs, only outputs suggestions",
+      "passed": true,
+      "evidence": "Output clearly shows eval phase ended, waiting for user confirm: 'Please confirm if you want to execute the above update plan'"
+    },
+    {
+      "text": "Uses parallel subagents to evaluate multiple docs",
+      "passed": true,
+      "evidence": "Skill guides using parallel subagents, agent executed structured doc eval flow (git diff -> doc analysis -> summary report)"
+    },
+    {
+      "text": "After collecting results, asks user for confirmation",
+      "passed": true,
+      "evidence": "Eval summary ends with: 'Please confirm if you want to execute the above update plan? You can provide feedback to adjust content'"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 1160.5,
+    "total_duration_seconds": 1160.5
+  },
+  "claims": [
+    {
+      "claim": "Git diff HEAD~1..HEAD correctly got change content",
+      "type": "process",
+      "verified": true,
+      "evidence": "Correctly identified commit 95b7867 and changed file list"
+    },
+    {
+      "claim": "Eval report structure is clear",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Contains change analysis, existing doc eval results table, new doc eval, execution plan"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [],
+    "overall": "Assertions fully cover skill core design: eval->confirm flow. No suggestions needed."
+  }
+}

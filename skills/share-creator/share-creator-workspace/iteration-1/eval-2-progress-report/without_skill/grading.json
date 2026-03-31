@@ -1,0 +1,26 @@
+{
+  "run_id": "eval-2-without_skill",
+  "timestamp": "2026-03-29",
+  "expectations": [
+    {
+      "text": "适合非技术听众",
+      "passed": true,
+      "evidence": "使用通俗易懂的语言，有用户故事和场景描述，避免深入技术细节"
+    },
+    {
+      "text": "时间控制",
+      "passed": true,
+      "evidence": "7个章节，明确标注15分钟时长，篇幅适中"
+    },
+    {
+      "text": "结构清晰",
+      "passed": true,
+      "evidence": "有明确的项目背景、开发成果、产品介绍、用户场景、规划、总结结构"
+    },
+    {
+      "text": "产物格式正确",
+      "passed": true,
+      "evidence": "生成了Markdown格式的汇报文档"
+    }
+  ]
+}

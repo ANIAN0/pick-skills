@@ -1,0 +1,113 @@
+{
+  "skill_name": "share-creator",
+  "iteration": 1,
+  "timestamp": "2026-03-29",
+  "configs": [
+    {
+      "name": "with_skill",
+      "pass_rate": 0.333,
+      "pass_rate_mean": 0.333,
+      "pass_rate_stddev": 0.471,
+      "total_time_seconds": 463.5,
+      "time_mean": 154.5,
+      "time_stddev": 82.6,
+      "total_tokens": 145549,
+      "tokens_mean": 48516,
+      "tokens_stddev": 154
+    },
+    {
+      "name": "without_skill",
+      "pass_rate": 1.0,
+      "pass_rate_mean": 1.0,
+      "pass_rate_stddev": 0.0,
+      "total_time_seconds": 429.6,
+      "time_mean": 143.2,
+      "time_stddev": 38.1,
+      "total_tokens": 144616,
+      "tokens_mean": 48205,
+      "tokens_stddev": 10
+    }
+  ],
+  "delta": {
+    "pass_rate": -0.667,
+    "time": 11.3,
+    "tokens": 311
+  },
+  "per_eval": [
+    {
+      "eval_id": "eval-1-tech-share",
+      "eval_name": "技术分享（30分钟，开发团队）",
+      "with_skill": {
+        "passed": 0,
+        "total": 4,
+        "time_seconds": 92.5,
+        "tokens": 48561
+      },
+      "without_skill": {
+        "passed": 4,
+        "total": 4,
+        "time_seconds": 115.9,
+        "tokens": 48193
+      }
+    },
+    {
+      "eval_id": "eval-2-progress-report",
+      "eval_name": "项目汇报（15分钟，产品经理）",
+      "with_skill": {
+        "passed": 4,
+        "total": 4,
+        "time_seconds": 277.0,
+        "tokens": 48684
+      },
+      "without_skill": {
+        "passed": 4,
+        "total": 4,
+        "time_seconds": 112.1,
+        "tokens": 48205
+      }
+    },
+    {
+      "eval_id": "eval-3-arch-training",
+      "eval_name": "架构培训（1小时，新入职开发）",
+      "with_skill": {
+        "passed": 0,
+        "total": 4,
+        "time_seconds": 94.0,
+        "tokens": 48304
+      },
+      "without_skill": {
+        "passed": 4,
+        "total": 4,
+        "time_seconds": 201.6,
+        "tokens": 48218
+      }
+    }
+  ],
+  "analyst_notes": [
+    {
+      "category": "skill_design_issue",
+      "observation": "With_skill在Eval-1和Eval-3停在信息收集阶段，无法生成最终产物",
+      "impact": "这两个测试0/4断言通过，导致整体pass_rate只有33.3%"
+    },
+    {
+      "category": "user_interaction_dependency",
+      "observation": "Skill设计依赖用户交互（20问流程），但子代理测试无法获得用户回复",
+      "impact": "自动化测试场景下skill无法完成，需要用户在场才能正常工作"
+    },
+    {
+      "category": "eval_2_success",
+      "observation": "Eval-2的with_skill成功完成，可能子代理自主跳过了用户交互或任务信息足够详细",
+      "impact": "生成了完整的.md和.html文档，断言全部通过"
+    },
+    {
+      "category": "baseline_consistency",
+      "observation": "Baseline（without_skill）在所有3个测试中都成功生成完整文档，100%断言通过",
+      "impact": "无skill指导时，模型能直接理解任务并生成合适的分享内容"
+    },
+    {
+      "category": "recommendation",
+      "observation": "Skill需要调整信息收集流程，支持自动化场景",
+      "suggestion": "考虑：1) 提供默认回答选项让skill可以自动继续；2) 减少必问问题数量；3) 允许用户一次性提供所有信息跳过逐步追问"
+    }
+  ]
+}

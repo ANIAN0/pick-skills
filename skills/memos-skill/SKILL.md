@@ -14,14 +14,30 @@ description: |
 
 ### 配置文件位置
 
-在 skill 目录下创建 `config.json` 文件：
+**推荐方案（更新 skill 时不会被覆盖）：**
+
+配置文件应放在 skill 目录之外的上级目录中，支持以下位置（按优先级查找）：
 
 ```
-memos-skill/
-├── SKILL.md
-├── config.json          # 配置文件
+项目根目录/
+├── .claude/                    ← 推荐位置
+│   └── config.json             # 直接放这里
+├── .agents/                    ← 备选位置
+│   └── config.json
+├── .config/                    ← 备选位置
+│   └── config.json
+├── skills/
+│   └── memos-skill/
+│       ├── SKILL.md
+│       └── config.json         ← 备选（更新会被覆盖）
 └── ...
 ```
+
+**查找优先级：**
+1. `{skill_dir}/../../.claude/config.json`
+2. `{skill_dir}/../../.agents/config.json`
+3. `{skill_dir}/../../.config/config.json`
+4. `{skill_dir}/config.json` （skill 目录内，更新会被覆盖）
 
 ### 配置文件格式
 
@@ -52,18 +68,41 @@ memos-skill/
 
 ### 在代码中读取配置
 
+**推荐方式（自动查找配置）：**
+
 ```python
 import json
 import os
 
-# 获取 skill 目录路径
-skill_dir = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(skill_dir, 'config.json')
+def get_config():
+    """查找并读取 memos-skill 配置"""
+    skill_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 配置查找路径（按优先级）
+    config_paths = [
+        # 推荐：外置配置（更新 skill 时不会被覆盖）
+        os.path.join(skill_dir, '..', '..', '.claude', 'config.json'),
+        os.path.join(skill_dir, '..', '..', '.agents', 'config.json'),
+        os.path.join(skill_dir, '..', '..', '.config', 'config.json'),
+        # 备选：skill 目录内（更新会被覆盖）
+        os.path.join(skill_dir, 'config.json'),
+    ]
+
+    for path in config_paths:
+        path = os.path.normpath(path)
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+
+    raise FileNotFoundError(
+        "未找到 memos-skill 配置文件。请创建以下位置的 config.json：\n"
+        f"  - {config_paths[0]}\n"
+        f"  - {config_paths[1]}\n"
+        "详见 README.md"
+    )
 
 # 读取配置
-with open(config_path, 'r', encoding='utf-8') as f:
-    config = json.load(f)
-
+config = get_config()
 instance_url = config['instance_url']
 access_token = config['access_token']
 headers = {
@@ -248,17 +287,9 @@ POST /api/v1/memos
 用户说："把我的 memos 实例配置为 https://memo.example.com，token 是 abc123"
 
 **处理步骤：**
-1. 检查是否存在 `config.json` 文件
-2. 如果存在，询问用户是否覆盖现有配置
-3. 创建或更新配置文件：
-```json
-{
-  "instance_url": "https://memo.example.com",
-  "access_token": "abc123",
-  "default_page_size": 10,
-  "default_visibility": "PRIVATE"
-}
-```
+1. 优先检查外置配置目录（`.claude/` 或 `.agents/`）
+2. 如果外置目录不存在，创建它
+3. 创建或更新外置配置文件
 4. 验证配置（可选：发送测试请求）
 5. 返回配置成功的确认信息
 
@@ -267,6 +298,22 @@ POST /api/v1/memos
 import json
 import os
 
+def get_skill_dir():
+    """获取 skill 目录路径"""
+    return os.path.dirname(os.path.abspath(__file__))
+
+def get_external_config_dir():
+    """获取外置配置目录（推荐位置）"""
+    skill_dir = get_skill_dir()
+    # 尝试找到 .claude 或 .agents 目录
+    for config_dir in ['.claude', '.agents', '.config']:
+        external_dir = os.path.normpath(os.path.join(skill_dir, '..', '..', config_dir))
+        if os.path.exists(os.path.dirname(external_dir)):
+            return external_dir
+    # 默认使用 .claude
+    return os.path.normpath(os.path.join(skill_dir, '..', '..', '.claude'))
+
+# 配置内容
 config = {
     "instance_url": "https://memo.example.com",
     "access_token": "abc123",
@@ -274,13 +321,17 @@ config = {
     "default_visibility": "PRIVATE"
 }
 
-skill_dir = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(skill_dir, 'config.json')
+# 确定配置文件路径（优先外置）
+config_dir = get_external_config_dir()
+os.makedirs(config_dir, exist_ok=True)
+config_path = os.path.join(config_dir, 'config.json')
 
+# 保存配置
 with open(config_path, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2, ensure_ascii=False)
 
 print(f"配置已保存到: {config_path}")
+print("注意：使用外置配置可避免更新 skill 时被覆盖")
 ```
 
 ## 输出格式建议
