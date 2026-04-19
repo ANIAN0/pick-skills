@@ -142,9 +142,9 @@ def get_client(config: Dict) -> FileBrowserClient:
 
 
 def get_remote_path(config: Dict, filename: str) -> str:
-    """获取远程路径"""
+    """获取云端配置包路径"""
     fb_config = config.get("filebrowser", {})
     ws_config = config.get("workspace", {})
-    base_path = fb_config.get("remote_base_path", "/skills")
-    skill_name = ws_config.get("skill_name", "default")
-    return f"{base_path.rstrip('/')}/{skill_name}/{filename}"
+    base_path = fb_config.get("remote_base_path", "/config")
+    config_pack = ws_config.get("config_pack", "default")
+    return f"{base_path.rstrip('/')}/{config_pack}/{filename}"

@@ -39,7 +39,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     # 获取配置
     workplace_dir = ws_config.get("workplace_dir", "workplace")
     current_version = ws_config.get("current_version", "1.0")
-    skill_name = ws_config.get("skill_name", "")
+    config_pack = ws_config.get("config_pack", "")
 
     results = {
         "directories_created": [],
@@ -74,7 +74,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
         print(f"  ├── {subdir}/")
 
     # 5. 处理配置文件
-    if download_configs and skill_name:
+    if download_configs and config_pack:
         print(f"\n📥 从 filebrowser 下载配置文件...")
         client = get_client(config)
         if client.login():

@@ -4,10 +4,15 @@
 
 ## 功能
 
-同步 CLAUDE.md、AGENTS.md 配置文件：
+同步配置文件和skills目录：
 - `upload` - 上传本地变更到 filebrowser
 - `download` - 从 filebrowser 下载最新配置
 - `sync` - 双向同步（基于修改时间）
+
+支持同步：
+- `CLAUDE.md` - Claude配置文件
+- `AGENTS.md` - Agents配置文件
+- `skills/` - skills目录（使用 `--sync-skills` 参数）
 
 ## 命令
 
@@ -44,19 +49,20 @@ python scripts/sync_config.py sync --config skillconfig.json
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `--config` | skillconfig.json | 配置文件路径 |
+| `--sync-skills` | false | 同时同步 skills 目录 |
 
-## 远程路径
+## 云端路径
 
-配置文件在 filebrowser 上的存储路径：
+配置包在 filebrowser 上的存储路径：
 
 ```
-{remote_base_path}/{skill_name}/CLAUDE.md
-{remote_base_path}/{skill_name}/AGENTS.md
+{remote_base_path}/{config_pack}/CLAUDE.md
+{remote_base_path}/{config_pack}/AGENTS.md
 ```
 
-默认路径示例：
-- `/skills/my-skill/CLAUDE.md`
-- `/skills/my-skill/AGENTS.md`
+示例（`remote_base_path: "/config"`，`config_pack: "config-1"`）：
+- `/config/config-1/CLAUDE.md`
+- `/config/config-1/AGENTS.md`
 
 ## 输出示例
 
@@ -66,9 +72,9 @@ python scripts/sync_config.py sync --config skillconfig.json
 📤 开始上传配置文件...
 
 ✅ 登录成功: admin
-✅ 创建目录: /skills/my-skill
-✅ 上传成功: CLAUDE.md -> /skills/my-skill/CLAUDE.md
-✅ 上传成功: AGENTS.md -> /skills/my-skill/AGENTS.md
+✅ 创建目录: /config/config-1
+✅ 上传成功: CLAUDE.md -> /config/config-1/CLAUDE.md
+✅ 上传成功: AGENTS.md -> /config/config-1/AGENTS.md
 
 📊 上传完成:
    成功: 2
@@ -82,8 +88,8 @@ python scripts/sync_config.py sync --config skillconfig.json
 📥 开始下载配置文件...
 
 ✅ 登录成功: admin
-✅ 下载成功: /skills/my-skill/CLAUDE.md -> CLAUDE.md
-✅ 下载成功: /skills/my-skill/AGENTS.md -> AGENTS.md
+✅ 下载成功: /config/config-1/CLAUDE.md -> CLAUDE.md
+✅ 下载成功: /config/config-1/AGENTS.md -> AGENTS.md
 
 📊 下载完成:
    成功: 2

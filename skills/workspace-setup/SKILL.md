@@ -39,7 +39,7 @@ description: |
 ```json
 {
   "workspace": {
-    "skill_name": "my-skill",
+    "config_pack": "config-1",
     "current_version": "1.0",
     "workplace_dir": "workplace"
   },
@@ -47,7 +47,7 @@ description: |
     "instance_url": "http://your-server:8080",
     "username": "admin",
     "password": "your-password",
-    "remote_base_path": "/skills"
+    "remote_base_path": "/config"
   }
 }
 ```
@@ -56,26 +56,44 @@ description: |
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `skill_name` | string | 是 | 技能名称，用于filebrowser远程路径 |
+| `config_pack` | string | 是 | 云端配置包名称，如 config-1、config-2 |
 | `current_version` | string | 是 | 当前版本号，如 1.0、1.1 |
 | `workplace_dir` | string | 否 | 工作目录名，默认 workplace |
 | `instance_url` | string | 是 | FileBrowser 服务地址 |
 | `username` | string | 是 | 登录用户名 |
 | `password` | string | 是 | 登录密码 |
-| `remote_base_path` | string | 否 | 远程基础路径，默认 /skills |
+| `remote_base_path` | string | 否 | 云端顶层目录，默认 /config |
 
-## Filebrowser 配置文件存储
+## 云端配置包库
 
-CLAUDE.md 和 AGENTS.md 存储在你的 Filebrowser 服务器上。
+FileBrowser 服务器上存储多套预设配置包，项目选择其中一套下载使用。
 
-**路径规则**：服务器上的路径 = `{remote_base_path}/{skill_name}/`
+**云端目录结构**：
+```
+/config/                      ← remote_base_path（顶层目录）
+├── config-1/                 ← 配置包1（如：React项目通用配置）
+│   ├── CLAUDE.md             ← 配置文件（下载到项目根目录）
+│   ├── AGENTS.md             ← 配置文件（下载到项目根目录）
+│   └── skills/               ← skills目录（和配置文件平级）
+│       └── xxx-skill/
+├── config-2/                 ← 配置包2（如：Python项目通用配置）
+│   ├── CLAUDE.md
+│   ├── AGENTS.md
+│   └── skills/
+└── config-3/                 ← 配置包3
+    └── ...
+```
 
-**举例**：
-- 配置 `remote_base_path: "/skills"`，`skill_name: "my-project"`
-- 那么 CLAUDE.md 在 Filebrowser 服务器的路径是：`/skills/my-project/CLAUDE.md`
+**下载到本地后**：
+```
+项目根目录/
+├── CLAUDE.md          ← 从 /config/config-1/CLAUDE.md 下载
+├── AGENTS.md          ← 从 /config/config-1/AGENTS.md 下载
+└── skills/            ← 从 /config/config-1/skills/ 下载
+    └── xxx-skill/
+```
 
-当你运行 `sync_config.py upload` 时，本地 CLAUDE.md 会上传到这个服务器路径。
-当你运行 `sync_config.py download` 时，会从这个服务器路径下载到本地。
+**路径规则**：云端路径 = `{remote_base_path}/{config_pack}/文件名`
 
 ## 脚本工具
 
@@ -101,11 +119,17 @@ python scripts/init_workspace.py --config skillconfig.json
 ### 同步配置文件
 
 ```bash
-# 上传本地变更到filebrowser
+# 上传配置文件到 filebrowser
 python scripts/sync_config.py upload --config skillconfig.json
 
-# 从filebrowser下载最新配置
+# 上传配置文件和skills目录
+python scripts/sync_config.py upload --config skillconfig.json --sync-skills
+
+# 从 filebrowser 下载配置文件
 python scripts/sync_config.py download --config skillconfig.json
+
+# 下载配置文件和skills目录
+python scripts/sync_config.py download --config skillconfig.json --sync-skills
 
 # 双向同步（检查变更）
 python scripts/sync_config.py sync --config skillconfig.json

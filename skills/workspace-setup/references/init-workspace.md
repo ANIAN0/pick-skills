@@ -29,7 +29,7 @@ python scripts/init_workspace.py --config skillconfig.json
 读取 skillconfig.json，获取以下配置：
 - `workspace.workplace_dir` - 工作目录名
 - `workspace.current_version` - 当前版本号
-- `workspace.skill_name` - 技能名称（用于下载配置）
+- `workspace.config_pack` - 云端配置包名称（用于下载配置）
 - `filebrowser.*` - filebrowser 连接配置
 
 ### 2. 创建目录结构
@@ -48,9 +48,9 @@ workplace/
 
 ### 3. 处理配置文件
 
-- 如果 `skill_name` 配置且未使用 `--skip-download`：
+- 如果 `config_pack` 配置且未使用 `--skip-download`：
   - 登录 filebrowser
-  - 从 `{remote_base_path}/{skill_name}/` 下载 CLAUDE.md、AGENTS.md
+  - 从 `{remote_base_path}/{config_pack}/` 下载 CLAUDE.md、AGENTS.md
   - 文件不存在时创建默认模板
 
 - 否则创建默认配置文件模板
