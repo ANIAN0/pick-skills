@@ -63,7 +63,10 @@ class FileBrowserClient:
         try:
             response = self.session.get(url, stream=True)
             if response.status_code == 200:
-                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                # 只在 local_path 有父目录时才创建
+                parent_dir = os.path.dirname(local_path)
+                if parent_dir:
+                    os.makedirs(parent_dir, exist_ok=True)
                 with open(local_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
