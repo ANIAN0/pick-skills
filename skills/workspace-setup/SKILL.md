@@ -1,0 +1,190 @@
+---
+name: workspace-setup
+description: |
+  快速配置和管理项目工作区。当用户提到工作区初始化、版本管理、配置文件同步、CLAUDE.md/AGENTS.md管理、创建版本目录、归档旧版本或使用npx skills管理技能时触发此skill。支持从filebrowser下载配置文件、创建标准化版本目录结构、同步本地变更、版本归档等功能。
+---
+
+# Workspace Setup Skill
+
+快速配置和管理项目工作区，提供标准化版本目录结构、配置文件同步、技能管理等功能。
+
+## 目录结构规范
+
+```
+项目根目录/
+├── skillconfig.json       ← 配置文件
+├── CLAUDE.md              ← Claude配置（可从filebrowser下载）
+├── AGENTS.md              ← Agents配置（可从filebrowser下载）
+├── workplace/
+│   ├── 1.0/               ← 当前版本目录
+│   │   ├── requirements/  ← 需求文档
+│   │   ├── references/    ← 参考文档
+│   │   ├── prototypes/    ← 原型设计
+│   │   ├── tech-design/   ← 技术方案
+│   │   ├── plan/          ← 实施计划
+│   │   └── tests/         ← 测试文件
+│   ├── 1.1/               ← 新版本（版本升级时创建）
+│   └── archive/           ← 归档目录
+│       └── 1.0/           ← 已完成版本归档
+└── .agents/
+    └── skills/
+        └── workspace-setup/
+            └── SKILL.md
+```
+
+## 配置文件
+
+### skillconfig.json 格式
+
+```json
+{
+  "workspace": {
+    "skill_name": "my-skill",
+    "current_version": "1.0",
+    "workplace_dir": "workplace"
+  },
+  "filebrowser": {
+    "instance_url": "http://your-server:8080",
+    "username": "admin",
+    "password": "your-password",
+    "remote_base_path": "/skills"
+  }
+}
+```
+
+### 配置字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `skill_name` | string | 是 | 技能名称，用于filebrowser远程路径 |
+| `current_version` | string | 是 | 当前版本号，如 1.0、1.1 |
+| `workplace_dir` | string | 否 | 工作目录名，默认 workplace |
+| `instance_url` | string | 是 | FileBrowser 服务地址 |
+| `username` | string | 是 | 登录用户名 |
+| `password` | string | 是 | 登录密码 |
+| `remote_base_path` | string | 否 | 远程基础路径，默认 /skills |
+
+## Filebrowser 配置文件存储
+
+CLAUDE.md 和 AGENTS.md 存储在你的 Filebrowser 服务器上。
+
+**路径规则**：服务器上的路径 = `{remote_base_path}/{skill_name}/`
+
+**举例**：
+- 配置 `remote_base_path: "/skills"`，`skill_name: "my-project"`
+- 那么 CLAUDE.md 在 Filebrowser 服务器的路径是：`/skills/my-project/CLAUDE.md`
+
+当你运行 `sync_config.py upload` 时，本地 CLAUDE.md 会上传到这个服务器路径。
+当你运行 `sync_config.py download` 时，会从这个服务器路径下载到本地。
+
+## 脚本工具
+
+按需读取对应的脚本说明。
+
+| 脚本 | 文档 | 功能 |
+|------|------|------|
+| **init_workspace.py** | `references/init-workspace.md` | 初始化工作区、下载配置文件 |
+| **sync_config.py** | `references/sync-config.md` | 同步CLAUDE.md/AGENTS.md |
+| **version_manager.py** | `references/version-manager.md` | 创建版本、归档版本 |
+| **skills_manager.py** | `references/skills-manager.md` | 管理npx skills命令 |
+
+## 快速命令
+
+### 初始化工作区
+
+```bash
+python scripts/init_workspace.py --config skillconfig.json
+```
+
+下载CLAUDE.md、AGENTS.md，创建workplace目录和当前版本目录结构。
+
+### 同步配置文件
+
+```bash
+# 上传本地变更到filebrowser
+python scripts/sync_config.py upload --config skillconfig.json
+
+# 从filebrowser下载最新配置
+python scripts/sync_config.py download --config skillconfig.json
+
+# 双向同步（检查变更）
+python scripts/sync_config.py sync --config skillconfig.json
+```
+
+### 版本管理
+
+```bash
+# 创建新版本（如从1.0升级到1.1）
+python scripts/version_manager.py create --config skillconfig.json
+
+# 归档当前版本到archive
+python scripts/version_manager.py archive --config skillconfig.json
+
+# 查看版本状态
+python scripts/version_manager.py status --config skillconfig.json
+```
+
+### 技能管理
+
+```bash
+# 搜索技能
+python scripts/skills_manager.py find "react testing"
+
+# 安装技能
+python scripts/skills_manager.py add "vercel-labs/agent-skills@react-best-practices"
+
+# 检查更新
+python scripts/skills_manager.py check
+
+# 更新所有技能
+python scripts/skills_manager.py update
+```
+
+## 工作流程
+
+### 1. 新项目初始化
+
+1. 创建 `skillconfig.json` 配置文件
+2. 运行 `init_workspace.py` 初始化工作区
+3. 配置文件自动从filebrowser下载（如果存在）
+4. workplace目录和版本结构自动创建
+
+### 2. 日常配置同步
+
+- 修改CLAUDE.md/AGENTS.md后，运行 `sync_config.py upload` 上传
+- 需要最新配置时，运行 `sync_config.py download` 下载
+- 定期运行 `sync_config.py sync` 保持同步
+
+### 3. 版本迭代
+
+1. 完成当前版本开发后，运行 `version_manager.py create` 创建新版本
+2. 新版本目录自动创建，版本号自动递增（1.0 → 1.1）
+3. 完成最终版本时，运行 `version_manager.py archive` 归档
+
+### 4. 技能安装
+
+使用 `skills_manager.py` 或直接运行npx skills命令：
+- `npx skills find [query]` - 搜索
+- `npx skills add <package> -g -y` - 安装
+- `npx skills check` - 检查更新
+- `npx skills update` - 更新
+
+## 版本子目录说明
+
+| 目录 | 用途 | 典型内容 |
+|------|------|----------|
+| `requirements/` | 需求文档 | 需求说明、用户故事、验收标准 |
+| `references/` | 参考文档 | API文档、设计规范、参考资料 |
+| `prototypes/` | 原型设计 | UI原型、流程图、架构图 |
+| `tech-design/` | 技术方案 | 技术选型、架构设计、数据库设计 |
+| `plan/` | 实施计划 | 任务分解、里程碑、进度跟踪 |
+| `tests/` | 测试文件 | 测试计划、测试用例、测试报告 |
+
+## 常见错误
+
+| 错误 | 说明 | 处理 |
+|------|------|------|
+| 配置文件缺失 | skillconfig.json不存在 | 手动创建配置文件 |
+| 登录失败 | filebrowser认证失败 | 检查用户名密码 |
+| 远程路径不存在 | filebrowser上无对应文件 | 检查remote_base_path和skill_name |
+| 版本目录已存在 | 目标版本已创建 | 使用archive先归档旧版本 |
