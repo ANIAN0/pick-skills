@@ -29,35 +29,17 @@ description: |
 
 ## 工作流程
 
-```dot
-digraph 需求讨论 {
-    "探索项目现状" [shape=box];
-    "理解需求背景" [shape=box];
-    "价值验证" [shape=box style=bold];
-    "可行性分析" [shape=box style=bold];
-    "MVP界定" [shape=box style=bold];
-    "功能清单梳理" [shape=box style=bold];
-    "时序图设计" [shape=box style=bold];
-    "验收规划" [shape=box style=bold];
-    "产出需求文档" [shape=box];
-    "文档自检" [shape=box];
-    "用户确认" [shape=diamond];
-    "进入实现规划" [shape=doublecircle];
-
-    "探索项目现状" -> "理解需求背景";
-    "理解需求背景" -> "价值验证";
-    "价值验证" -> "可行性分析";
-    "可行性分析" -> "MVP界定";
-    "MVP界定" -> "功能清单梳理";
-    "功能清单梳理" -> "时序图设计";
-    "时序图设计" -> "验收规划";
-    "验收规划" -> "产出需求文档";
-    "产出需求文档" -> "文档自检";
-    "文档自检" -> "用户确认";
-    "用户确认" -> "产出需求文档" [label="需修改"];
-    "用户确认" -> "进入实现规划" [label="确认通过"];
-}
-```
+1. 探索项目现状
+2. 理解需求背景（逐问逐答）
+3. 价值验证
+4. 可行性分析
+5. MVP 界定
+6. 功能清单梳理
+7. 时序图设计
+8. 验收规划
+9. 产出需求文档
+10. 文档自检（subagent 审查）
+11. 用户确认 → 修改后循环，确认后进入 tech-design
 
 ## 第一步：探索项目现状
 
@@ -245,13 +227,13 @@ sequenceDiagram
 
 **命名格式**：`YYYY-MM-DD-需求标题.md`
 
-**存储位置**：`workplace/{版本}/requirements/`
+**存储位置**：`workplace/v{N}/requirements/`
 
-示例：`workplace/1.0/requirements/2026-04-19-用户登录优化.md`
+示例：`workplace/v1/requirements/2026-04-19-用户登录优化.md`
 
 说明：
-- workplace目录下只有一个当前版本目录（如1.0）
-- 版本升级时创建新版本目录（如2.0），旧版本归档
+- workplace目录下只有一个当前版本目录（如 v1）
+- 版本升级时创建新版本目录（如 v2），旧版本保留归档
 
 ### 需求文档模板
 
