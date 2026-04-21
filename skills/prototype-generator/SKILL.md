@@ -58,6 +58,12 @@ description: |
 
 ### Phase 4: 生成原型（调用脚本）
 
+**生成前检查现有页面：**
+- 扫描 `.dev/prototype/` 目录查找现有原型文件
+- 读取最新的原型文件（按日期排序）
+- 分析现有页面的样式、布局、配色、组件风格
+- 在新原型中继承和还原现有页面的视觉效果
+
 **每个页面调用 `scripts/generate_page.py` 生成：**
 
 ```bash
@@ -65,7 +71,7 @@ python scripts/generate_page.py --input '{
   "page_name": "用户列表",
   "page_type": "list",
   "scenario": "new",
-  "output_path": "docs/prototype",
+  "output_path": ".dev/prototype",
   "clarification": {
     "layout": {...},
     "data": {...},
@@ -83,17 +89,49 @@ python scripts/batch_generate.py --config pages.json
 
 ### Phase 5: 文件输出
 
-**输出目录：** `docs/prototype/`
+**输出目录：** `.dev/prototype/`
 
 **命名规则：**
 - 新原型：`prototype-{YYYYMMDD}-{页面名称}.html`
 - 改造原型：`prototype-{YYYYMMDD}-{页面名称}-v{版本}.html`
 
-**重要原则（场景B）：**
-- ✅ 生成新文件（新日期/版本号）
+**页面结构原则：**
+- ✅ 抽屉、弹窗、子页面等交互统一合并到主页面 HTML 中
+- ✅ 通过 CSS 控制显示/隐藏，或使用 JavaScript 切换内容
+- ✅ 不再单独生成抽屉或子页面的独立 HTML 文件
 - ✅ 保留旧文件（绝不覆盖）
 
-## 场景B（旧原型改造）特殊处理
+## 页面结构规范
+
+### 抽屉/弹窗合并原则
+
+**不再单独生成抽屉 HTML，统一在主页面中实现：**
+
+```html
+<!-- 主页面结构 -->
+<div class="ant-layout">
+  <!-- 主内容区域 -->
+  <main>...</main>
+
+  <!-- 抽屉（初始隐藏，通过JS控制显示） -->
+  <div id="drawer" class="drawer-container" style="display: none;">
+    <div class="drawer-mask" onclick="closeDrawer()"></div>
+    <div class="drawer-content">
+      <!-- 抽屉表单或详情内容 -->
+    </div>
+  </div>
+
+  <!-- 弹窗（初始隐藏） -->
+  <div id="modal" class="modal-container" style="display: none;">
+    <!-- 弹窗内容 -->
+  </div>
+</div>
+```
+
+**交互控制：**
+- 使用 JavaScript 控制抽屉/弹窗的显示/隐藏
+- 点击主页面按钮时打开对应的抽屉/弹窗
+- 点击遮罩层或关闭按钮时隐藏
 
 ```
 读取旧原型 → 分析结构 → 确认改造需求 → 生成新原型 → 保留旧文件
@@ -140,6 +178,8 @@ python scripts/batch_generate.py --config pages.json
 - **固定宽度**：左侧原型区域必须固定1200px
 - **Mock数据**：所有数据为硬编码，无真实API调用
 - **单页面原型**：每个HTML文件只包含一个页面原型
+- **抽屉弹窗合并**：所有抽屉、弹窗、子页面统一合并到主页面 HTML 中
+- **参考现有页面**：生成时优先扫描 `.dev/prototype/` 中的现有页面，继承其风格
 
 ## 参考资源
 
@@ -147,6 +187,8 @@ python scripts/batch_generate.py --config pages.json
 - **输出格式**：`docs/output-format.md` — HTML输出格式详细规范
 - **页面生成脚本**：`scripts/generate_page.py` — 单页面生成
 - **批量生成脚本**：`scripts/batch_generate.py` — 多页面并行生成
+
+**现有原型参考位置：** `.dev/prototype/`
 
 ## 自检清单
 
@@ -156,6 +198,8 @@ python scripts/batch_generate.py --config pages.json
 - [ ] 使用真正的 antd.min.css（非Tailwind模拟）
 - [ ] 所有数据为mock数据
 - [ ] 右侧说明文档包含完整的交互描述
-- [ ] 文件保存到 docs/prototype/ 目录
+- [ ] 文件保存到 `.dev/prototype/` 目录
 - [ ] 文件名符合命名规范
+- [ ] 抽屉、弹窗等交互合并到主页面（无独立HTML）
 - [ ] 场景B：旧文件已保留（未被覆盖）
+- [ ] 新页面风格与现有页面保持一致
