@@ -1,9 +1,9 @@
----
+﻿---
 name: tech-design
 description: |
   技术方案设计skill。在需求文档基础上产出完整技术方案。
   强制前置：先讨论并确认技术文档需求，新功能必须有参考文档，旧功能必须有技术栈说明文档。
-  文档存放于workplace/v{N}/references目录后，才能开始技术方案设计。
+  文档存放于workplace/1.0/references目录后，才能开始技术方案设计。
   最终产出：架构设计、数据模型、API设计、测试策略、实施计划。
   触发词：技术方案、方案设计、实现规划、架构设计、技术设计文档。
 ---
@@ -13,7 +13,7 @@ description: |
 基于需求文档产出完整技术方案。核心原则：**文档先行，方案后行**。
 
 <HARD-GATE>
-在技术文档准备完成并存入workplace/v{N}/references目录之前，不得开始技术方案设计。
+在技术文档准备完成并存入workplace/1.0/references目录之前，不得开始技术方案设计。
 不得写代码、不得创建项目结构、不得进入实现阶段。
 </HARD-GATE>
 
@@ -23,7 +23,7 @@ description: |
 2. 识别功能清单，区分新旧功能
 3. 讨论技术文档需求（关键前置步骤，用户确认后再继续）
 4. 新功能：收集参考文档；旧功能扩展：整理技术栈说明
-5. 文档存入 `workplace/v{N}/references/`
+5. 文档存入 `workplace/1.0/references/`
 6. 架构设计 → 数据模型设计 → API 设计 → 测试策略
 7. 产出技术方案文档
 8. 文档自检（subagent 审查）
@@ -31,7 +31,7 @@ description: |
 
 ## 第一步：读取需求文档
 
-从workplace/v{N}/requirements/读取最近的需求文档。
+从workplace/1.0/requirements/读取最近的需求文档。
 
 **如果不存在需求文档**：
 > 未找到需求文档。请先使用requirements-workshop产出需求文档，或直接提供需求文档路径。
@@ -86,7 +86,7 @@ description: |
 
 ### 文档存放位置
 
-所有文档存入：`workplace/v{N}/references/`
+所有文档存入：`workplace/1.0/references/`
 
 命名规则：
 - 参考文档：`{技术名}-reference.md`
@@ -222,13 +222,13 @@ workplace/
 
 | 检查项 | 要求 |
 |--------|------|
-| 目录存在 | workplace/v{N}/references/ 已创建 |
+| 目录存在 | workplace/1.0/references/ 已创建 |
 | 新功能文档 | 每个新功能都有对应的参考文档 |
 | 旧功能文档 | 每个旧功能扩展都有技术栈说明 |
 | 文档质量 | 文档包含必要的技术细节，足以支撑设计 |
 
 **验证通过后**，宣布：
-> 技术文档准备完成，存入 workplace/v{N}/references/。开始技术方案设计。
+> 技术文档准备完成，存入 workplace/1.0/references/。开始技术方案设计。
 
 ## 第八步：架构设计
 
@@ -396,7 +396,7 @@ graph TB
 
 **命名格式**：`YYYY-MM-DD-{需求名称}-技术方案.md`
 
-**存储位置**：`workplace/v{N}/tech-design/`
+**存储位置**：`workplace/1.0/tech-design/`
 
 ### 技术方案模板
 
@@ -404,7 +404,7 @@ graph TB
 # {需求名称} 技术方案
 
 > 需求文档：[需求文档路径]
-> 技术参考：workplace/v{N}/references/
+> 技术参考：workplace/1.0/references/
 
 ## 一、架构设计
 

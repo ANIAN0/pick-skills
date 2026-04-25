@@ -1,4 +1,4 @@
----
+﻿---
 name: plan-execution
 description: |
   执行实施计划的skill。按照模块清单逐个执行，每个模块委托subagent连续实现子步骤，
@@ -12,7 +12,7 @@ description: |
 
 <HARD-GATE>
 实施计划必须已存在。无计划则先调用 implementation-planning skill。
-计划文件路径：`workplace/v{N}/plan/` 目录下（版本格式为 v1、v2 等）。
+计划文件路径：`workplace/1.0/plan/` 目录下（版本格式为 1.0、2.0 等）。
 </HARD-GATE>
 
 ## 为什么用Subagent

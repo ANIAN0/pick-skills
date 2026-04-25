@@ -1,4 +1,4 @@
----
+﻿---
 name: requirements-workshop
 description: |
   需求讨论与完善skill。通过交互式对话探索用户意图，结合产品现状产出完整需求文档。
@@ -227,13 +227,13 @@ sequenceDiagram
 
 **命名格式**：`YYYY-MM-DD-需求标题.md`
 
-**存储位置**：`workplace/v{N}/requirements/`
+**存储位置**：`workplace/1.0/requirements/`
 
-示例：`workplace/v1/requirements/2026-04-19-用户登录优化.md`
+示例：`workplace/1.0/requirements/2026-04-19-用户登录优化.md`
 
 说明：
-- workplace目录下只有一个当前版本目录（如 v1）
-- 版本升级时创建新版本目录（如 v2），旧版本保留归档
+- workplace目录下只有一个当前版本目录（如 1.0）
+- 版本升级时创建新版本目录（如 2.0），旧版本保留归档
 
 ### 需求文档模板
 

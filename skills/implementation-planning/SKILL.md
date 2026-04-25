@@ -1,9 +1,9 @@
----
+﻿---
 name: implementation-planning
 description: |
   实施计划创建skill。将技术方案拆分为可执行的任务清单，每个任务有顺序、依赖、验收标准。
   聚焦任务编排，通过链接引用技术文档，避免内容重复和不一致。
-  输出目录：workplace/v{N}/plan/
+  输出目录：workplace/1.0/plan/
   触发词：实施计划、任务清单、工作项拆分、开始实现。
 ---
 
@@ -29,7 +29,7 @@ description: |
 
 ## 工作流程
 
-1. 从 `workplace/v{N}/tech-design/` 读取技术方案
+1. 从 `workplace/1.0/tech-design/` 读取技术方案
 2. 提取技术方案中的架构设计、数据模型、API 设计，自主拆分阶段和任务
 3. 确认执行顺序：数据层 → 服务层 → 接口层 → 前端
 4. 关联验收标准（来自技术方案的测试策略、约束定义）
@@ -41,7 +41,7 @@ description: |
 
 ## 输出模板
 
-文件路径：`workplace/v{N}/plan/YYYY-MM-DD-{项目名}-任务清单.md`
+文件路径：`workplace/1.0/plan/YYYY-MM-DD-{项目名}-任务清单.md`
 
 ~~~markdown
 # {项目名} 任务清单
