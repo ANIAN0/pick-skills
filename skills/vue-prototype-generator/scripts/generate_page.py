@@ -1,811 +1,471 @@
 """
 Vue 原型页面生成脚本
-根据页面需求生成单个 HTML 预览文件（使用 Vue 3 + Ant Design Vue CDN）
+根据配置生成单个 Vue 页面文件（.vue 和 data.ts）
 
 用法:
-    python generate_page.py --config <json_config_path>
-    python generate_page.py --input '{"page_name": "...", "page_type": "...", ...}'
+    python generate_page.py --input '{JSON配置}'
+    python generate_page.py --config page_config.json --prototype my-prototype
 """
 
 import argparse
 import json
+import re
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-import re
 
 
-def generate_base_html(title: str, prototype_content: str, description_content: str) -> str:
-    """生成基础HTML框架（Vue 3 + Ant Design Vue CDN）"""
-    return f'''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vue原型 - {title}</title>
-  <!-- Vue 3 -->
-  <script src="https://cdn.jsdmirror.com/npm/vue@3/dist/vue.global.js"></script>
-  <!-- Ant Design Vue CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/reset.css" />
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.css" />
-  <!-- Ant Design Vue JS -->
-  <script src="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.js"></script>
-  <!-- Ant Design Icons -->
-  <script src="https://cdn.jsdmirror.com/npm/@ant-design/icons-vue@6.1.0/dist/index.umd.min.js"></script>
-  <style>
-    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }}
-
-    /* 页面级布局 */
-    .prototype-container {{ display: flex; height: 100vh; overflow: hidden; }}
-    .prototype-left {{ width: 1200px; background: #f0f2f5; overflow: auto; flex-shrink: 0; position: relative; }}
-    .prototype-right {{ flex: 1; background: #f5f5f5; padding: 24px; overflow: auto; }}
-
-    /* 后台布局样式 - Ant Design 风格 */
-    .layout-container {{ min-height: 100vh; display: flex; flex-direction: column; }}
-    .layout-header {{ height: 64px; background: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,21,41,0.08); }}
-    .layout-header-left {{ display: flex; align-items: center; gap: 16px; }}
-    .layout-logo {{ width: 32px; height: 32px; background: #1677ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; }}
-    .layout-title {{ font-size: 18px; font-weight: 500; color: rgba(0,0,0,0.85); }}
-    .layout-user {{ display: flex; align-items: center; gap: 16px; }}
-    .layout-avatar {{ width: 32px; height: 32px; background: #f0f0f0; border-radius: 50%; }}
-
-    .layout-body {{ display: flex; flex: 1; }}
-    .layout-sidebar {{ width: 200px; background: #001529; flex-shrink: 0; }}
-    .layout-menu {{ padding: 16px 0; }}
-    .layout-menu-item {{ padding: 12px 24px; color: rgba(255,255,255,0.65); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }}
-    .layout-menu-item:hover {{ background: rgba(255,255,255,0.05); color: #fff; }}
-    .layout-menu-item.active {{ background: #1677ff; color: #fff; }}
-
-    .layout-main {{ flex: 1; padding: 24px; overflow: auto; }}
-    .breadcrumb {{ margin-bottom: 16px; font-size: 14px; }}
-    .breadcrumb-item {{ color: rgba(0,0,0,0.45); }}
-    .breadcrumb-item.active {{ color: rgba(0,0,0,0.85); }}
-
-    /* 右侧说明文档样式 */
-    .doc-section {{ background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }}
-    .doc-title {{ font-size: 18px; font-weight: 600; color: rgba(0,0,0,0.85); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }}
-    .doc-item {{ display: flex; gap: 12px; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }}
-    .doc-label {{ font-weight: 500; color: rgba(0,0,0,0.65); min-width: 100px; flex-shrink: 0; }}
-    .doc-content {{ color: rgba(0,0,0,0.45); }}
-  </style>
-</head>
-<body>
-  <div class="prototype-container">
-    <!-- 左侧：原型页面（1200px固定宽度） -->
-    <div class="prototype-left" id="app">
-{prototype_content}
-    </div>
-
-    <!-- 右侧：交互说明 -->
-    <div class="prototype-right">
-{description_content}
-    </div>
-  </div>
-
-  <script>
-    const {{ createApp, ref, reactive }} = Vue;
-    const {{ message, Modal }} = antd;
-
-__PROTOTYPE_SCRIPT__
-  </script>
-</body>
-</html>'''
-
-
-def generate_list_page(config: Dict) -> tuple:
-    """生成列表页原型 - 返回 (template_html, script_js)"""
-    page_name = config.get('page_name', '列表页')
-    data = config.get('data', {})
-    interactions = config.get('interactions', {})
-
-    columns = data.get('columns', [])
-    buttons = interactions.get('buttons', [])
-
-    # 构建表格列 - Ant Design Vue 格式
-    table_columns = []
-    for col in columns:
-        data_index = col.get('dataIndex', 'field')
-        title = col['title']
-        if col.get('type') == 'actions':
-            col_def = f"        {{ title: '{title}', key: 'action', width: 150, fixed: 'right' }}"
-        elif col.get('type') == 'tag':
-            col_def = f"        {{ title: '{title}', dataIndex: '{data_index}', key: '{data_index}', width: 100 }}"
-        else:
-            col_def = f"        {{ title: '{title}', dataIndex: '{data_index}', key: '{data_index}' }}"
-        table_columns.append(col_def)
-
-    table_columns_js = ',\n'.join(table_columns)
-
-    # 构建搜索表单字段 - Ant Design Vue 格式
-    search_fields = []
-    for col in columns[:3]:
-        if col.get('type') != 'actions':
-            data_index = col.get('dataIndex', 'field')
-            search_fields.append(f'''
-            <a-form-item label="{col['title']}" name="{data_index}">
-              <a-input v-model:value="searchForm.{data_index}" placeholder="请输入{col['title']}" allow-clear />
-            </a-form-item>''')
-
-    search_form_html = ''.join(search_fields)
-
-    # 构建操作按钮 - Ant Design Vue 格式
-    action_buttons = []
-    for btn in buttons:
-        btn_type = 'primary' if btn in ['新增', '创建', '添加'] else 'default'
-        action_buttons.append(f'<a-button type="{btn_type}" @click="handle{btn}">{btn}</a-button>')
-
-    action_buttons_html = '\n                '.join(action_buttons)
-
-    template_html = f'''<div class="layout-container">
-      <!-- 顶栏 -->
-      <header class="layout-header">
-        <div class="layout-header-left">
-          <div class="layout-logo">S</div>
-          <span class="layout-title">系统后台</span>
-        </div>
-        <div class="layout-user">
-          <span style="color: rgba(0,0,0,0.65);">管理员</span>
-          <div class="layout-avatar"></div>
-        </div>
-      </header>
-
-      <div class="layout-body">
-        <!-- 侧边栏 -->
-        <aside class="layout-sidebar">
-          <div class="layout-menu">
-            <div class="layout-menu-item">
-              <home-outlined />
-              <span>首页</span>
-            </div>
-            <div class="layout-menu-item active">
-              <unordered-list-outlined />
-              <span>{page_name}</span>
-            </div>
-          </div>
-        </aside>
-
-        <!-- 主内容 -->
-        <main class="layout-main">
-          <!-- 面包屑 -->
-          <div class="breadcrumb">
-            <span class="breadcrumb-item">首页</span>
-            <span style="margin: 0 8px; color: rgba(0,0,0,0.45);">/</span>
-            <span class="breadcrumb-item active">{page_name}</span>
-          </div>
-
-          <!-- 搜索卡片 -->
-          <a-card style="margin-bottom: 20px;">
-            <a-form :model="searchForm" layout="inline">
-{search_form_html}
-              <a-form-item>
-                <a-button type="primary" @click="handleSearch">
-                  <search-outlined />搜索
-                </a-button>
-                <a-button @click="handleReset" style="margin-left: 8px;">重置</a-button>
-              </a-form-item>
-            </a-form>
-          </a-card>
-
-          <!-- 操作栏 -->
-          <a-card style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; gap: 10px;">
-                {action_buttons_html}
-              </div>
-            </div>
-          </a-card>
-
-          <!-- 表格 -->
-          <a-card>
-            <a-table :columns="columns" :data-source="tableData" :pagination="false" bordered>
-              <template #bodyCell="{{ column, record }}">
-                <template v-if="column.key === 'action'">
-                  <a-button type="link" @click="handleEdit(record)">编辑</a-button>
-                  <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
-                </template>
-                <template v-else-if="column.key === 'status'">
-                  <a-tag :color="record.status === '启用' ? 'success' : 'error'">{{{{ record.status }}}}</a-tag>
-                </template>
-              </template>
-            </a-table>
-
-            <!-- 分页 -->
-            <a-pagination
-              v-model:current="currentPage"
-              v-model:page-size="pageSize"
-              :total="total"
-              :page-size-options="['10', '20', '50']"
-              show-size-changer
-              show-quick-jumper
-              show-total
-              :total-text="'共 {{total}} 条'"
-              style="margin-top: 20px; text-align: right;"
-            />
-          </a-card>
-        </main>
-      </div>
-
-      <!-- 抽屉：新增/编辑 -->
-      <a-drawer v-model:open="drawerVisible" :title="drawerTitle" width="520px">
-        <a-form :model="formData" layout="vertical">
-          <a-form-item v-for="col in formColumns" :key="col.dataIndex" :label="col.title" :name="col.dataIndex">
-            <a-input v-model:value="formData[col.dataIndex]" :placeholder="'请输入' + col.title" />
-          </a-form-item>
-        </a-form>
-        <template #footer>
-          <a-button @click="drawerVisible = false">取消</a-button>
-          <a-button type="primary" @click="handleSave" style="margin-left: 8px;">确定</a-button>
-        </template>
-      </a-drawer>
-    </div>'''
-
-    script_js = f'''
-    const {{ HomeOutlined, UnorderedListOutlined, SearchOutlined }} = icons;
-
-    const app = createApp({{
-      setup() {{
-        // 搜索表单
-        const searchForm = reactive({{
-{', '.join([f"{col.get('dataIndex', 'field')}: ''" for col in columns[:3] if col.get('type') != 'actions'])}
-        }});
-
-        // 表格数据
-        const tableData = ref([
-          {{ key: 1, name: '示例数据1', status: '启用', createTime: '2024-03-25' }},
-          {{ key: 2, name: '示例数据2', status: '禁用', createTime: '2024-03-24' }},
-          {{ key: 3, name: '示例数据3', status: '启用', createTime: '2024-03-23' }},
-        ]);
-
-        // 分页
-        const currentPage = ref(1);
-        const pageSize = ref(10);
-        const total = ref(100);
-
-        // 抽屉
-        const drawerVisible = ref(false);
-        const drawerTitle = ref('新增');
-        const formData = reactive({{}});
-
-        // 表格列定义
-        const columns = [
-{table_columns_js}
-        ];
-
-        // 表单列（排除操作列）
-        const formColumns = {json.dumps([c for c in columns if c.get('type') != 'actions'], ensure_ascii=False)};
-
-        // 方法
-        const handleSearch = () => {{
-          message.success('搜索成功（模拟）');
-          console.log('搜索条件:', searchForm);
-        }};
-
-        const handleReset = () => {{
-          Object.keys(searchForm).forEach(key => {{
-            searchForm[key] = '';
-          }});
-          message.success('重置成功');
-        }};
-
-        const handle新增 = () => {{
-          drawerTitle.value = '新增';
-          Object.keys(formData).forEach(key => delete formData[key]);
-          drawerVisible.value = true;
-        }};
-
-        const handleEdit = (row) => {{
-          drawerTitle.value = '编辑';
-          Object.assign(formData, row);
-          drawerVisible.value = true;
-        }};
-
-        const handleDelete = (row) => {{
-          Modal.confirm({{
-            title: '确认删除',
-            content: '确定要删除该记录吗？此操作不可撤销。',
-            okText: '确定',
-            cancelText: '取消',
-            onOk: () => {{
-              message.success('删除成功（模拟）');
-            }}
-          }});
-        }};
-
-        const handleSave = () => {{
-          message.success('保存成功（模拟）');
-          drawerVisible.value = false;
-        }};
-
-        return {{
-          searchForm,
-          tableData,
-          currentPage,
-          pageSize,
-          total,
-          drawerVisible,
-          drawerTitle,
-          formData,
-          columns,
-          formColumns,
-          handleSearch,
-          handleReset,
-          handle新增,
-          handleEdit,
-          handleDelete,
-          handleSave,
-          HomeOutlined,
-          UnorderedListOutlined,
-          SearchOutlined
-        }};
-      }}
-    }});
-
-    app.use(antd);
-    app.component('HomeOutlined', HomeOutlined);
-    app.component('UnorderedListOutlined', UnorderedListOutlined);
-    app.component('SearchOutlined', SearchOutlined);
-    app.mount('#app');
-'''
-
-    return template_html, script_js
-
-
-def generate_form_page(config: Dict) -> tuple:
-    """生成表单页原型"""
-    page_name = config.get('page_name', '表单页')
-    data = config.get('data', {})
-    fields = data.get('fields', [])
-
-    # 构建表单字段 - Ant Design Vue 格式
-    form_items = []
-    for field in fields:
-        required = field.get('required', False)
-        required_attr = ':required="true"' if required else ''
-
-        if field.get('type') == 'select':
-            options = ''.join([f'<a-select-option value="{opt}">{opt}</a-select-option>' for opt in field.get('options', ['选项1', '选项2'])])
-            input_html = f'<a-select v-model:value="formData.{field["key"]}" placeholder="请选择{field["label"]}" style="width: 100%;"><a-select-option value="">请选择</a-select-option>{options}</a-select>'
-        elif field.get('type') == 'textarea':
-            input_html = f'<a-textarea v-model:value="formData.{field["key"]}" :rows="3" placeholder="请输入{field["label"]}" />'
-        elif field.get('type') == 'date':
-            input_html = f'<a-date-picker v-model:value="formData.{field["key"]}" placeholder="选择{field["label"]}" style="width: 100%;" />'
-        elif field.get('type') == 'switch':
-            input_html = f'<a-switch v-model:checked="formData.{field["key"]}" />'
-        elif field.get('type') == 'radio':
-            options = ''.join([f'<a-radio value="{opt}">{opt}</a-radio>' for opt in field.get('options', ['选项1', '选项2'])])
-            input_html = f'<a-radio-group v-model:value="formData.{field["key"]}">{options}</a-radio-group>'
-        else:
-            input_html = f'<a-input v-model:value="formData.{field["key"]}" placeholder="请输入{field["label"]}" />'
-
-        form_items.append(f'''
-          <a-form-item label="{field['label']}" name="{field['key']}" {required_attr}>
-            {input_html}
-          </a-form-item>''')
-
-    form_items_html = ''.join(form_items)
-
-    # 构建表单数据
-    form_data_fields = ', '.join([f"{f['key']}: ''" for f in fields if f.get('type') != 'switch'])
-    form_data_fields_switch = ', '.join([f"{f['key']}: true" for f in fields if f.get('type') == 'switch'])
-    if form_data_fields and form_data_fields_switch:
-        form_data_fields += ', ' + form_data_fields_switch
-    elif form_data_fields_switch:
-        form_data_fields = form_data_fields_switch
-
-    template_html = f'''<div class="layout-container">
-      <!-- 顶栏 -->
-      <header class="layout-header">
-        <div class="layout-header-left">
-          <div class="layout-logo">S</div>
-          <span class="layout-title">系统后台</span>
-        </div>
-        <div class="layout-user">
-          <span style="color: rgba(0,0,0,0.65);">管理员</span>
-          <div class="layout-avatar"></div>
-        </div>
-      </header>
-
-      <div class="layout-body">
-        <!-- 侧边栏 -->
-        <aside class="layout-sidebar">
-          <div class="layout-menu">
-            <div class="layout-menu-item">
-              <home-outlined />
-              <span>首页</span>
-            </div>
-            <div class="layout-menu-item active">
-              <form-outlined />
-              <span>{page_name}</span>
-            </div>
-          </div>
-        </aside>
-
-        <!-- 主内容 -->
-        <main class="layout-main">
-          <!-- 面包屑 -->
-          <div class="breadcrumb">
-            <span class="breadcrumb-item">首页</span>
-            <span style="margin: 0 8px; color: rgba(0,0,0,0.45);">/</span>
-            <span class="breadcrumb-item active">{page_name}</span>
-          </div>
-
-          <!-- 表单卡片 -->
-          <a-card style="max-width: 800px;">
-            <template #title>
-              <span style="font-size: 16px; font-weight: 500;">{page_name}</span>
-            </template>
-            <a-form ref="formRef" :model="formData" :rules="formRules" layout="vertical">
-{form_items_html}
-              <a-form-item>
-                <a-button type="primary" @click="handleSubmit">提交</a-button>
-                <a-button @click="handleCancel" style="margin-left: 8px;">取消</a-button>
-              </a-form-item>
-            </a-form>
-          </a-card>
-        </main>
-      </div>
-    </div>'''
-
-    # 构建验证规则
-    rules_js = ''
-    for field in fields:
-        if field.get('required'):
-            rules_js += f"{field['key']}: [{{ required: true, message: '请输入{field['label']}', trigger: 'change' }}],\n          "
-
-    script_js = f'''
-    const {{ HomeOutlined, FormOutlined }} = icons;
-
-    const app = createApp({{
-      setup() {{
-        const formRef = ref(null);
-
-        const formData = reactive({{
-          {form_data_fields}
-        }});
-
-        const formRules = reactive({{
-          {rules_js}
-        }});
-
-        const handleSubmit = () => {{
-          formRef.value.validate().then(() => {{
-            message.success('提交成功（模拟）');
-            console.log('提交数据:', formData);
-          }}).catch((error) => {{
-            console.log('验证失败:', error);
-          }});
-        }};
-
-        const handleCancel = () => {{
-          message.info('取消操作');
-        }};
-
-        return {{
-          formRef,
-          formData,
-          formRules,
-          handleSubmit,
-          handleCancel,
-          HomeOutlined,
-          FormOutlined
-        }};
-      }}
-    }});
-
-    app.use(antd);
-    app.component('HomeOutlined', HomeOutlined);
-    app.component('FormOutlined', FormOutlined);
-    app.mount('#app');
-'''
-
-    return template_html, script_js
-
-
-def generate_detail_page(config: Dict) -> tuple:
-    """生成详情页原型"""
-    page_name = config.get('page_name', '详情页')
-    data = config.get('data', {})
-    groups = data.get('groups', [])
-
-    # 构建详情分组 - Ant Design Vue 格式
-    groups_html = ''
-    for group in groups:
-        items = []
-        for field in group.get('fields', []):
-            prop = field.get('key', field.get('name', 'field')) if isinstance(field, dict) else field
-            label = field.get('label', prop) if isinstance(field, dict) else field
-            items.append(f"{{{{ detailData.{prop} || '—' }}}}")
-
-        items_labels = [field.get('label', field.get('key', field.get('name', 'field'))) if isinstance(field, dict) else field for field in group.get('fields', [])]
-
-        descriptions_items = ''
-        for field in group.get('fields', []):
-            prop = field.get('key', field.get('name', 'field')) if isinstance(field, dict) else field
-            label = field.get('label', prop) if isinstance(field, dict) else field
-            if prop == 'status':
-                descriptions_items += f'''
-              <a-descriptions-item label="{label}">
-                <a-tag :color="detailData.status === '启用' ? 'success' : 'error'">{{{{ detailData.status || '—' }}}}</a-tag>
-              </a-descriptions-item>'''
-            else:
-                descriptions_items += f'''
-              <a-descriptions-item label="{label}">{{{{ detailData.{prop} || '—' }}}}</a-descriptions-item>'''
-
-        groups_html += f'''
-          <!-- {group.get('title', '基本信息')} -->
-          <a-card style="margin-bottom: 20px;">
-            <template #title>
-              <span style="font-size: 16px; font-weight: 500;">{group.get('title', '基本信息')}</span>
-            </template>
-            <a-descriptions :column="2" bordered>{descriptions_items}
-            </a-descriptions>
-          </a-card>'''
-
-    template_html = f'''<div class="layout-container">
-      <!-- 顶栏 -->
-      <header class="layout-header">
-        <div class="layout-header-left">
-          <div class="layout-logo">S</div>
-          <span class="layout-title">系统后台</span>
-        </div>
-        <div class="layout-user">
-          <span style="color: rgba(0,0,0,0.65);">管理员</span>
-          <div class="layout-avatar"></div>
-        </div>
-      </header>
-
-      <div class="layout-body">
-        <!-- 侧边栏 -->
-        <aside class="layout-sidebar">
-          <div class="layout-menu">
-            <div class="layout-menu-item">
-              <home-outlined />
-              <span>首页</span>
-            </div>
-            <div class="layout-menu-item active">
-              <file-text-outlined />
-              <span>{page_name}</span>
-            </div>
-          </div>
-        </aside>
-
-        <!-- 主内容 -->
-        <main class="layout-main">
-          <!-- 面包屑 -->
-          <div class="breadcrumb">
-            <span class="breadcrumb-item">首页</span>
-            <span style="margin: 0 8px; color: rgba(0,0,0,0.45);">/</span>
-            <span class="breadcrumb-item active">{page_name}</span>
-          </div>
-
-          <!-- 操作栏 -->
-          <div style="margin-bottom: 20px;">
-            <a-button type="primary" @click="handleEdit">编辑</a-button>
-            <a-button @click="handleBack" style="margin-left: 8px;">返回</a-button>
-          </div>
-
-          <!-- 详情内容 -->
-{groups_html}
-        </main>
-      </div>
-
-      <!-- 抽屉：编辑 -->
-      <a-drawer v-model:open="drawerVisible" title="编辑详情" width="520px">
-        <a-form :model="editData" layout="vertical">
-          <a-form-item v-for="(value, key) in editData" :key="key" :label="key">
-            <a-input v-model:value="editData[key]" />
-          </a-form-item>
-        </a-form>
-        <template #footer>
-          <a-button @click="drawerVisible = false">取消</a-button>
-          <a-button type="primary" @click="handleSave" style="margin-left: 8px;">保存</a-button>
-        </template>
-      </a-drawer>
-    </div>'''
-
-    # 生成 mock 数据
-    detail_data = {}
-    for group in groups:
-        for field in group.get('fields', []):
-            prop = field.get('key', field.get('name', 'field')) if isinstance(field, dict) else field
-            detail_data[prop] = f'示例{prop}值'
-
-    script_js = f'''
-    const {{ HomeOutlined, FileTextOutlined }} = icons;
-
-    const app = createApp({{
-      setup() {{
-        const drawerVisible = ref(false);
-
-        const detailData = reactive({json.dumps(detail_data, ensure_ascii=False)});
-        const editData = reactive({{ ...detailData }});
-
-        const handleEdit = () => {{
-          Object.assign(editData, detailData);
-          drawerVisible.value = true;
-        }};
-
-        const handleBack = () => {{
-          message.info('返回列表页（模拟）');
-        }};
-
-        const handleSave = () => {{
-          Object.assign(detailData, editData);
-          message.success('保存成功（模拟）');
-          drawerVisible.value = false;
-        }};
-
-        return {{
-          drawerVisible,
-          detailData,
-          editData,
-          handleEdit,
-          handleBack,
-          handleSave,
-          HomeOutlined,
-          FileTextOutlined
-        }};
-      }}
-    }});
-
-    app.use(antd);
-    app.component('HomeOutlined', HomeOutlined);
-    app.component('FileTextOutlined', FileTextOutlined);
-    app.mount('#app');
-'''
-
-    return template_html, script_js
-
-
-def generate_description(config: Dict) -> str:
-    """生成右侧说明文档"""
-    page_name = config.get('page_name', '页面')
-    clarification = config.get('clarification', {})
-    interactions = clarification.get('interactions', {})
-    boundary = clarification.get('boundary', {})
-
-    # 构建交互说明
-    interactions_html = ''
-    if interactions.get('buttons'):
-        interactions_html += '<h4 style="font-weight: 500; margin-bottom: 8px;">操作按钮</h4><ul style="list-style: disc; padding-left: 20px; margin-bottom: 16px;">'
-        for btn in interactions['buttons']:
-            interactions_html += f'<li>{btn}: 点击后触发相应操作</li>'
-        interactions_html += '</ul>'
-
-    # 构建边界说明
-    boundary_html = '<ul style="list-style: disc; padding-left: 20px;">'
-    if boundary.get('empty_state'):
-        boundary_html += f'<li><span style="font-weight: 500;">空数据:</span> {boundary["empty_state"]}</li>'
-    if boundary.get('loading_state'):
-        boundary_html += f'<li><span style="font-weight: 500;">加载中:</span> {boundary["loading_state"]}</li>'
-    if boundary.get('error_state'):
-        boundary_html += f'<li><span style="font-weight: 500;">错误:</span> {boundary["error_state"]}</li>'
-    boundary_html += '</ul>'
-
-    return f'''<div style="max-width: 600px;">
-  <div class="doc-section">
-    <div class="doc-title">Vue 原型说明</div>
-    <p style="color: rgba(0,0,0,0.45); font-size: 14px; margin-bottom: 16px;">版本: v1.0 | 更新日期: {datetime.now().strftime('%Y-%m-%d')}</p>
-  </div>
-
-  <div class="doc-section">
-    <div class="doc-title">1. 页面概述</div>
-    <p style="color: rgba(0,0,0,0.65); line-height: 1.6;">本页面为{page_name}的 Vue 3 + Ant Design Vue 原型，左侧展示可交互的页面原型，右侧为说明文档。</p>
-  </div>
-
-  <div class="doc-section">
-    <div class="doc-title">2. 技术栈</div>
-    <ul style="list-style: disc; padding-left: 20px;">
-      <li><span style="font-weight: 500;">Vue 3:</span> 使用 Composition API + setup 语法</li>
-      <li><span style="font-weight: 500;">Ant Design Vue:</span> UI 组件库</li>
-      <li><span style="font-weight: 500;">CDN 引入:</span> 无需构建工具，直接浏览器打开</li>
-    </ul>
-  </div>
-
-  <div class="doc-section">
-    <div class="doc-title">3. 交互说明</div>
-    {interactions_html if interactions_html else '<p style="color: rgba(0,0,0,0.65);">标准交互逻辑</p>'}
-    <h4 style="font-weight: 500; margin: 16px 0 8px;">抽屉交互</h4>
-    <ul style="list-style: disc; padding-left: 20px;">
-      <li><span style="font-weight: 500;">打开:</span> 点击新增/编辑按钮</li>
-      <li><span style="font-weight: 500;">关闭:</span> 点击遮罩层、关闭按钮或取消按钮</li>
-    </ul>
-  </div>
-
-  <div class="doc-section">
-    <div class="doc-title">4. 边界场景</div>
-    {boundary_html}
-  </div>
-</div>'''
+def to_camel_case(name: str) -> str:
+    """转换为驼峰命名（用于变量名）"""
+    name = name.replace('页面', '').replace('管理', '').strip()
+    words = re.split(r'[\s_\-]+', name)
+    return words[0].lower() + ''.join(word.capitalize() for word in words[1:]) if words else ''
 
 
 def to_pascal_case(name: str) -> str:
-    """将页面名称转换为 PascalCase"""
+    """转换为 PascalCase（用于组件名）"""
     name = name.replace('页面', '').replace('管理', '').strip()
     words = re.split(r'[\s_\-]+', name)
     return ''.join(word.capitalize() for word in words if word)
 
 
-def generate_file_name(output_dir: Path, page_name: str, scenario: str, old_file_name: Optional[str]) -> str:
-    """生成文件名（HTML格式）"""
-    date_str = datetime.now().strftime('%Y%m%d')
-    pascal_name = to_pascal_case(page_name)
-
-    if scenario == 'refactor' and old_file_name:
-        # 从旧文件名提取版本号
-        match = re.search(r'V(\d+)\.html$', old_file_name)
-        old_version = int(match.group(1)) if match else 1
-        new_version = old_version + 1
-        file_name = f'VuePrototype{pascal_name}V{new_version}.html'
-        while (output_dir / file_name).exists():
-            new_version += 1
-            file_name = f'VuePrototype{pascal_name}V{new_version}.html'
-    else:
-        file_name = f'VuePrototype{pascal_name}.html'
-        if (output_dir / file_name).exists():
-            version = 2
-            while (output_dir / f'VuePrototype{pascal_name}V{version}.html').exists():
-                version += 1
-            file_name = f'VuePrototype{pascal_name}V{version}.html'
-
-    return file_name
+def to_kebab_case(name: str) -> str:
+    """转换为 kebab-case（用于目录名）"""
+    name = name.replace('页面', '').replace('管理', '').strip()
+    # 先处理驼峰
+    name = re.sub(r'([a-z])([A-Z])', r'\1-\2', name)
+    # 处理空格和下划线
+    name = re.sub(r'[\s_]+', '-', name)
+    return name.lower().strip('-')
 
 
-def generate_page(config: Dict) -> Dict:
-    """生成单个页面原型"""
+def generate_list_page_tsx(config: Dict) -> tuple:
+    """生成列表页的 index.vue 和 data.ts"""
+    page_name = config.get('page_name', '列表页')
+    clarification = config.get('clarification', {})
+    data_config = clarification.get('data', {})
+
+    page_name_pascal = to_pascal_case(page_name) + 'Page'
+    page_name_camel = to_camel_case(page_name)
+    page_dir = to_kebab_case(page_name)
+
+    columns = data_config.get('columns', [
+        {'title': '名称', 'dataIndex': 'name', 'width': 150},
+        {'title': '状态', 'dataIndex': 'status', 'width': 100},
+        {'title': '创建时间', 'dataIndex': 'createTime', 'width': 180},
+        {'title': '操作', 'dataIndex': 'action', 'fixed': 'right', 'width': 150},
+    ])
+
+    search_fields = data_config.get('search_fields', [
+        {'field': 'name', 'label': '名称', 'component': 'Input'},
+        {'field': 'status', 'label': '状态', 'component': 'Select'},
+    ])
+
+    # 生成 columns 配置
+    columns_str = json.dumps(columns, ensure_ascii=False, indent=2)
+
+    # 生成 searchSchema
+    search_schema_items = []
+    for field in search_fields:
+        schema_item = {
+            'field': field['field'],
+            'component': field['component'],
+            'componentProps': {
+                'placeholder': field.get('label', field['field'])
+            }
+        }
+        if field['component'] == 'Select':
+            schema_item['componentProps']['options'] = [{'label': '全部', 'value': ''}, {'label': '启用', 'value': 1}, {'label': '禁用', 'value': 0}]
+        search_schema_items.append(schema_item)
+
+    search_schema_str = json.dumps(search_schema_items, ensure_ascii=False, indent=2)
+
+    # 生成 data.ts
+    data_ts = f'''/**
+ * {page_name} - 配置文件
+ */
+
+/**
+ * vue组件导出名称，需和路由名称一致，需要全局唯一
+ */
+export const PAGE_NAME = '{page_name_pascal}';
+
+/**
+ * 表格列配置
+ */
+export const columns = {columns_str};
+
+/**
+ * 状态枚举
+ */
+export enum statusEnum {{
+  DISABLED = 0,
+  ENABLED = 1,
+}}
+
+/**
+ * 状态选项
+ */
+export const statusOptions = [
+  {{ label: '禁用', value: statusEnum.DISABLED, status: 'error' }},
+  {{ label: '启用', value: statusEnum.ENABLED, status: 'success' }},
+];
+
+/**
+ * 搜索表单配置
+ */
+export const searchSchema: YcForm.Schema[] = {search_schema_str};
+'''
+
+    # 生成 index.vue
+    index_vue = f'''<script setup lang="ts">
+import {{ columns, PAGE_NAME, searchSchema, statusOptions }} from './data';
+import EditForm from './components/EditForm.vue';
+import {{ mockGetTableData, mockDelete }} from '@/api/mock-api';
+import {{ getLabelByValue }} from '@/utils';
+import useDrawer from '@/hooks/useDrawer';
+import {{ useForm }} from '@/hooks/useForm';
+
+defineOptions({{ name: PAGE_NAME }});
+
+/** 筛选项 */
+const inParams = reactive({{
+  name: '',
+  status: '',
+}});
+
+const {{ VBind: searchVBind, resetFields: reset }} = useForm({{
+  schemas: searchSchema,
+  modelRef: inParams,
+  isForm: false,
+  onEnter: () => search(),
+}});
+
+/** 表格数据 */
+const tableData = ref<any[]>([]);
+const loading = ref(false);
+const pagination = reactive({{
+  current: 1,
+  pageSize: 10,
+  total: 0,
+}});
+
+const getTableData = async () => {{
+  loading.value = true;
+  try {{
+    const res = await mockGetTableData({{
+      pageNo: pagination.current,
+      pageSize: pagination.pageSize,
+      ...inParams,
+    }});
+    if (res.code === 200) {{
+      tableData.value = res.data.records;
+      pagination.total = res.data.total;
+    }}
+  }} finally {{
+    loading.value = false;
+  }}
+}};
+
+const search = () => {{
+  pagination.current = 1;
+  getTableData();
+}};
+
+/** 表格操作 */
+const handleDelete = (row: any) => {{
+  Modal.confirm({{
+    title: '确定删除？',
+    onOk: async () => {{
+      const res = await mockDelete(row.id);
+      if (res.code === 200) {{
+        message.success('删除成功');
+        await getTableData();
+      }}
+    }},
+    cancelText: '取消',
+  }});
+}};
+
+/** 抽屉 */
+const {{ drawer }} = useDrawer(PAGE_NAME);
+const editForm = ref();
+const handleSave = async () => {{
+  try {{
+    await editForm.value?.save();
+    drawer.close();
+    getTableData();
+  }} catch (e) {{
+    console.error(e);
+  }}
+}};
+
+/** 初始化 */
+const init = async () => {{
+  await getTableData();
+}};
+init();
+</script>
+
+<template>
+  <div class="prototype-page">
+    <a-card title="{page_name}" :bordered="false">
+      <!-- 搜索区域 -->
+      <div class="search-area">
+        <a-form layout="inline" :model="inParams">
+          <a-form-item v-for="schema in searchSchema" :key="schema.field" :label="schema.componentProps?.placeholder">
+            <a-input
+              v-if="schema.component === 'Input'"
+              v-model:value="inParams[schema.field as string]"
+              :placeholder="`请输入${{schema.componentProps?.placeholder}}`"
+              allow-clear
+            />
+            <a-select
+              v-else-if="schema.component === 'Select'"
+              v-model:value="inParams[schema.field as string]"
+              :placeholder="`请选择${{schema.componentProps?.placeholder}}`"
+              style="width: 180px"
+              allow-clear
+            >
+              <a-select-option v-for="opt in schema.componentProps?.options" :key="opt.value" :value="opt.value">
+                {{{{ opt.label }}}}
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+          <a-form-item>
+            <a-button type="primary" @click="search">查询</a-button>
+            <a-button style="margin-left: 8px" @click="reset">重置</a-button>
+            <a-button type="primary" style="margin-left: 8px" @click="drawer.open('add', '新增')">
+              新增
+            </a-button>
+          </a-form-item>
+        </a-form>
+      </div>
+
+      <!-- 表格区域 -->
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
+        :loading="loading"
+        :pagination="false"
+        row-key="id"
+      >
+        <template #bodyCell="{{ column, record }}">
+          <template v-if="column.dataIndex === 'status'">
+            <a-tag :color="record.status === 1 ? 'success' : 'error'">
+              {{{{ getLabelByValue(record.status, statusOptions) }}}}
+            </a-tag>
+          </template>
+          <template v-if="column.dataIndex === 'action'">
+            <a-button type="link" @click="drawer.open('detail', '详情', record)">详情</a-button>
+            <a-button type="link" @click="drawer.open('edit', '编辑', record)">编辑</a-button>
+            <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
+          </template>
+        </template>
+      </a-table>
+
+      <!-- 分页 -->
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:page-size="pagination.pageSize"
+        :total="pagination.total"
+        :page-size-options="['10', '20', '50']"
+        show-size-changer
+        show-quick-jumper
+        show-total
+        style="margin-top: 20px; text-align: right"
+      />
+    </a-card>
+
+    <!-- 抽屉 -->
+    <a-drawer
+      v-model:visible="drawer.visible"
+      :title="drawer.title"
+      width="600px"
+      :destroy-on-close="true"
+    >
+      <edit-form v-if="['add', 'edit'].includes(drawer.mode)" ref="editForm" :mode="drawer.mode" :record="drawer.record" @save="handleSave" />
+      <div v-else-if="drawer.mode === 'detail'">
+        <a-descriptions bordered :column="2">
+          <a-descriptions-item label="ID">{{{{ drawer.record?.id }}}}</a-descriptions-item>
+          <a-descriptions-item label="名称">{{{{ drawer.record?.name }}}}</a-descriptions-item>
+          <a-descriptions-item label="状态">
+            <a-tag :color="drawer.record?.status === 1 ? 'success' : 'error'">
+              {{{{ getLabelByValue(drawer.record?.status, statusOptions) }}}}
+            </a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="创建时间">{{{{ drawer.record?.createTime }}}}</a-descriptions-item>
+        </a-descriptions>
+      </div>
+      <template v-if="['add', 'edit'].includes(drawer.mode)" #footer>
+        <a-button @click="drawer.close">取消</a-button>
+        <a-button type="primary" style="margin-left: 8px" @click="handleSave">保存</a-button>
+      </template>
+      <template v-else #footer>
+        <a-button @click="drawer.close">关闭</a-button>
+      </template>
+    </a-drawer>
+  </div>
+</template>
+
+<style scoped lang="less">
+.prototype-page {{
+  padding: 24px;
+}}
+
+.search-area {{
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}}
+</style>
+'''
+
+    return index_vue, data_ts, page_dir
+
+
+def generate_edit_form_component(config: Dict) -> str:
+    """生成编辑表单组件"""
+    clarification = config.get('clarification', {})
+    data_config = clarification.get('data', {})
+    columns = data_config.get('columns', [])
+
+    # 过滤掉操作列，生成表单字段
+    form_fields = [col for col in columns if col.get('dataIndex') != 'action']
+
+    form_items = []
+    for field in form_fields:
+        data_index = field.get('dataIndex', 'field')
+        title = field.get('title', '字段')
+        form_items.append(f'''
+      <a-form-item label="{title}" name="{data_index}">
+        <a-input v-model:value="formData.{data_index}" placeholder="请输入{title}" />
+      </a-form-item>''')
+
+    form_items_str = ''.join(form_items)
+
+    # 生成表单字段的初始值
+    form_data_fields = []
+    for field in form_fields:
+        data_index = field.get('dataIndex', 'field')
+        form_data_fields.append(f"{data_index}: ''")
+    form_data_str = ',\n    '.join(form_data_fields)
+
+    return f'''<script setup lang="ts">
+import {{ mockUpdate }} from '@/api/mock-api';
+
+const props = defineProps<{{
+  mode: 'add' | 'edit';
+  record?: any;
+}}>();
+
+const emit = defineEmits(['save']);
+
+const formRef = ref();
+const formData = reactive({{
+  {form_data_str}
+}});
+
+const rules = {{
+  {', '.join([f"{f.get('dataIndex', 'field')}: [{{ required: true, message: '请输入{f.get('title', '字段')}', trigger: 'blur' }}]" for f in form_fields if f.get('required')])}
+}};
+
+const init = () => {{
+  if (props.mode === 'edit' && props.record) {{
+    Object.assign(formData, props.record);
+  }}
+}};
+
+const save = async () => {{
+  await formRef.value.validate();
+  const res = await mockUpdate({{ ...formData, id: props.record?.id }});
+  if (res.code === 200) {{
+    message.success(props.mode === 'add' ? '新增成功' : '编辑成功');
+    emit('save');
+  }}
+}};
+
+defineExpose({{ save }});
+
+init();
+</script>
+
+<template>
+  <a-form
+    ref="formRef"
+    :model="formData"
+    :rules="rules"
+    layout="vertical"
+  >{form_items_str}
+  </a-form>
+</template>
+'''
+
+
+def generate_page(config: Dict, prototype_name: Optional[str] = None) -> Dict:
+    """
+    生成单个页面原型
+
+    Args:
+        config: 页面配置
+        prototype_name: 原型项目名称
+
+    Returns:
+        {
+            "status": "success|error",
+            "message": "...",
+            "files": [...],
+            "path": "..."
+        }
+    """
     try:
         page_name = config.get('page_name')
         page_type = config.get('page_type', 'list')
-        output_path_str = config.get('output_path', '.dev/prototype')
-        scenario = config.get('scenario', 'new')
+        prototype = prototype_name or config.get('prototype_name', 'default-prototype')
 
         if not page_name:
             return {"status": "error", "message": "缺少 page_name 参数"}
 
-        output_dir = Path(output_path_str)
+        # 确定输出路径
+        output_dir = Path('docs/prototype') / prototype / 'src' / 'pages'
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 生成文件名（HTML格式）
-        file_name = generate_file_name(output_dir, page_name, scenario, config.get('old_file_name'))
+        # 生成页面
+        if page_type == 'list':
+            index_vue, data_ts, page_dir_name = generate_list_page_tsx(config)
+        else:
+            # 其他类型暂时使用列表模板
+            index_vue, data_ts, page_dir_name = generate_list_page_tsx(config)
 
-        # 根据页面类型生成内容
-        page_generators = {
-            'list': generate_list_page,
-            'form': generate_form_page,
-            'detail': generate_detail_page,
-        }
+        # 创建页面目录
+        page_path = output_dir / page_dir_name
+        components_path = page_path / 'components'
+        components_path.mkdir(parents=True, exist_ok=True)
 
-        generator = page_generators.get(page_type, generate_list_page)
-        prototype_template, prototype_script = generator(config)
+        # 写入文件
+        (page_path / 'index.vue').write_text(index_vue, encoding='utf-8')
+        (page_path / 'data.ts').write_text(data_ts, encoding='utf-8')
 
-        # 生成说明文档
-        description_content = generate_description(config)
+        # 生成编辑表单组件
+        edit_form = generate_edit_form_component(config)
+        (components_path / 'EditForm.vue').write_text(edit_form, encoding='utf-8')
 
-        # 生成完整HTML
-        full_html = generate_base_html(page_name, prototype_template, description_content)
-        # 插入脚本
-        full_html = full_html.replace('__PROTOTYPE_SCRIPT__', prototype_script)
-
-        # 保存文件
-        file_path = output_dir / file_name
-        file_path.write_text(full_html, encoding='utf-8')
-
-        # 提取版本号
-        version_match = re.search(r'V(\d+)\.html$', file_name)
-        version = int(version_match.group(1)) if version_match else 1
+        # 更新路由
+        update_router(prototype, page_dir_name, to_pascal_case(page_name) + 'Page')
 
         return {
-            "file_path": str(file_path),
-            "file_name": file_name,
             "status": "success",
-            "message": "生成成功" if scenario == 'new' else f"改造成功，已生成新版本",
+            "message": f"页面 '{page_name}' 生成成功",
+            "files": [
+                str(page_path / 'index.vue'),
+                str(page_path / 'data.ts'),
+                str(components_path / 'EditForm.vue'),
+            ],
+            "path": str(page_path),
             "page_info": {
                 "name": page_name,
                 "type": page_type,
-                "scenario": scenario,
-                "version": version
+                "route": f"/{page_dir_name}",
             }
         }
 
@@ -814,29 +474,65 @@ def generate_page(config: Dict) -> Dict:
         return {
             "status": "error",
             "message": str(e),
-            "error": {"type": "generation_error", "detail": traceback.format_exc()}
+            "error": traceback.format_exc()
         }
 
 
+def update_router(prototype_name: str, page_dir: str, page_component: str):
+    """更新路由配置，添加新页面"""
+    router_path = Path('docs/prototype') / prototype_name / 'src' / 'router' / 'index.ts'
+    if not router_path.exists():
+        return
+
+    content = router_path.read_text(encoding='utf-8')
+
+    # 检查是否已存在该路由
+    if f"path: '/{page_dir}'" in content:
+        return
+
+    # 构建新的路由项
+    new_route = f'''  {{
+    path: '/{page_dir}',
+    name: '{page_component}',
+    component: () => import('@/pages/{page_dir}/index.vue'),
+    meta: {{ title: '{page_component}' }},
+  }},'''
+
+    # 插入到 routes 数组中
+    if 'const routes: RouteRecordRaw[] = [];' in content:
+        content = content.replace(
+            'const routes: RouteRecordRaw[] = [];',
+            f'const routes: RouteRecordRaw[] = [\n{new_route}\n];'
+        )
+    elif 'const routes: RouteRecordRaw[] = [' in content:
+        # 在最后一个路由项后添加
+        content = content.replace(
+            '];',
+            f'  {new_route}\n];'
+        )
+
+    router_path.write_text(content, encoding='utf-8')
+
+
 def main():
-    parser = argparse.ArgumentParser(description='生成 Vue 原型页面 HTML')
+    parser = argparse.ArgumentParser(description='生成 Vue 原型页面')
+    parser.add_argument('--input', '-i', help='JSON格式的输入配置')
     parser.add_argument('--config', '-c', help='JSON配置文件路径')
-    parser.add_argument('--input', '-i', help='JSON格式的输入参数')
+    parser.add_argument('--prototype', '-p', help='原型项目名称')
     parser.add_argument('--output', '-o', help='输出结果到文件')
 
     args = parser.parse_args()
 
     # 读取配置
-    if args.config:
-        config = json.loads(Path(args.config).read_text(encoding='utf-8'))
-    elif args.input:
+    if args.input:
         config = json.loads(args.input)
+    elif args.config:
+        config = json.loads(Path(args.config).read_text(encoding='utf-8'))
     else:
-        # 从stdin读取
         config = json.loads(sys.stdin.read())
 
     # 生成页面
-    result = generate_page(config)
+    result = generate_page(config, args.prototype)
 
     # 输出结果
     output = json.dumps(result, ensure_ascii=False, indent=2)
@@ -845,7 +541,6 @@ def main():
     else:
         print(output)
 
-    # 返回退出码
     sys.exit(0 if result['status'] == 'success' else 1)
 
 

@@ -1,311 +1,497 @@
-# Ant Design Vue 原型设计规范
+# Vue 原型设计规范
 
-本规范专门用于指导 Vue 原型生成，确保所有原型页面风格统一。**基于 Ant Design Vue 官方样式**。
+本规范用于指导 Vue 原型生成，确保所有原型页面使用与项目前端完全一致的技术栈和设计风格。
 
 ## 核心原则
 
-**使用 Vue 3 + Ant Design Vue CDN 引入**：
+### 技术栈一致性
 
-```html
-<!-- Vue 3 -->
-<script src="https://cdn.jsdmirror.com/npm/vue@3/dist/vue.global.js"></script>
+原型项目使用与主项目**完全一致的依赖版本**：
 
-<!-- Ant Design Vue 样式 -->
-<link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/reset.css" />
-<link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.css" />
-
-<!-- Ant Design Vue 组件 -->
-<script src="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.js"></script>
-```
-
-## 配色方案（Ant Design Vue）
-
-| 名称 | 色值 | CSS 变量 | 用途 |
-|-----|------|---------|-----|
-| Primary | `#1677ff` | `--ant-primary-color` | 主按钮、链接、选中态 |
-| Success | `#52c41a` | `--ant-success-color` | 成功状态、启用标签 |
-| Warning | `#faad14` | `--ant-warning-color` | 警告状态 |
-| Error | `#ff4d4f` | `--ant-error-color` | 错误状态、危险操作 |
-| Info | `#1677ff` | `--ant-info-color` | 信息提示 |
-
-### 中性色
-| 名称 | 色值 | 用途 |
+| 技术 | 版本 | 用途 |
 |-----|------|-----|
-| Text Primary | `rgba(0, 0, 0, 0.85` | success
+| Vue | 3.3.4 | 前端框架 |
+| TypeScript | ~5.9.3 | 类型系统 |
+| Ant Design Vue | 3.2.20 | UI 组件库 |
+| Rsbuild | ^1.6.15 | 构建工具 |
+| Vue Router | 5.0.1 | 路由管理 |
+| Pinia | 3.0.4 | 状态管理 |
+| Dayjs | ^1.11.19 | 日期处理 |
+| Lodash-es | ^4.17.23 | 工具函数 |
 
-## HTML 头部模板
+**重要提醒**：必须使用 Ant Design Vue **3.x** 版本，而非 4.x。API 有显著差异。
 
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>原型 - {页面名称}</title>
-  <!-- Vue 3 -->
-  <script src="https://cdn.jsdmirror.com/npm/vue@3/dist/vue.global.js"></script>
+### 启动方式
 
-  <!-- Ant Design Vue CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/reset.css" />
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.css" />
-  <!-- Ant Design Vue JS -->
-  <script src="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.js"></script>
-  <!-- Ant Design Icons -->
-  <script src="https://cdn.jsdmirror.com/npm/@ant-design/icons-vue@6.1.0/dist/index.umd.min.js"></script>
+原型项目需要在指定目录下使用 `pnpm dev` 启动开发服务器：
 
-  ## 组件使用规范
-
-  ### 按钮
-
-  ```html
-  <style>
-    <script>
-      /* 成功n
-
-
-```html
-<!-- 主按钮 -->
-<a-button type="primary">主要按钮</a-button>
-
-<!-- 默认按钮 -->
-<a-button>默认按钮</a-button>
-
-<!-- 危险按钮 -->
-<a-button danger>删除</a-button>
-
-<!-- 链接按钮 -->
-<a-button type="link">编辑</a-button>
-
-<!-- 带图标的按钮 -->
-<a-button type="primary">
-  <plus-outlined />新增
-</a-button>
+```bash
+cd docs/prototype/{prototype-name}
+pnpm install
+pnpm dev
 ```
 
-### 输入框
+服务默认在 **3005 端口**启动，访问 http://localhost:3005 查看原型。
 
-```html
-<!-- 基础输入框 -->
-<a-input v-model:value="input" placeholder="请输入" />
+## 项目结构
 
-<!-- 带前缀的输入框 -->
-<a-input v-model:value="input" placeholder="搜索">
-  <template #prefix>
-    <search-outlined />
-  </template>
-</a-input>
-
-<!-- 清空按钮 -->
-<a-input v-model:value="input" placeholder="请输入" allow-clear />
-
-<!-- 密码输入框 -->
-<a-input-password v-model:value="password" placeholder="请输入密码" />
-
-<!-- 文本域 -->
-<a-textarea v-model:value="textarea" :rows="3" placeholder="请输入" />
+```
+docs/prototype/{prototype-name}/
+├── package.json              # 依赖配置
+├── rsbuild.config.ts         # Rsbuild配置
+├── tsconfig.json             # TypeScript配置
+├── index.html                # 入口HTML
+├── src/
+│   ├── main.ts               # 入口文件
+│   ├── App.vue               # 根组件
+│   ├── env.d.ts              # 类型声明
+│   ├── api/
+│   │   └── mock-api.ts       # Mock API层
+│   ├── hooks/                # Hooks（简化版）
+│   │   ├── useDrawer.ts
+│   │   └── useForm.ts
+│   ├── pages/                # 页面目录
+│   │   └── {page-name}/
+│   │       ├── index.vue
+│   │       ├── data.ts
+│   │       └── components/
+│   │           └── EditForm.vue
+│   ├── router/               # 路由配置
+│   │   └── index.ts
+│   ├── styles/               # 全局样式
+│   ├── utils/                # 工具函数
+│   └── types/                # 类型定义
 ```
 
-### 下拉选择
+## 组件使用规范
 
-```html
-<a-select v-model:value="value" placeholder="请选择" allow-clear style="width: 200px;">
-  <a-select-option value="">全部状态</a-select-option>
-  <a-select-option value="enabled">启用</a-select-option>
-  <a-select-option value="disabled">禁用</a-select-option>
-</a-select>
+### Ant Design Vue 3.x 组件
+
+#### 按钮 Button
+
+```vue
+<template>
+  <!-- 主按钮 -->
+  <a-button type="primary">主要按钮</a-button>
+
+  <!-- 默认按钮 -->
+  <a-button>默认按钮</a-button>
+
+  <!-- 危险按钮 -->
+  <a-button danger>删除</a-button>
+
+  <!-- 链接按钮 -->
+  <a-button type="link">编辑</a-button>
+
+  <!-- 带图标的按钮 -->
+  <a-button type="primary">
+    <plus-outlined />新增
+  </a-button>
+</template>
 ```
 
-### 表格
+**Ant Design Vue 3.x 注意事项**（与 4.x 的区别）：
+- 使用 `v-model:visible` 控制弹窗/抽屉显示（而非 `v-model:open`）
+- 图标需要单独导入和注册
 
-```html
-<a-table :columns="columns" :data-source="tableData" :pagination="false" bordered>
-  <template #bodyCell="{ column, record }">
-    <template v-if="column.key === 'action'">
-      <a-button type="link" @click="handleEdit(record)">编辑</a-button>
-      <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
+#### 输入框 Input
+
+```vue
+<template>
+  <!-- 基础输入框 -->
+  <a-input v-model:value="input" placeholder="请输入" />
+
+  <!-- 带清空按钮 -->
+  <a-input v-model:value="input" placeholder="请输入" allow-clear />
+
+  <!-- 密码输入框 -->
+  <a-input-password v-model:value="password" placeholder="请输入密码" />
+
+  <!-- 文本域 -->
+  <a-textarea v-model:value="textarea" :rows="3" placeholder="请输入" />
+</template>
+```
+
+#### 下拉选择 Select
+
+```vue
+<template>
+  <a-select v-model:value="value" placeholder="请选择" allow-clear style="width: 200px;">
+    <a-select-option value="">全部状态</a-select-option>
+    <a-select-option value="enabled">启用</a-select-option>
+    <a-select-option value="disabled">禁用</a-select-option>
+  </a-select>
+</template>
+```
+
+#### 表格 Table
+
+```vue
+<template>
+  <a-table
+    :columns="columns"
+    :data-source="tableData"
+    :loading="loading"
+    :pagination="false"
+    row-key="id"
+  >
+    <template #bodyCell="{ column, record }">
+      <template v-if="column.dataIndex === 'action'">
+        <a-button type="link" @click="handleEdit(record)">编辑</a-button>
+        <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
+      </template>
+      <template v-else-if="column.dataIndex === 'status'">
+        <a-tag :color="record.status === 1 ? 'success' : 'error'">
+          {{ record.status === 1 ? '启用' : '禁用' }}
+        </a-tag>
+      </template>
     </template>
-    <template v-else-if="column.key === 'status'">
-      <a-tag :color="record.status === '启用' ? 'success' : 'error'">{{ record.status }}</a-tag>
+  </a-table>
+</template>
+```
+
+#### 标签 Tag
+
+```vue
+<template>
+  <!-- 状态标签 - 启用 -->
+  <a-tag color="success">启用</a-tag>
+
+  <!-- 状态标签 - 禁用 -->
+  <a-tag color="error">禁用</a-tag>
+
+  <!-- 状态标签 - 待审核 -->
+  <a-tag color="warning">待审核</a-tag>
+</template>
+```
+
+#### 卡片 Card
+
+```vue
+<template>
+  <a-card title="卡片标题" :bordered="false">
+    卡片内容
+  </a-card>
+</template>
+```
+
+#### 抽屉 Drawer（3.x 版本）
+
+**重要**：Ant Design Vue 3.x 使用 `v-model:visible` 而非 `v-model:open`：
+
+```vue
+<template>
+  <a-drawer
+    v-model:visible="drawerVisible"
+    title="抽屉标题"
+    width="500px"
+    :destroy-on-close="true"
+  >
+    <a-form :model="formData" layout="vertical">
+      <a-form-item label="名称" name="name" :required="true">
+        <a-input v-model:value="formData.name" placeholder="请输入名称" />
+      </a-form-item>
+    </a-form>
+    <template #footer>
+      <a-button @click="drawerVisible = false">取消</a-button>
+      <a-button type="primary" @click="handleSave" style="margin-left: 8px;">确定</a-button>
     </template>
-  </template>
-</a-table>
+  </a-drawer>
+</template>
 ```
 
-### 标签
+#### 对话框 Modal
 
-```html
-<!-- 状态标签 - 启用 -->
-<a-tag color="success">启用</a-tag>
-
-<!-- 状态标签 - 禁用 -->
-<a-tag color="error">禁用</a-tag>
-
-<!-- 状态标签 - 待审核 -->
-<a-tag color="warning">待审核</a-tag>
-
-<!-- 状态标签 - 默认 -->
-<a-tag>默认</a-tag>
-
-<!-- 边框标签 -->
-<a-tag color="success" bordered>启用</a-tag>
+```vue
+<template>
+  <a-modal
+    v-model:visible="modalVisible"
+    title="删除确认"
+    width="420px"
+    @ok="confirmDelete"
+  >
+    <div style="display: flex; align-items: center;">
+      <exclamation-circle-outlined style="font-size: 22px; color: #faad14; margin-right: 12px;" />
+      <span>确定要删除该记录吗？此操作不可撤销。</span>
+    </div>
+  </a-modal>
+</template>
 ```
 
-### 卡片
+#### 分页 Pagination
 
-```html
-<a-card>
-  <template #title>
-    <span>卡片标题</span>
-  </template>
-  卡片内容
-</a-card>
+```vue
+<template>
+  <a-pagination
+    v-model:current="pagination.current"
+    v-model:page-size="pagination.pageSize"
+    :total="pagination.total"
+    :page-size-options="['10', '20', '50']"
+    show-size-changer
+    show-quick-jumper
+    show-total
+    style="margin-top: 20px; text-align: right;"
+  />
+</template>
 ```
 
-### 抽屉
+#### 表单 Form
 
-```html
-<a-drawer
-  v-model:open="drawerVisible"
-  title="抽屉标题"
-  width="500px"
->
-  <a-form :model="formData" layout="vertical">
-    <a-form-item label="名称" :required="true">
-      <a-input v-model:value="formData.name" placeholder="请输入名称" />
+```vue
+<template>
+  <a-form
+    ref="formRef"
+    :model="formData"
+    :rules="formRules"
+    layout="vertical"
+  >
+    <a-form-item label="用户名" name="username" :required="true">
+      <a-input v-model:value="formData.username" placeholder="请输入用户名" />
+    </a-form-item>
+
+    <a-form-item label="状态" name="status">
+      <a-select v-model:value="formData.status" placeholder="请选择状态" style="width: 100%;">
+        <a-select-option value="enabled">启用</a-select-option>
+        <a-select-option value="disabled">禁用</a-select-option>
+      </a-select>
+    </a-form-item>
+
+    <a-form-item>
+      <a-button type="primary" @click="handleSubmit">提交</a-button>
+      <a-button @click="handleCancel" style="margin-left: 8px;">取消</a-button>
     </a-form-item>
   </a-form>
-  <template #footer>
-    <a-button @click="drawerVisible = false">取消</a-button>
-    <a-button type="primary" @click="handleSave" style="margin-left: 8px;">确定</a-button>
-  </template>
-</a-drawer>
+</template>
 ```
 
-### 对话框
+#### 描述列表 Descriptions
 
-```html
-<a-modal
-  v-model:open="modalVisible"
-  title="删除确认"
-  width="420px"
-  @ok="confirmDelete"
->
-  <div style="display: flex; align-items: center;">
-    <exclamation-circle-outlined style="font-size: 22px; color: #faad14; margin-right: 12px;" />
-    <span>确定要删除该记录吗？此操作不可撤销。</span>
-  </div>
-</a-modal>
+```vue
+<template>
+  <a-descriptions :column="2" bordered>
+    <a-descriptions-item label="用户名">admin</a-descriptions-item>
+    <a-descriptions-item label="邮箱">admin@example.com</a-descriptions-item>
+    <a-descriptions-item label="状态">
+      <a-tag color="success">启用</a-tag>
+    </a-descriptions-item>
+  </a-descriptions>
+</template>
 ```
 
-### 分页
+## Hooks 使用规范
 
-```html
-<a-pagination
-  v-model:current="currentPage"
-  v-model:page-size="pageSize"
-  :total="total"
-  :page-size-options="['10', '20', '50']"
-  show-size-changer
-  show-quick-jumper
-  show-total
-  style="margin-top: 20px; text-align: right;"
-/>
+### useDrawer（简化版）
+
+```typescript
+import useDrawer from '@/hooks/useDrawer';
+
+const { drawer, open, close } = useDrawer('PageName');
+
+// 打开抽屉（新增模式）
+open('add', '新增');
+
+// 打开抽屉（编辑模式）
+open('edit', '编辑', record);
+
+// 打开抽屉（详情模式）
+open('detail', '详情', record);
+
+// 关闭抽屉
+close();
 ```
 
-### 表单
+### useForm（简化版）
 
-```html
-<a-form
-  ref="formRef"
-  :model="formData"
-  :rules="formRules"
-  layout="vertical"
->
-  <a-form-item label="用户名" name="username" :required="true">
-    <a-input v-model:value="formData.username" placeholder="请输入用户名" />
-  </a-form-item>
+```typescript
+import { useForm } from '@/hooks/useForm';
 
-  <a-form-item label="状态" name="status">
-    <a-select v-model:value="formData.status" placeholder="请选择状态" style="width: 100%;">
-      <a-select-option value="enabled">启用</a-select-option>
-      <a-select-option value="disabled">禁用</a-select-option>
-    </a-select>
-  </a-form-item>
-
-  <a-form-item>
-    <a-button type="primary" @click="handleSubmit">提交</a-button>
-    <a-button @click="handleCancel" style="margin-left: 8px;">取消</a-button>
-  </a-form-item>
-</a-form>
+const { VBind, resetFields, setFields } = useForm({
+  schemas: searchSchema,
+  modelRef: inParams,
+  isForm: false,
+  onEnter: () => search(),
+});
 ```
 
-### 描述列表
+## 页面开发规范
 
-```html
-<a-descriptions :column="2" bordered>
-  <a-descriptions-item label="用户名">admin</a-descriptions-item>
-  <a-descriptions-item label="邮箱">admin@example.com</a-descriptions-item>
-  <a-descriptions-item label="状态">
-    <a-tag color="success">启用</a-tag>
-  </a-descriptions-item>
-</a-descriptions>
-```
+### 列表页标准结构
 
-## 布局模式
+```vue
+<script setup lang="ts">
+import { columns, PAGE_NAME, searchSchema, statusOptions } from './data';
+import EditForm from './components/EditForm.vue';
+import { mockGetTableData, mockDelete } from '@/api/mock-api';
+import { getLabelByValue } from '@/utils';
+import useDrawer from '@/hooks/useDrawer';
+import { useForm } from '@/hooks/useForm';
 
-### 标准后台布局
+defineOptions({ name: PAGE_NAME });
 
-```html
-<a-layout style="min-height: 100vh;">
-  <!-- 顶栏 -->
-  <a-layout-header style="background: #fff; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,21,41,0.08);">
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <div style="width: 32px; height: 32px; background: #1677ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold;">S</div>
-      <span style="font-size: 18px; font-weight: 500; color: rgba(0,0,0,0.85);">系统后台</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <span style="color: rgba(0,0,0,0.65);">管理员</span>
-      <a-avatar :size="32" icon="user" />
-    </div>
-  </a-layout-header>
+// 搜索表单
+const inParams = reactive({
+  name: '',
+  status: '',
+});
 
-  <a-layout>
-    <!-- 侧边栏 -->
-    <a-layout-sider width="200px" style="background: #001529;">
-      <a-menu
-        mode="inline"
-        theme="dark"
-        :selected-keys="['1']"
-        style="border-right: none;"
+const { VBind: searchVBind, resetFields: reset } = useForm({
+  schemas: searchSchema,
+  modelRef: inParams,
+  isForm: false,
+  onEnter: () => search(),
+});
+
+// 表格数据
+const tableData = ref<any[]>([]);
+const loading = ref(false);
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+});
+
+const getTableData = async () => {
+  loading.value = true;
+  try {
+    const res = await mockGetTableData({
+      pageNo: pagination.current,
+      pageSize: pagination.pageSize,
+      ...inParams,
+    });
+    if (res.code === 200) {
+      tableData.value = res.data.records;
+      pagination.total = res.data.total;
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const search = () => {
+  pagination.current = 1;
+  getTableData();
+};
+
+// 删除操作
+const handleDelete = (row: any) => {
+  Modal.confirm({
+    title: '确定删除？',
+    onOk: async () => {
+      const res = await mockDelete(row.id);
+      if (res.code === 200) {
+        message.success('删除成功');
+        await getTableData();
+      }
+    },
+    cancelText: '取消',
+  });
+};
+
+// 抽屉
+const { drawer } = useDrawer(PAGE_NAME);
+const editForm = ref();
+const handleSave = async () => {
+  try {
+    await editForm.value?.save();
+    drawer.close();
+    getTableData();
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+// 初始化
+const init = async () => {
+  await getTableData();
+};
+init();
+</script>
+
+<template>
+  <div class="prototype-page">
+    <a-card title="页面标题" :bordered="false">
+      <!-- 搜索区域 -->
+      <div class="search-area">
+        <a-form layout="inline" :model="inParams">
+          <!-- 搜索字段 -->
+          <a-form-item>
+            <a-button type="primary" @click="search">查询</a-button>
+            <a-button style="margin-left: 8px" @click="reset">重置</a-button>
+            <a-button type="primary" style="margin-left: 8px" @click="drawer.open('add', '新增')">
+              新增
+            </a-button>
+          </a-form-item>
+        </a-form>
+      </div>
+
+      <!-- 表格区域 -->
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
+        :loading="loading"
+        :pagination="false"
+        row-key="id"
       >
-        <a-menu-item key="1">
-          <home-outlined />
-          <span>首页</span>
-        </a-menu-item>
-        <a-menu-item key="2">
-          <unordered-list-outlined />
-          <span>用户管理</span>
-        </a-menu-item>
-      </a-menu>
-    </a-layout-sider>
+        <template #bodyCell="{ column, record }">
+          <!-- 自定义列 -->
+        </template>
+      </a-table>
 
-    <!-- 主内容 -->
-    <a-layout-content style="background: #f0f2f5; padding: 24px;">
-      <!-- 面包屑 -->
-      <a-breadcrumb style="margin-bottom: 16px;">
-        <a-breadcrumb-item>首页</a-breadcrumb-item>
-        <a-breadcrumb-item>用户管理</a-breadcrumb-item>
-      </a-breadcrumb>
+      <!-- 分页 -->
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:page-size="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        show-quick-jumper
+        show-total
+        style="margin-top: 20px; text-align: right"
+      />
+    </a-card>
 
-      <!-- 页面内容 -->
-    </a-layout-content>
-  </a-layout>
-</a-layout>
+    <!-- 抽屉 -->
+    <a-drawer
+      v-model:visible="drawer.visible"
+      :title="drawer.title"
+      width="600px"
+      :destroy-on-close="true"
+    >
+      <edit-form v-if="['add', 'edit'].includes(drawer.mode)" ref="editForm" />
+      <template #footer>
+        <a-button @click="drawer.close">取消</a-button>
+        <a-button type="primary" style="margin-left: 8px" @click="handleSave">保存</a-button>
+      </template>
+    </a-drawer>
+  </div>
+</template>
+
+<style scoped lang="less">
+.prototype-page {
+  padding: 24px;
+}
+
+.search-area {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+</style>
 ```
+
+## 配色方案
+
+使用 Ant Design Vue 3.x 的标准配色：
+
+| 名称 | 色值 | 用途 |
+|-----|------|-----|
+| Primary | `#1890ff` | 主按钮、链接、选中态 |
+| Success | `#52c41a` | 成功状态、启用标签 |
+| Warning | `#faad14` | 警告状态 |
+| Error | `#ff4d4f` | 错误状态、危险操作 |
 
 ## 消息提示
 
-```javascript
+```typescript
 // 成功提示
 message.success('操作成功');
 
@@ -332,254 +518,54 @@ Modal.confirm({
 
 ## 图标使用
 
-```html
-<!-- 使用 Ant Design 图标 -->
-<home-outlined />
-<unordered-list-outlined />
-<file-text-outlined />
-<search-outlined />
-<plus-outlined />
-<edit-outlined />
-<delete-outlined />
-<exclamation-circle-outlined />
-<user-outlined />
+```vue
+<template>
+  <home-outlined />
+  <search-outlined />
+  <plus-outlined />
+  <edit-outlined />
+  <delete-outlined />
+</template>
+
+<script setup lang="ts">
+import {
+  HomeOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons-vue';
+</script>
 ```
 
-在 script 中导入：
+## Mock 数据规范
 
-```javascript
-const { HomeOutlined, UnorderedListOutlined, FileTextOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UserOutlined } = icons;
+所有 API 调用都使用 mock 数据：
 
-// 注册组件
-app.component('HomeOutlined', HomeOutlined);
-app.component('UnorderedListOutlined', UnorderedListOutlined);
-```
+```typescript
+// src/api/mock-api.ts
+export async function mockGetTableData(params: any): Promise<MockResponse<any>> {
+  const pageSize = params.pageSize || 10;
+  const pageNo = params.pageNo || 1;
 
-## 完整页面示例
+  const records = Array.from({ length: pageSize }, (_, i) => ({
+    id: String((pageNo - 1) * pageSize + i + 1),
+    name: `示例数据${(pageNo - 1) * pageSize + i + 1}`,
+    status: Math.random() > 0.5 ? 1 : 0,
+    createTime: '2024-01-01',
+  }));
 
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <title>原型 - 用户列表</title>
-  <script src="https://cdn.jsdmirror.com/npm/vue@3/dist/vue.global.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/reset.css" />
-  <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.css" />
-  <script src="https://cdn.jsdmirror.com/npm/ant-design-vue@4.0.0/dist/antd.min.js"></script>
-  <script src="https://cdn.jsdmirror.com/npm/@ant-design/icons-vue@6.1.0/dist/index.umd.min.js"></script>
-  <style>
-    .prototype-container { display: flex; height: 100vh; overflow: hidden; }
-    .prototype-left { width: 1200px; background: white; overflow: auto; flex-shrink: 0; }
-    .prototype-right { flex: 1; background: #f5f5f5; padding: 24px; overflow: auto; }
-  </style>
-</head>
-<body>
-  <div class="prototype-container">
-    <!-- 左侧原型 -->
-    <div class="prototype-left" id="app">
-      <a-layout style="min-height: 100vh;">
-        <a-layout-header style="background: #fff; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,21,41,0.08);">
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div style="width: 32px; height: 32px; background: #1677ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold;">S</div>
-            <span style="font-size: 18px; font-weight: 500;">系统后台</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <span style="color: rgba(0,0,0,0.65);">管理员</span>
-            <a-avatar :size="32" icon="user" />
-          </div>
-        </a-layout-header>
-
-        <a-layout>
-          <a-layout-sider width="200px" style="background: #001529;">
-            <a-menu mode="inline" theme="dark" :selected-keys="['2']" style="border-right: none;">
-              <a-menu-item key="1">
-                <home-outlined />
-                <span>首页</span>
-              </a-menu-item>
-              <a-menu-item key="2">
-                <unordered-list-outlined />
-                <span>用户管理</span>
-              </a-menu-item>
-            </a-menu>
-          </a-layout-sider>
-
-          <a-layout-content style="background: #f0f2f5; padding: 24px;">
-            <a-breadcrumb style="margin-bottom: 16px;">
-              <a-breadcrumb-item>首页</a-breadcrumb-item>
-              <a-breadcrumb-item>用户管理</a-breadcrumb-item>
-            </a-breadcrumb>
-
-            <!-- 搜索卡片 -->
-            <a-card style="margin-bottom: 24px;">
-              <a-form :model="searchForm" layout="inline">
-                <a-form-item label="用户名" name="username">
-                  <a-input v-model:value="searchForm.username" placeholder="请输入用户名" allow-clear />
-                </a-form-item>
-                <a-form-item label="状态" name="status">
-                  <a-select v-model:value="searchForm.status" placeholder="请选择状态" allow-clear style="width: 200px;">
-                    <a-select-option value="">全部</a-select-option>
-                    <a-select-option value="enabled">启用</a-select-option>
-                    <a-select-option value="disabled">禁用</a-select-option>
-                  </a-select>
-                </a-form-item>
-                <a-form-item>
-                  <a-button type="primary" @click="handleSearch">
-                    <search-outlined />搜索
-                  </a-button>
-                  <a-button @click="handleReset" style="margin-left: 8px;">重置</a-button>
-                </a-form-item>
-              </a-form>
-            </a-card>
-
-            <!-- 操作栏 -->
-            <div style="margin-bottom: 16px;">
-              <a-button type="primary" @click="openDrawer('add')">
-                <plus-outlined />新增用户
-              </a-button>
-            </div>
-
-            <!-- 表格 -->
-            <a-card>
-              <a-table :columns="columns" :data-source="tableData" :pagination="false" bordered>
-                <template #bodyCell="{ column, record }">
-                  <template v-if="column.key === 'action'">
-                    <a-button type="link" @click="openDrawer('edit', record)">编辑</a-button>
-                    <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
-                  </template>
-                  <template v-else-if="column.key === 'status'">
-                    <a-tag :color="record.status === '启用' ? 'success' : 'error'">{{ record.status }}</a-tag>
-                  </template>
-                </template>
-              </a-table>
-
-              <a-pagination
-                v-model:current="currentPage"
-                v-model:page-size="pageSize"
-                :total="total"
-                :page-size-options="['10', '20', '50']"
-                show-size-changer
-                show-quick-jumper
-                show-total
-                style="margin-top: 20px; text-align: right;"
-              />
-            </a-card>
-          </a-layout-content>
-        </a-layout>
-      </a-layout>
-
-      <!-- 抽屉 -->
-      <a-drawer v-model:open="drawerVisible" :title="drawerTitle" width="500px">
-        <a-form :model="formData" layout="vertical">
-          <a-form-item label="用户名" name="username" :required="true">
-            <a-input v-model:value="formData.username" placeholder="请输入用户名" />
-          </a-form-item>
-          <a-form-item label="邮箱" name="email" :required="true">
-            <a-input v-model:value="formData.email" placeholder="请输入邮箱" />
-          </a-form-item>
-          <a-form-item label="状态" name="status">
-            <a-select v-model:value="formData.status" placeholder="请选择状态" style="width: 100%;">
-              <a-select-option value="enabled">启用</a-select-option>
-              <a-select-option value="disabled">禁用</a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-        <template #footer>
-          <a-button @click="drawerVisible = false">取消</a-button>
-          <a-button type="primary" @click="handleSave" style="margin-left: 8px;">确定</a-button>
-        </template>
-      </a-drawer>
-    </div>
-
-    <!-- 右侧说明 -->
-    <div class="prototype-right">
-      <!-- 说明内容 -->
-    </div>
-  </div>
-
-  <script>
-    const { createApp, ref, reactive } = Vue;
-    const { message, Modal } = antd;
-    const { HomeOutlined, UnorderedListOutlined, UserOutlined, SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } = icons;
-
-    const app = createApp({
-      setup() {
-        const searchForm = reactive({ username: '', status: '' });
-        const tableData = ref([
-          { key: 1, username: 'admin', email: 'admin@example.com', status: '启用' },
-          { key: 2, username: 'user1', email: 'user1@example.com', status: '禁用' },
-        ]);
-        const currentPage = ref(1);
-        const pageSize = ref(10);
-        const total = ref(100);
-        const drawerVisible = ref(false);
-        const drawerTitle = ref('新增用户');
-        const formData = reactive({ username: '', email: '', status: 'enabled' });
-
-        const columns = [
-          { title: '用户名', dataIndex: 'username', key: 'username' },
-          { title: '邮箱', dataIndex: 'email', key: 'email' },
-          { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-          { title: '操作', key: 'action', width: 150 },
-        ];
-
-        const handleSearch = () => message.success('搜索成功（模拟）');
-        const handleReset = () => {
-          searchForm.username = '';
-          searchForm.status = '';
-          message.success('重置成功');
-        };
-        const openDrawer = (type, row) => {
-          drawerTitle.value = type === 'add' ? '新增用户' : '编辑用户';
-          drawerVisible.value = true;
-        };
-        const handleSave = () => {
-          message.success('保存成功（模拟）');
-          drawerVisible.value = false;
-        };
-        const handleDelete = (row) => {
-          Modal.confirm({
-            title: '确认删除',
-            content: '确定要删除该用户吗？此操作不可撤销。',
-            okText: '确定',
-            cancelText: '取消',
-            onOk: () => message.success('删除成功（模拟）')
-          });
-        };
-
-        return {
-          searchForm, tableData, currentPage, pageSize, total,
-          drawerVisible, drawerTitle, formData, columns,
-          handleSearch, handleReset, openDrawer, handleSave, handleDelete
-        };
-      }
-    });
-
-    app.use(antd);
-    app.component('HomeOutlined', HomeOutlined);
-    app.component('UnorderedListOutlined', UnorderedListOutlined);
-    app.component('UserOutlined', UserOutlined);
-    app.component('SearchOutlined', SearchOutlined);
-    app.component('PlusOutlined', PlusOutlined);
-    app.component('EditOutlined', EditOutlined);
-    app.component('DeleteOutlined', DeleteOutlined);
-    app.component('ExclamationCircleOutlined', ExclamationCircleOutlined;
-
-    app.mount('#app');
-  </script>
-</body>
-</html>
+  return createMockResponse({
+    records,
+    total: 100,
+  });
+}
 ```
 
 ## 重要提醒
 
-1. **使用 Ant Design Vue CDN 引入**：`antd.min.js` 包含完整组件
-2. **使用 Ant Design Vue 组件标签**：`a-button`、`a-input`、`a-table` 等
-3. **使用 Vue 3 Composition API**：`setup()` 函数返回响应式数据和方法
-4. **使用 ref/reactive 定义响应式数据**
-5. **使用 message/Modal 进行交互反馈**
-6. **使用 Ant Design 标准色**：`#1677ff` 为主色
-7. **抽屉/弹窗使用 v-model:open 控制显示**：绑定 `visible` 变量
-8. **表格操作列通过 bodyCell 插槽自定义**：`#bodyCell="{ column, record
-9. **分页使用 a-pagination 组件**：绑定 `current` 和 `pageSize`
-10. **图标需从 icons 对象导入并注册**：使用 `app.component()`
+1. **必须使用 Ant Design Vue 3.x**：API 与 4.x 有差异，特别注意 `v-model:visible` vs `v-model:open`
+2. **使用 pnpm**：项目使用 pnpm 作为包管理器
+3. **3005端口**：原型服务默认在 3005 端口启动
+4. **Mock数据**：所有 API 调用都使用 mock 数据，不依赖后端服务
+5. **保持技术栈一致**：依赖版本必须与主项目完全一致
