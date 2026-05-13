@@ -23,6 +23,12 @@ description: |
 
 原型的核心价值是「与真实页面尽可能一致」。以下是必须遵守的设计规范：
 
+### 样式原则
+
+1. **Ant Design 组件结构优先**：组件 HTML 结构和类名必须遵循 Ant Design 4.x 规范（如 `ant-btn`、`ant-table`、`ant-form` 等），项目配色覆盖主色但不改变组件结构
+2. **禁止使用 Emoji**：侧边栏图标、按钮图标、状态标识等一律使用 CSS/SVG 实现或 Ant Design 图标类名（如 `anticon anticon-home`），绝不使用 emoji 字符（🏠🤖📋 等），emoji 在不同系统渲染不一致
+3. **状态标签**：简单状态优先使用 `ant-tag` 系列，需要带圆点和背景色时才用自定义 `.kt-status`
+
 ### 配色（来自项目 const.less）
 
 | 用途 | 色值 | 背景色 |
@@ -75,7 +81,7 @@ description: |
 - `<a-table>` → Ant Design 表格（HTML版）
 - `<tl-drawer>` → 右侧抽屉
 - `<action-group>` → 操作按钮组（a-space + link buttons）
-- `<yc-status>` → 状态标签（使用项目配色，带圆点/背景色）
+- `<yc-status>` → 状态标签（简单状态用 `ant-tag`，需要圆点背景色用 `.kt-status`）
 - `useDrawer` → JS 控制抽屉开关（openDrawer/closeDrawer）
 - `useTable` → 静态表格数据 + 分页
 - `hasButtonPerm()` → 移除权限判断，直接展示按钮
@@ -104,7 +110,7 @@ description: |
 
 ### Phase 3: 生成原型
 
-每个页面调用 `scripts/generate_page.py` 生成：
+**单页面生成**：直接调用脚本或手写 HTML。
 
 ```bash
 python scripts/generate_page.py --input '{
@@ -122,11 +128,30 @@ python scripts/generate_page.py --input '{
 }'
 ```
 
-多页面使用批量生成：
+**多页面生成 — 使用 Subagent 隔离上下文**：
 
-```bash
-python scripts/batch_generate.py --config pages.json
+当需要同时生成多个原型页面时，必须为每个页面启动独立的 Subagent，避免上下文污染导致页面之间风格不一致或信息串扰。
+
+这样做的原因：每个页面可能涉及不同的需求细节、不同的数据结构和交互逻辑，在一个上下文中处理多个页面会导致信息混淆和风格漂移。
+
+```python
+# 每个页面一个 subagent，并行生成
+# 使用 Agent 工具，subagent_type 为 "general-purpose"
+# 每个 subagent 独立读取 SKILL.md 和 design-guide.md
+# 每个 subagent 独立完成一个页面的生成并写入文件
 ```
+
+具体操作步骤：
+1. 为每个页面准备独立的生成参数（page_name, page_type, clarification 等）
+2. 在同一轮消息中启动所有 subagent（并行执行）
+3. 每个 subagent 的 prompt 包含：
+   - 本技能的完整路径，以便读取 SKILL.md 和 docs/
+   - 该页面的完整配置参数
+   - 输出路径和命名规则
+   - 风格继承指令（参考 .dev/prototype/ 中现有页面）
+4. 所有 subagent 完成后，生成 index.html 目录页（见 Phase 4）
+
+**注意**：如果页面数量为 1，无需使用 subagent，直接生成即可。
 
 ### Phase 4: 文件输出
 
@@ -142,6 +167,13 @@ python scripts/batch_generate.py --config pages.json
 - 文档面板默认隐藏，点击「交互说明」按钮展开
 - 保留旧文件（绝不覆盖）
 
+**目录页（index.html）：**
+- 多页面生成完成后，必须在 `.dev/prototype/` 下生成 `index.html` 目录页
+- 目录页列出所有已生成的原型页面，每个页面一个卡片（名称+类型标签+描述+链接）
+- 按页面类型分组排序：list → form → detail → dashboard
+- 目录页可以覆盖更新（始终反映最新的页面列表）
+- 详细规范见 `docs/output-format.md` 中的「目录页」章节
+
 ## 页面类型
 
 | 类型 | 说明 | 典型组件 |
@@ -155,10 +187,14 @@ python scripts/batch_generate.py --config pages.json
 
 - **必须使用 Ant Design 4.x CSS**：`antd.min.css` CDN
 - **必须应用项目配色**：#3e8dff 主色，非 Ant Design 默认 #1890ff
+- **遵循 Ant Design 组件结构**：即使配色被覆盖，HTML 结构和类名遵循 Ant Design 4.x 规范
+- **禁止使用 Emoji**：所有图标使用 Ant Design 图标类名或 CSS 实现
 - **Tailwind 仅用于布局工具类**：flex、grid、间距，不用于组件样式
 - **单文件输出**：每个HTML包含完整原型，可直接打开
 - **Mock数据**：硬编码，无API调用
 - **不使用 @apply**：CDN模式不生效
+- **多页面用 Subagent**：同时生成多个页面时，每个页面在独立 subagent 中生成
+- **生成目录页**：多页面生成后必须创建 index.html 目录页
 
 ## 参考资源
 
@@ -175,9 +211,13 @@ python scripts/batch_generate.py --config pages.json
 - [ ] HTML文件可在浏览器正常打开
 - [ ] 配色使用项目色值（#3e8dff 主色等）
 - [ ] 侧边栏 #1e202a，顶栏白色
-- [ ] 使用 Ant Design 组件类名
+- [ ] 使用 Ant Design 组件类名（ant-btn、ant-table 等）
+- [ ] 无 emoji 字符，图标使用 anticon 类名或 CSS 实现
+- [ ] 状态标签：简单用 ant-tag，需圆点用 .kt-status
 - [ ] 抽屉/弹窗合并到主页面
 - [ ] 文档面板可切换显示
 - [ ] 文件保存到 `.dev/prototype/`
 - [ ] 复刻模式：源页面结构已还原
 - [ ] Mock数据合理
+- [ ] 多页面时已生成 index.html 目录页
+- [ ] 多页面时使用了 subagent 隔离上下文

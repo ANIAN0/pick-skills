@@ -2,6 +2,12 @@
 
 本规范确保原型页面与 kt-agent-framework 管理后台风格一致。
 
+## 0. 设计原则
+
+1. **Ant Design 优先**：组件结构和交互模式必须遵循 Ant Design 4.x 规范，项目配色覆盖主色但不改变组件结构
+2. **禁止使用 Emoji**：侧边栏图标、按钮图标、状态标识等一律使用 CSS/SVG 实现或 Ant Design 图标类名（如 `anticon anticon-home`），绝不使用 emoji 字符（🏠🤖📋 等），emoji 在不同系统渲染不一致，显得不专业
+3. **项目配色覆盖**：主色使用 #3e8dff 替代 Ant Design 默认 #1890ff，但 Ant Design 组件类名和结构保持不变
+
 ## 1. 技术栈
 
 - **Ant Design 4.x CSS**：`https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.15/antd.min.css`
@@ -46,6 +52,8 @@
   <title>原型 - {页面名称}</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.15/antd.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Ant Design 图标（SVG symbol 方式） -->
+  <script src="https://at.alicdn.com/t/c/font_3649831_vn4l2gpuij.js"></script>
   <style>
     :root {
       --kt-primary: #3e8dff;
@@ -199,14 +207,14 @@
     </div>
     <!-- 菜单 -->
     <ul style="list-style: none; padding: 8px 0; margin: 0;">
-      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 14px;">
-        <span style="margin-right: 10px;">🏠</span>首页
+      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 14px; display: flex; align-items: center;">
+        <span class="anticon anticon-home" style="margin-right: 10px; font-size: 14px;"></span>首页
       </li>
-      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 14px;">
-        <span style="margin-right: 10px;">🤖</span>Agent 管理
+      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 14px; display: flex; align-items: center;">
+        <span class="anticon anticon-robot" style="margin-right: 10px; font-size: 14px;"></span>Agent 管理
       </li>
-      <li style="padding: 10px 20px; background: #3e8dff; color: #fff; cursor: pointer; font-size: 14px; border-radius: 4px; margin: 0 8px;">
-        <span style="margin-right: 10px;">📋</span>当前页面
+      <li style="padding: 10px 20px; background: #3e8dff; color: #fff; cursor: pointer; font-size: 14px; border-radius: 4px; margin: 0 8px; display: flex; align-items: center;">
+        <span class="anticon anticon-file-text" style="margin-right: 10px; font-size: 14px;"></span>当前页面
       </li>
     </ul>
   </aside>
@@ -232,9 +240,51 @@
 
 ## 5. 组件规范
 
+### 图标使用规范
+
+**禁止使用 emoji**（如 🏠🤖📋 等），统一使用以下方式实现图标：
+
+1. **Ant Design 图标**（推荐）：使用 `@ant-design/icons` 的 iconfont CDN
+   ```html
+   <!-- 在 head 中引入图标字体 -->
+   <script src="https://at.alicdn.com/t/c/font_3649831_vn4l2gpuij.js"></script>
+   <!-- 使用 SVG 图标 -->
+   <svg class="anticon" style="width: 14px; height: 14px; margin-right: 10px;">
+     <use xlink:href="#anticon-home"></use>
+   </svg>
+   ```
+
+2. **CSS 圆点/色块**：状态指示用 `.kt-status-dot`，分类标识用小色块
+   ```html
+   <span style="display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #3e8dff; margin-right: 6px;"></span>分类名称
+   ```
+
+3. **文字缩写**：作为 fallback，用首字母或中文简称
+   ```html
+   <span style="display: inline-flex; width: 20px; height: 20px; border-radius: 4px; background: #3e8dff; color: #fff; font-size: 12px; align-items: center; justify-content: center; margin-right: 10px;">首</span>
+   ```
+
 ### yc-status 状态标签
 
-替代项目的 `<yc-status>` 组件，使用自定义 `.kt-status` 类：
+替代项目的 `<yc-status>` 组件。简单状态优先使用 Ant Design 原生 `ant-tag`，需要带圆点和背景色时使用自定义 `.kt-status`：
+
+**优先方案 — ant-tag（简单状态标签）：**
+
+```html
+<!-- 启用/成功 -->
+<span class="ant-tag ant-tag-success">启用</span>
+
+<!-- 禁用/危险 -->
+<span class="ant-tag ant-tag-error">禁用</span>
+
+<!-- 警告 -->
+<span class="ant-tag ant-tag-warning">待审核</span>
+
+<!-- 默认 -->
+<span class="ant-tag">未知</span>
+```
+
+**增强方案 — .kt-status（带圆点和背景色，还原项目 yc-status 组件）：**
 
 ```html
 <!-- 启用/成功 -->
@@ -252,6 +302,8 @@
 <!-- Default -->
 <span class="kt-status kt-status-default"><span class="kt-status-dot"></span>未知</span>
 ```
+
+**选择原则**：如果原型目标是快速展示功能逻辑，用 `ant-tag`；如果目标是高度还原项目页面视觉效果，用 `.kt-status`。
 
 ### yc-form 筛选表单
 
@@ -459,6 +511,8 @@
   <title>原型 - 角色列表</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.15/antd.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Ant Design 图标（SVG symbol 方式） -->
+  <script src="https://at.alicdn.com/t/c/font_3649831_vn4l2gpuij.js"></script>
   <style>
     :root { --kt-primary: #3e8dff; --kt-primary-bg: #d6e7ff; --kt-success: #00e5c7; --kt-success-bg: #effffb; --kt-danger: #ff8b78; --kt-danger-bg: #fff5f3; --kt-warning: #ffb71d; --kt-warning-bg: #fff2d6; --kt-default: #bfc6d1; --kt-default-bg: #f5f6f9; --kt-sidebar: #1e202a; --kt-content-bg: #f0f2f5; }
     .ant-btn-primary { background-color: #3e8dff; border-color: #3e8dff; }
@@ -493,11 +547,11 @@
       <span style="color: #fff; font-size: 16px; font-weight: 600;">KT Agent</span>
     </div>
     <ul style="list-style: none; padding: 8px 0; margin: 0;">
-      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); font-size: 14px; cursor: pointer;">
-        <span style="margin-right: 10px;">🏠</span>首页
+      <li style="padding: 10px 20px; color: rgba(255,255,255,0.65); font-size: 14px; cursor: pointer; display: flex; align-items: center;">
+        <span class="anticon anticon-home" style="margin-right: 10px; font-size: 14px;"></span>首页
       </li>
-      <li style="padding: 10px 16px; background: #3e8dff; color: #fff; font-size: 14px; cursor: pointer; border-radius: 4px; margin: 0 8px;">
-        <span style="margin-right: 10px;">📋</span>角色管理
+      <li style="padding: 10px 16px; background: #3e8dff; color: #fff; font-size: 14px; cursor: pointer; border-radius: 4px; margin: 0 8px; display: flex; align-items: center;">
+        <span class="anticon anticon-file-text" style="margin-right: 10px; font-size: 14px;"></span>角色管理
       </li>
     </ul>
   </aside>
@@ -678,9 +732,11 @@ function mockAction(action) { console.log('[Mock]', action); }
 ## 7. 重要规则
 
 1. **必须使用项目配色**：#3e8dff 主色，非 Ant Design 默认 #1890ff
-2. **使用自定义状态组件**：`.kt-status` 替代 `ant-tag`
-3. **TL 布局模式**：`.tl-filter` + `.tl-table` + 抽屉
-4. **表格 bordered small**：与项目 `@kt/unity-antd-table` 全局配置一致
-5. **操作按钮用 action-group**：替代 `<action-group>` 组件
-6. **Tailwind 仅用于布局**：flex、grid、间距
-7. **不使用 @apply**：CDN 模式不生效
+2. **禁止使用 Emoji**：所有图标使用 Ant Design 图标类名（`anticon anticon-xxx`）或 CSS 实现，绝不使用 emoji 字符
+3. **状态标签优先用 ant-tag**：简单状态用 `ant-tag` 系列（`ant-tag-success`、`ant-tag-error`、`ant-tag-warning`），需要带圆点和背景色时才用 `.kt-status`
+4. **TL 布局模式**：`.tl-filter` + `.tl-table` + 抽屉
+5. **表格 bordered small**：与项目 `@kt/unity-antd-table` 全局配置一致
+6. **操作按钮用 action-group**：替代 `<action-group>` 组件
+7. **Tailwind 仅用于布局**：flex、grid、间距
+8. **不使用 @apply**：CDN 模式不生效
+9. **遵循 Ant Design 组件结构**：即使配色被覆盖，组件 HTML 结构和类名必须遵循 Ant Design 4.x 规范

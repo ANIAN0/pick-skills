@@ -100,12 +100,38 @@ def generate_css_variables():
 
 def generate_sidebar(menu_items, active_item):
     """生成侧边栏 HTML"""
+    # 图标映射：菜单名 -> anticon 类名
+    ICON_MAP = {
+        '首页': 'anticon-home',
+        'Agent 管理': 'anticon-robot',
+        '角色管理': 'anticon-team',
+        '用户管理': 'anticon-user',
+        '系统设置': 'anticon-setting',
+        '日志': 'anticon-file-text',
+        '监控': 'anticon-dashboard',
+        '任务': 'anticon-thunderbolt',
+    }
+
     menu_html = ''
     for item in menu_items:
         is_active = item.get('name') == active_item
-        icon = item.get('icon', '📋')
-        style = f'padding: 10px 16px; background: {COLORS["primary"]}; color: #fff; font-size: 14px; cursor: pointer; border-radius: 4px; margin: 0 8px;' if is_active else f'padding: 10px 20px; color: rgba(255,255,255,0.65); font-size: 14px; cursor: pointer;'
-        menu_html += f'      <li style="{style}"><span style="margin-right: 10px;">{icon}</span>{item["name"]}</li>\n'
+        # 优先使用配置中的 icon，否则从映射表取，最后用色块首字母
+        icon_class = item.get('icon', '')
+        if icon_class and not icon_class.startswith('anticon'):
+            # 如果传入的不是 anticon 类名，忽略（禁止 emoji）
+            icon_class = ''
+        if not icon_class:
+            icon_class = ICON_MAP.get(item['name'], '')
+
+        if icon_class:
+            icon_html = f'<span class="anticon {icon_class}" style="margin-right: 10px; font-size: 14px;"></span>'
+        else:
+            # fallback: 首字母色块
+            first_char = item['name'][0] if item['name'] else ''
+            icon_html = f'<span style="display: inline-flex; width: 18px; height: 18px; border-radius: 3px; background: {"#3e8dff" if is_active else "rgba(255,255,255,0.25)"}; color: #fff; font-size: 11px; align-items: center; justify-content: center; margin-right: 10px;">{first_char}</span>'
+
+        style = f'padding: 10px 16px; background: {COLORS["primary"]}; color: #fff; font-size: 14px; cursor: pointer; border-radius: 4px; margin: 0 8px; display: flex; align-items: center;' if is_active else f'padding: 10px 20px; color: rgba(255,255,255,0.65); font-size: 14px; cursor: pointer; display: flex; align-items: center;'
+        menu_html += f'      <li style="{style}">{icon_html}{item["name"]}</li>\n'
 
     return f"""  <aside style="background: {COLORS['sidebar']}; width: 220px; flex-shrink: 0; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;">
     <div style="height: 56px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08);">
@@ -252,8 +278,8 @@ def generate_list_page(config):
 
     # 菜单
     menu_items = layout.get('menu_items', [
-        {'name': '首页', 'icon': '🏠'},
-        {'name': page_name, 'icon': '📋'},
+        {'name': '首页', 'icon': 'anticon-home'},
+        {'name': page_name, 'icon': 'anticon-file-text'},
     ])
 
     # 生成筛选区
@@ -286,6 +312,7 @@ def generate_list_page(config):
   <title>原型 - {page_name}</title>
   <link rel="stylesheet" href="{ANTD_CSS_CDN}">
   <script src="{TAILWIND_CDN}"></script>
+  <script src="https://at.alicdn.com/t/c/font_3649831_vn4l2gpuij.js"></script>
   <style>{generate_css_variables()}
   </style>
 </head>

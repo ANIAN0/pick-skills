@@ -1,10 +1,9 @@
 ---
 name: implementation-planning
 description: |
-  实施计划创建skill。将技术方案拆分为可执行的模块任务清单（含前后端模块）。
-  聚焦任务编排，通过链接引用技术文档，避免内容重复。
-  输出目录：workplace/1.X/plan/
-  触发词：实施计划、任务清单、工作项拆分、开始实现。
+  当技术方案已确认、需要制定开发计划时触发。将技术方案拆分为可执行的任务模块，为每个模块编写具体的验收脚本或审查清单。
+  适用场景：用户说"制定计划"、"怎么拆分任务"、"开始排期"、"任务清单"、"工作项拆分"等，且已有确认的技术方案。
+  本skill只做计划编排，不执行开发。
 ---
 
 # 实施计划创建
@@ -145,6 +144,13 @@ description: |
 
 ## 第五步：关联验收标准
 
+基于技术方案的功能点清单（FP-N）和测试点清单（TC-N），创建任务模块和验收标准。
+
+**核心原则**：
+- 每个任务模块对应一组功能点
+- 每个功能点有且只有一种验收方式：后端py脚本 或 前端subagent审查清单
+- 计划阶段必须编写具体的验收脚本或审查清单内容
+
 文件路径：`workplace/1.X/plan/YYYY-MM-DD-{项目名}-任务清单.md`
 
 ~~~markdown
@@ -160,18 +166,13 @@ description: |
 > **使用方式**：每次执行前只读这个表，找第一个"待执行"模块。
 > 开始模块时改为"执行中"，完成后改为"完成"。
 
-| 模块 | 描述 | 层 | 状态 | 前置 | 参考 |
-|------|------|----|------|------|------|
-| M1 | 数据库迁移与模型 | 后端-数据 | 待执行 | 无 | 技术方案 §2 |
-| M2 | 业务服务层 | 后端-服务 | 待执行 | M1 | 技术方案 §1, §2 |
-| M3 | REST API 层 | 后端-接口 | 待执行 | M2 | 技术方案 §3 |
-| M4 | 前端基础（路由/状态/API 客户端） | 前端-基础 | 待执行 | M3 | 技术方案 §4.1, §4.4, §4.5 |
-| M5 | 前端页面 A | 前端-页面 | 待执行 | M4 | 技术方案 §4.2.A |
-| M6 | 前端页面 B | 前端-页面 | 待执行 | M4 | 技术方案 §4.2.B |
+| 模块 | 描述 | 对应功能点 | 对应测试点 | 状态 | 前置 | 验收方式 |
+|------|------|-----------|-----------|------|------|---------|
+| M1 | 数据库迁移与模型 | - | TC-0 | 待执行 | 无 | 后端脚本 |
+| M2 | 创建工单API | FP-1, FP-2, FP-3 | TC-1, TC-2, TC-3 | 待执行 | M1 | 后端脚本 |
+| M3 | 工单创建页 | FP-4, FP-5, FP-6 | TC-4, TC-5, TC-6 | 待执行 | M2 | 前端审查 |
 
 **状态值**：`待执行` / `执行中` / `完成` / `跳过`
-
-**层标签建议**：`后端-数据` / `后端-服务` / `后端-接口` / `前端-基础` / `前端-页面` / `前端-组件`
 
 ---
 
@@ -179,78 +180,166 @@ description: |
 
 > **使用方式**：执行某模块时通过标题跳转，只读该节。
 
-### M1: {模块名称}
+### M1: 数据库迁移与模型
 
-**目标**：[一句话]
-**层**：[标签]
-**前置依赖**：无
-**工作目录**：[源码主要落地目录]
+**目标**：完成数据模型变更
 
-**子步骤**（按顺序，不逐步骤审核）：
-1. [子步骤1] → 参考 §2.1
-2. [子步骤2] → 参考 §2.2
+**对应功能点**：无（基础设施模块）
 
-**模块边界与接口契约**：
-- 输入：[模块开始前的状态/数据]
-- 输出：[模块完成后的交付物]
-- 对外接口：[暴露给其他模块的接口/数据结构]
-
-**测试场景**：
-| 场景编号 | 场景描述 | 输入 | 预期结果 | 测试类型 |
-| T-1 | [具体场景] | [输入数据] | [预期输出] | 单元 |
-| T-2 | [边界条件] | [边界输入] | [预期行为] | 单元 |
-| T-3 | [异常情况] | [异常输入] | [错误处理] | 单元 |
-
-**测试文件位置**：`workplace/1.X/test/<层>/<类型>/<本模块>/`
-- 共享 fixtures：`workplace/1.X/test/fixtures/`
-- 不得在源码旁创建测试文件
-- 以**单元测试为主**；仅在关键路径（API + 数据库写入）补充集成测试
-
-**验收标准**：
-- 测试命令（按本模块所属层选择）：
-  - 后端单元：`pytest workplace/1.X/test/backend/unit/<module> -v` 或 `npm test -- workplace/1.X/test/backend/unit/<module>`
-  - 后端集成（仅关键模块）：`pytest workplace/1.X/test/backend/integration/<module>`
-  - 前端单元：`npm run test:unit -- workplace/1.X/test/frontend/unit/<page>`
-  - 前端组件：`npm run test:component -- workplace/1.X/test/frontend/component/<comp>`
-  → 全部 PASS
-- 覆盖检查：所有测试场景均通过
-- 参考：[技术方案 §X](相对路径)
-
----
-
-### M2: {模块名称}
-
-**目标**：[一句话]
-**层**：[标签]
-**前置依赖**：M1
-**工作目录**：[源码目录]
+**对应测试点**：TC-0
 
 **子步骤**：
-1. [子步骤1] → 参考 §3.1
-2. [子步骤2] → 参考 §3.2
-
-**模块边界**：
-- 输入：[依赖 M1 的接口/数据]
-- 输出：[本模块交付物]
-- 对外接口：[暴露给其他模块]
-
-**测试要求**：
-- 新增测试目录：`workplace/1.X/test/<层>/<类型>/<本模块>/`
-- 不得在源码旁建测试文件
+1. 执行迁移脚本 → 参考技术方案 §3.1
+2. 验证表结构 → 参考技术方案 §3.2
 
 **验收标准**：
-- 测试命令：[具体命令] → PASS
-- 检查：[检查点]
-- 参考：[技术方案 §X](相对路径)
+- 验收方式：后端脚本
+- 验收脚本：`workplace/1.X/test/backend/m1_test.py`
+
+```python
+# m1_test.py - 计划阶段编写
+import sqlite3  # 或对应数据库驱动
+
+def test_table_structure():
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(tickets)")
+    columns = {row[1] for row in cursor.fetchall()}
+    assert "id" in columns
+    assert "title" in columns
+    assert "content" in columns
+    assert "status" in columns
+    assert "created_at" in columns
+    print("TC-0 PASS")
+
+if __name__ == "__main__":
+    test_table_structure()
+    print("M1 ALL PASS")
+```
+
+- 验收命令：`python workplace/1.X/test/backend/m1_test.py`
+- 通过标准：输出 `M1 ALL PASS`
 
 ---
 
-## 里程碑（可选，模块数>3 或跨层时使用）
+### M2: 创建工单API
 
-| 里程碑 | 验收点 | 包含模块 |
-|--------|--------|----------|
-| P1 后端完成 | API 单元/集成测试通过 | M1, M2, M3 |
-| P2 前端完成 | 前端单元/组件测试通过 | M4, M5, M6 |
+**目标**：实现工单创建接口，覆盖FP-1/FP-2/FP-3
+
+**对应功能点**：FP-1, FP-2, FP-3
+
+**对应测试点**：TC-1, TC-2, TC-3
+
+**对应变更项**：B-1, B-2, B-3
+
+**子步骤**：
+1. 实现POST /api/tickets接口 → 参考技术方案 §4.2.1
+2. 实现请求体校验 → 参考技术方案 §4.2.2
+3. 实现重复校验 → 参考技术方案 §4.2.3
+
+**验收标准**：
+- 验收方式：后端脚本
+- 验收脚本：`workplace/1.X/test/backend/m2_test.py`
+
+```python
+# m2_test.py - 计划阶段编写
+import requests
+
+BASE = "http://localhost:8000"
+
+def test_fp1():
+    """TC-1: 正常创建"""
+    resp = requests.post(f"{BASE}/api/tickets", json={"title": "测试", "content": "内容"})
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["id"] is not None
+    assert data["title"] == "测试"
+    print("FP-1 PASS")
+
+def test_fp2():
+    """TC-2: 空标题校验"""
+    resp = requests.post(f"{BASE}/api/tickets", json={"title": "", "content": ""})
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "VALIDATION_ERROR"
+    print("FP-2 PASS")
+
+def test_fp3():
+    """TC-3: 重复标题校验"""
+    requests.post(f"{BASE}/api/tickets", json={"title": "重复", "content": "内容"})
+    resp = requests.post(f"{BASE}/api/tickets", json={"title": "重复", "content": "内容"})
+    assert resp.status_code == 409
+    assert resp.json()["code"] == "DUPLICATE"
+    print("FP-3 PASS")
+
+if __name__ == "__main__":
+    test_fp1(); test_fp2(); test_fp3()
+    print("M2 ALL PASS")
+```
+
+- 验收命令：`python workplace/1.X/test/backend/m2_test.py`
+- 通过标准：输出 `M2 ALL PASS`
+
+---
+
+### M3: 工单创建页
+
+**目标**：实现工单创建页面，覆盖FP-4/FP-5/FP-6
+
+**对应功能点**：FP-4, FP-5, FP-6
+
+**对应测试点**：TC-4, TC-5, TC-6
+
+**对应变更项**：F-1, F-2
+
+**子步骤**：
+1. 实现TicketCreate.vue页面 → 参考技术方案 §5.2.1
+2. 实现表单提交逻辑 → 参考技术方案 §5.5
+3. 实现SubmitButton组件loading态 → 参考技术方案 §5.3
+
+**验收标准**：
+- 验收方式：前端审查
+- 审查清单：`workplace/1.X/test/review/m3_checklist.md`
+
+```markdown
+# M3 前端审查清单
+
+## TC-4: FP-4 成功反馈
+- [ ] 打开 /tickets/create，表单正常渲染（标题输入框、内容文本域、提交按钮）
+- [ ] 填写有效数据（标题="测试"，内容="内容"），点击提交
+- [ ] 提交按钮变为loading状态（不可点击）
+- [ ] 显示成功Toast"创建成功"
+- [ ] 自动跳转到 /tickets 列表页
+- [ ] 列表页出现新创建的工单（标题="测试"）
+
+## TC-5: FP-5 失败反馈
+- [ ] 填写空标题，点击提交
+- [ ] 标题输入框标红，显示"标题不能为空"
+- [ ] 页面不跳转，停留在创建页
+- [ ] 提交按钮恢复可点击
+
+## TC-6: FP-6 加载态
+- [ ] 点击提交后按钮显示loading动画（或文字"提交中..."）
+- [ ] loading期间按钮disabled
+- [ ] 请求完成后按钮恢复正常状态
+```
+
+- 验收方式：委派subagent按清单逐项检查，返回勾选结果
+- 通过标准：清单全部勾选
+
+---
+
+## 功能点-模块映射表
+
+| 功能点 | 所属模块 | 测试点 | 验收方式 | 状态 |
+|--------|---------|--------|---------|------|
+| FP-1 | M2 | TC-1 | 后端脚本 | 待执行 |
+| FP-2 | M2 | TC-2 | 后端脚本 | 待执行 |
+| FP-3 | M2 | TC-3 | 后端脚本 | 待执行 |
+| FP-4 | M3 | TC-4 | 前端审查 | 待执行 |
+| FP-5 | M3 | TC-5 | 前端审查 | 待执行 |
+| FP-6 | M3 | TC-6 | 前端审查 | 待执行 |
+
+**核查规则**：技术方案中的所有功能点必须在本表中出现，任一遗漏即不合格。
 ~~~
 
 ---
@@ -264,11 +353,12 @@ description: |
 > **交接清单**：
 > - 任务清单路径：`workplace/1.X/plan/YYYY-MM-DD-xxx.md`
 > - 模块数量：N个（列出编号和名称）
-> - 前端模块数量：M个
-> - 测试场景总数：K个
+> - 功能点总数：K个（列出FP编号）
+> - 后端脚本测试点：X个（列出TC编号）
+> - 前端审查测试点：Y个（列出TC编号）
 > - 特别关注点：[用户强调的内容]
 > 
-> 执行时请按模块顺序逐个实施，每个模块完成后运行对应测试。
+> 执行时请按模块顺序逐个实施，每个模块完成后运行对应验收脚本或委派subagent审查。
 
 ---
 
@@ -295,6 +385,7 @@ description: |
 - **测试集中**：所有测试统一落在 `workplace/1.X/test/`，按 backend/frontend/fixtures 分类（不含 e2e 目录）
 - **不做 E2E**：默认范围只到模块级集成测试
 - **讨论先行**：模块拆分和测试场景必须与用户讨论确认，不直接生成
+- **验收只有两种方式**：后端py脚本、前端subagent审查清单。没有其他验收方式。
 
 ## 特殊情况
 
