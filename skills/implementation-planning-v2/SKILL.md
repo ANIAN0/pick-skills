@@ -16,6 +16,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 - `references/implementation-planning-confirmation-gates.md`
 - `references/plan-quality-gates.md`
 - `references/implementation-plan-template.md`
+- 如用户要求评估、审查、进入执行前把关，使用 `project-development-review-v2`。
 
 ## 核心规则
 
@@ -25,6 +26,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 - 当垂直用户路径任务能降低集成风险时，优先按用户路径拆分。只有依赖关系要求时才按技术层拆分。
 - 把隐藏的集成工作显式写进计划。默认不要排除 UI smoke、API 契约或构建验证。
 - 计划必须先做覆盖审计，再拆任务。发现需求、验收、页面、服务边界或验证缺口时，先补方案或标记阻塞，不要产出粗计划。
+- 计划必须先确认技术方案没有阻塞级审查发现；若技术方案缺少审查记录，先按 `project-development-review-v2` 的技术方案审查口径做最小审查。
 - 涉及多服务、前后端、运行链路或数据追踪的需求，必须有最终闭环任务作为放行门槛。
 - 每个任务必须包含明确的文件或目录、非目标和验证命令/步骤。
 - 本阶段不写生产代码。
@@ -52,11 +54,12 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
    - 验证方式。
    - 完成证据。
 9. 执行确认闸门 G3：验证方案、最终闭环和执行风险确认。
-10. 保存计划目录：
+10. 按 `project-development-review-v2` 的计划审查口径做交付前自检，确认没有粗任务、漏任务或 mock/fallback 完成路径。
+11. 保存计划目录：
    - `workplace/<version>/plan/YYYY-MM-DD-<slug>/index.md`
    - `workplace/<version>/plan/YYYY-MM-DD-<slug>/T-001-<name>.md`
    - 每个 `T-*` 一个任务文件。
-11. 最终只请求用户确认是否可进入 `plan-execution-v2`。
+12. 最终只请求用户确认是否可进入 `plan-execution-v2`。
 
 ## 任务质量标准
 
@@ -113,3 +116,4 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 - 每个任务都有真实验证。
 - 除非明确交付物就是文档、mock、stub 或清单，否则任务不能只靠这些内容完成。
 - 计划足够具体，执行时不需要重新发明需求。
+- 审查记录中没有未处理的阻塞级发现。
