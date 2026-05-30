@@ -13,6 +13,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 
 - `../project-development-v2-common/references/delivery-contract.md`
 - `../project-development-v2-common/references/no-simulation-policy.md`
+- `references/implementation-planning-confirmation-gates.md`
 - `references/plan-quality-gates.md`
 - `references/implementation-plan-template.md`
 
@@ -20,6 +21,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 
 - 必须从已确认的 `tech-design-v2` 文档开始。
 - 保持可追踪链路：`R-* -> A-* -> C-* -> T-* -> V-*`。
+- 计划阶段必须经过固定确认闸门。闸门确认优先级高于“少问问题”策略。
 - 当垂直用户路径任务能降低集成风险时，优先按用户路径拆分。只有依赖关系要求时才按技术层拆分。
 - 把隐藏的集成工作显式写进计划。默认不要排除 UI smoke、API 契约或构建验证。
 - 计划必须先做覆盖审计，再拆任务。发现需求、验收、页面、服务边界或验证缺口时，先补方案或标记阻塞，不要产出粗计划。
@@ -32,13 +34,15 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 1. 在 `workplace/<version>/tech-design/` 找到当前技术方案，或使用用户给定路径。
 2. 提取所有 `R-*`、`A-*`、`C-*` 和 `V-*`。
 3. 按 `references/plan-quality-gates.md` 做覆盖审计，列出需求、验收、页面/API/数据/服务边界、验证方式和缺口。
-4. 检查代码库，确认任务边界和依赖关系可执行。
-5. 创建按顺序执行的 `T-*` 任务：
+4. 执行确认闸门 G1：输入理解和覆盖审计确认。
+5. 检查代码库，确认任务边界和依赖关系可执行。
+6. 创建按顺序执行的 `T-*` 任务：
    - 一个任务通常对应一次聚焦实现。
    - 混合无关领域、无法清晰验证的任务必须拆分。
    - 无法单独完成或验证的任务应合并。
    - 前端页面、后端服务、数据迁移、运行链路、日志/追踪、最终闭环要拆成可验证任务，不要合并成一个粗任务。
-6. 每个任务写清：
+7. 执行确认闸门 G2：任务拆分、顺序和依赖确认。
+8. 每个任务写清：
    - 目标。
    - 所需上下文。
    - 文件/目录。
@@ -47,11 +51,12 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
    - 禁止的捷径。
    - 验证方式。
    - 完成证据。
-7. 保存计划目录：
+9. 执行确认闸门 G3：验证方案、最终闭环和执行风险确认。
+10. 保存计划目录：
    - `workplace/<version>/plan/YYYY-MM-DD-<slug>/index.md`
    - `workplace/<version>/plan/YYYY-MM-DD-<slug>/T-001-<name>.md`
    - 每个 `T-*` 一个任务文件。
-8. 只有当任务范围、顺序或未决事项会影响执行时，才向用户确认。
+11. 最终只请求用户确认是否可进入 `plan-execution-v2`。
 
 ## 任务质量标准
 
@@ -85,6 +90,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 `index.md` 必须包含：
 
 - 来源需求和技术方案路径。
+- 确认记录。
 - 覆盖审计表。
 - 执行顺序。
 - 带状态的任务表。
@@ -99,6 +105,7 @@ description: 将已确认的 tech-design-v2 实现契约拆成详细、可执行
 
 检查：
 
+- G1 到 G3 均有确认记录，或明确记录用户要求跳过哪一项及其风险。
 - 每个 `C-*` 至少出现在一个任务中。
 - 每个 `V-*` 至少出现在一个任务或全局验证中。
 - 每个需求页面、API、数据实体、服务边界和用户路径都在任务中有落点。
