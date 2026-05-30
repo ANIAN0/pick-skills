@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目开发 v2 公共协议"
+  short_description: "维护 v2 共享工作流政策。"
+  default_prompt: "使用 project-development-v2-common，审查或更新项目开发 v2 skills 的共享政策。"

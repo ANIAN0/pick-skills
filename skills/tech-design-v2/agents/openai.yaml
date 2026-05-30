@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术方案 v2"
+  short_description: "创建简洁的实现契约。"
+  default_prompt: "使用 tech-design-v2，把需求简报转成实现契约。"
