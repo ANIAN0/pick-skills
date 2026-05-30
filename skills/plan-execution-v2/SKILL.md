@@ -25,6 +25,7 @@ description: 执行已确认的 implementation-planning-v2 任务计划，通过
 - 只有实现完成且验证证据已记录，任务才能标记完成。
 - 不得把 mock、stub、fallback、伪造输出、未检查 UI 或未运行测试当作完成。
 - 如果验证无法运行，标记为 `NOT VERIFIED` 并写清阻塞原因。
+- 如果计划包含最终闭环/放行门槛，未执行或未通过前不得宣布整体完成。
 
 ## 流程
 
@@ -42,7 +43,8 @@ description: 执行已确认的 implementation-planning-v2 任务计划，通过
     - 已实现但无法验证写 `not_verified`。
     - 无法继续实现写 `blocked`。
 11. 用户没有要求停止时，继续下一个任务。
-12. 所有任务结束后，运行 `index.md` 中的全局验证并总结剩余风险。
+12. 所有普通任务结束后，执行最终闭环/放行任务。
+13. 运行 `index.md` 中的全局验证并总结剩余风险。
 
 ## 证据要求
 
@@ -93,4 +95,5 @@ description: 执行已确认的 implementation-planning-v2 任务计划，通过
 
 - 所有任务为 `done`，或明确说明未完成状态。
 - 全局验证已运行，或因阻塞标记 `NOT VERIFIED`。
+- 最终闭环/放行门槛已通过，或明确标记 `NOT VERIFIED` 并说明不能整体放行。
 - 最终总结把完成情况映射回 `R-*`、`C-*`、`T-*` 和 `V-*`。
