@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 配置文件同步脚本
-上传/下载/双向同步 CLAUDE.md、AGENTS.md 和 skills 目录
+上传/下载/双向同步通用 CLAUDE.md、AGENTS.md 和可选 skills 目录
 """
 
 import os

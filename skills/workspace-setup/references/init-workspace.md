@@ -1,42 +1,57 @@
 # 初始化工作区
 
-`init_workspace.py` 脚本的详细使用说明。
+`init_workspace.py` 初始化三层项目上下文结构，并保留原有 `workplace/` 过程文档目录。
 
 ## 功能
 
-初始化项目工作区，包括：
-- 创建 workplace 目录和版本结构
-- 从 filebrowser 下载 CLAUDE.md、AGENTS.md
-- 创建默认配置文件模板
+- 创建 `workplace/{current_version}/` 过程文档目录。
+- 从 FileBrowser 下载第 1 层通用 `AGENTS.md`、`CLAUDE.md`。
+- 创建第 2 层项目规则 `PROJECT_RULES.md`。
+- 创建第 3 层项目知识库入口 `project-kb/`。
+- 已存在的项目规则和项目知识库不会被覆盖。
 
 ## 命令
 
 ```bash
-python scripts/init_workspace.py --config skillconfig.json
+python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.json
 ```
 
 ### 参数
 
 | 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--config` | skillconfig.json | 配置文件路径 |
-| `--skip-download` | false | 跳过从 filebrowser 下载配置文件 |
+|---|---|---|
+| `--config` | `skillconfig.json` | 配置文件路径 |
+| `--skip-download` | `false` | 跳过从 FileBrowser 下载通用配置文件 |
+
+## 配置字段
+
+```json
+{
+  "workspace": {
+    "config_pack": "config-1",
+    "current_version": "1.0",
+    "workplace_dir": "workplace",
+    "project_rules_file": "PROJECT_RULES.md",
+    "project_kb_dir": "project-kb"
+  }
+}
+```
+
+| 字段 | 默认值 | 说明 |
+|---|---|---|
+| `workplace_dir` | `workplace` | 过程文档目录 |
+| `current_version` | `1.0` | 当前过程文档版本 |
+| `config_pack` | 空 | 通用配置包名称 |
+| `project_rules_file` | `PROJECT_RULES.md` | 项目独立规则文件 |
+| `project_kb_dir` | `project-kb` | 项目独立知识库目录 |
 
 ## 执行流程
 
-### 1. 加载配置
-
-读取 skillconfig.json，获取以下配置：
-- `workspace.workplace_dir` - 工作目录名
-- `workspace.current_version` - 当前版本号
-- `workspace.config_pack` - 云端配置包名称（用于下载配置）
-- `filebrowser.*` - filebrowser 连接配置
-
-### 2. 创建目录结构
+### 1. 创建过程文档目录
 
 ```
 workplace/
-├── {current_version}/
+├── 1.0/
 │   ├── requirements/
 │   ├── references/
 │   ├── prototypes/
@@ -46,27 +61,50 @@ workplace/
 └── archive/
 ```
 
-### 3. 处理配置文件
+### 2. 处理第 1 层通用入口
 
-- 如果 `config_pack` 配置且未使用 `--skip-download`：
-  - 登录 filebrowser
-  - 从 `{remote_base_path}/{config_pack}/` 下载 CLAUDE.md、AGENTS.md
-  - 文件不存在时创建默认模板
-
-- 否则创建默认配置文件模板
-
-### 4. 更新配置
-
-更新 skillconfig.json 中的 `current_version` 字段。
-
-## 输出
+如果配置了 `config_pack` 且未使用 `--skip-download`：
 
 ```
+{remote_base_path}/{config_pack}/AGENTS.md
+{remote_base_path}/{config_pack}/CLAUDE.md
+```
+
+下载失败时创建默认模板：
+- `CLAUDE.md`：`@AGENTS.md`
+- `AGENTS.md`：通用规则和同级 `PROJECT_RULES.md` 入口说明
+
+### 3. 创建第 2 层项目规则
+
+默认创建：
+
+```
+PROJECT_RULES.md
+```
+
+该文件只在不存在时创建，避免覆盖项目自己的规则。
+
+### 4. 创建第 3 层项目知识库
+
+默认创建：
+
+```
+project-kb/
+├── README.md
+└── code/
+    └── README.md
+```
+
+`project-kb/code/` 后续由 `personal-kb` 按源码相对路径维护。
+
+## 输出示例
+
+```text
 🚀 开始初始化工作区...
 
 ✅ 创建工作目录: workplace
-✅ 创建归档目录: archive
-✅ 创建版本目录: 1.0
+✅ 创建归档目录: workplace/archive
+✅ 创建版本目录: workplace/1.0
   ├── requirements/
   ├── references/
   ├── prototypes/
@@ -75,9 +113,9 @@ workplace/
   ├── tests/
 
 📥 从 filebrowser 下载配置文件...
-✅ 登录成功: admin
-✅ 下载成功: /skills/my-skill/CLAUDE.md -> CLAUDE.md
-✅ 下载成功: /skills/my-skill/AGENTS.md -> AGENTS.md
+✅ 下载成功: /config/config-1/AGENTS.md -> AGENTS.md
+✅ 下载成功: /config/config-1/CLAUDE.md -> CLAUDE.md
+✅ 创建项目规则模板: PROJECT_RULES.md
 
 📊 初始化完成:
    目录创建: 8
@@ -85,32 +123,9 @@ workplace/
    配置创建: 0
 ```
 
-## 错误处理
+## 维护边界
 
-| 错误 | 处理 |
-|------|------|
-| 配置文件缺失 | 抛出 FileNotFoundError |
-| filebrowser 登录失败 | 创建默认配置文件模板 |
-| 远程文件不存在 | 创建默认配置文件模板 |
-
-## 使用示例
-
-### 基本用法
-
-```bash
-# 在项目根目录运行
-python skills/workspace-setup/scripts/init_workspace.py
-```
-
-### 跳过下载
-
-```bash
-# 不从 filebrowser 下载，只创建目录结构
-python scripts/init_workspace.py --skip-download
-```
-
-### 自定义配置路径
-
-```bash
-python scripts/init_workspace.py --config path/to/config.json
-```
+- `AGENTS.md`、`CLAUDE.md`：通用配置包同步。
+- `PROJECT_RULES.md`：项目独立维护。
+- `project-kb/`：项目独立维护。
+- `workplace/`：过程文档，不作为项目规则入口。

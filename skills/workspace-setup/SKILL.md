@@ -1,47 +1,76 @@
 ---
 name: workspace-setup
 description: |
-  快速配置和管理项目工作区。当用户提到工作区初始化、版本管理、配置文件同步、CLAUDE.md/AGENTS.md管理、创建版本目录、归档旧版本或使用npx skills管理技能时触发此skill。支持从filebrowser下载配置文件、创建标准化版本目录结构、同步本地变更、版本归档等功能。
+  快速配置和管理项目工作区。当用户提到工作区初始化、CLAUDE.md/AGENTS.md 管理、项目规则文件、项目知识库入口、配置文件同步、创建版本目录、归档旧版本或使用 npx skills 管理技能时触发此 skill。支持三层项目上下文结构：通用入口、项目规则、项目知识库。
 ---
 
 # Workspace Setup Skill
 
-快速配置和管理项目工作区，提供标准化版本目录结构、配置文件同步、技能管理等功能。
+本 skill 管理所有项目都复用的工作区入口，并初始化项目独立维护的规则和知识库骨架。
 
-## 目录结构规范
+## 三层结构
 
 ```
 项目根目录/
-├── skillconfig.json       ← 配置文件
-├── CLAUDE.md              ← Claude配置（可从filebrowser下载）
-├── AGENTS.md              ← Agents配置（可从filebrowser下载）
-├── workplace/
-│   ├── 1.0/               ← 当前版本目录
-│   │   ├── requirements/  ← 需求文档
-│   │   ├── references/    ← 参考文档
-│   │   ├── prototypes/    ← 原型设计
-│   │   ├── tech-design/   ← 技术方案
-│   │   ├── plan/          ← 实施计划
-│   │   └── tests/         ← 测试文件
-│   ├── 1.1/               ← 新版本（版本升级时创建）
-│   └── archive/           ← 归档目录
-│       └── 1.0/           ← 已完成版本归档
-└── .agents/
-    └── skills/
-        └── workspace-setup/
-            └── SKILL.md
+├── AGENTS.md              ← 第 1 层：通用 AI 入口，所有项目内容一致
+├── CLAUDE.md              ← 第 1 层：Claude 入口，通常只写 @AGENTS.md
+├── PROJECT_RULES.md       ← 第 2 层：项目规则，每个项目独立维护
+├── project-kb/            ← 第 3 层：项目知识库，每个项目独立维护
+│   ├── README.md
+│   └── code/              ← 按源码相对路径镜像的代码文件说明
+│       └── README.md
+├── workplace/             ← 需求、方案、计划、测试等过程文档
+│   ├── 1.0/
+│   └── archive/
+├── skillconfig.json
+└── skills/
+    └── workspace-setup/
 ```
 
-## 配置文件
+### 第 1 层：通用入口
 
-### skillconfig.json 格式
+`AGENTS.md` 和 `CLAUDE.md` 必须在所有项目保持一致，适合通过配置包统一同步。
+
+职责：
+- 声明通用协作、编码、验证和文档同步规则。
+- 固定要求读取同级 `PROJECT_RULES.md`。
+- 固定要求修改代码前读取 `project-kb/code/` 中对应的代码文件说明。
+
+不应包含：
+- 某个项目的目录说明。
+- 某个项目的测试命令。
+- 某个项目的业务、架构、依赖或部署规则。
+
+### 第 2 层：项目规则
+
+`PROJECT_RULES.md` 是每个项目独立维护的必读文档。
+
+职责：
+- 列出当前项目修改代码前必须知道的规则。
+- 说明重要文件、重要目录和修改风险。
+- 链接到第 3 层项目知识库。
+- 记录项目级验证命令和定向测试策略。
+
+### 第 3 层：项目知识库
+
+`project-kb/` 是每个项目独立维护的知识库，由 `personal-kb` skill 负责维护规则。
+
+关键约定：
+- `project-kb/code/` 按代码文件结构镜像。
+- 每个代码文件对应一份说明文档。
+- 说明文档记录功能点、相关文件、重要逻辑、测试文件和修改注意事项。
+- 相关文件使用 Obsidian 双向链接。
+
+## skillconfig.json
 
 ```json
 {
   "workspace": {
     "config_pack": "config-1",
     "current_version": "1.0",
-    "workplace_dir": "workplace"
+    "workplace_dir": "workplace",
+    "project_rules_file": "PROJECT_RULES.md",
+    "project_kb_dir": "project-kb"
   },
   "filebrowser": {
     "instance_url": "http://your-server:8080",
@@ -52,163 +81,87 @@ description: |
 }
 ```
 
-### 配置字段说明
-
 | 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `config_pack` | string | 是 | 云端配置包名称，如 config-1、config-2 |
-| `current_version` | string | 是 | 当前版本号，如 1.0、1.1 |
-| `workplace_dir` | string | 否 | 工作目录名，默认 workplace |
+|---|---|---|---|
+| `config_pack` | string | 是 | 云端通用配置包名称 |
+| `current_version` | string | 是 | 当前过程文档版本号 |
+| `workplace_dir` | string | 否 | 过程文档目录，默认 `workplace` |
+| `project_rules_file` | string | 否 | 项目规则文件，默认 `PROJECT_RULES.md` |
+| `project_kb_dir` | string | 否 | 项目知识库目录，默认 `project-kb` |
 | `instance_url` | string | 是 | FileBrowser 服务地址 |
 | `username` | string | 是 | 登录用户名 |
 | `password` | string | 是 | 登录密码 |
-| `remote_base_path` | string | 否 | 云端顶层目录，默认 /config |
+| `remote_base_path` | string | 否 | 云端顶层目录，默认 `/config` |
 
-## 云端配置包库
+## 配置包同步边界
 
-FileBrowser 服务器上存储多套预设配置包，项目选择其中一套下载使用。
+云端配置包只同步第 1 层通用入口和通用 skills：
 
-**云端目录结构**：
 ```
-/config/                      ← remote_base_path（顶层目录）
-├── config-1/                 ← 配置包1（如：React项目通用配置）
-│   ├── CLAUDE.md             ← 配置文件（下载到项目根目录）
-│   ├── AGENTS.md             ← 配置文件（下载到项目根目录）
-│   └── skills/               ← skills目录（和配置文件平级）
-│       └── xxx-skill/
-├── config-2/                 ← 配置包2（如：Python项目通用配置）
-│   ├── CLAUDE.md
-│   ├── AGENTS.md
-│   └── skills/
-└── config-3/                 ← 配置包3
-    └── ...
+/config/config-1/
+├── AGENTS.md
+├── CLAUDE.md
+└── skills/
 ```
 
-**下载到本地后**：
-```
-项目根目录/
-├── CLAUDE.md          ← 从 /config/config-1/CLAUDE.md 下载
-├── AGENTS.md          ← 从 /config/config-1/AGENTS.md 下载
-└── skills/            ← 从 /config/config-1/skills/ 下载
-    └── xxx-skill/
-```
+项目独立文件不进入通用配置包：
+- `PROJECT_RULES.md`
+- `project-kb/`
+- `workplace/`
 
-**路径规则**：云端路径 = `{remote_base_path}/{config_pack}/文件名`
+这样可以让所有项目使用相同的入口命令，同时保留各项目独立规则和知识。
 
 ## 脚本工具
 
-按需读取对应的脚本说明。
-
 | 脚本 | 文档 | 功能 |
-|------|------|------|
-| **init_workspace.py** | `references/init-workspace.md` | 初始化工作区、下载配置文件 |
-| **sync_config.py** | `references/sync-config.md` | 同步CLAUDE.md/AGENTS.md |
-| **version_manager.py** | `references/version-manager.md` | 创建版本、归档版本 |
-| **skills_manager.py** | `references/skills-manager.md` | 管理npx skills命令 |
+|---|---|---|
+| `init_workspace.py` | `references/init-workspace.md` | 初始化三层入口、过程文档目录，可下载通用配置 |
+| `sync_config.py` | `references/sync-config.md` | 同步第 1 层通用入口和可选 skills |
+| `version_manager.py` | `references/version-manager.md` | 创建版本、归档版本 |
+| `skills_manager.py` | `references/skills-manager.md` | 管理 npx skills 命令 |
 
 ## 快速命令
 
-### 初始化工作区
-
 ```bash
-python scripts/init_workspace.py --config skillconfig.json
+# 初始化工作区
+python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.json
+
+# 从配置包下载通用 AGENTS.md/CLAUDE.md
+python skills/workspace-setup/scripts/sync_config.py download --config skillconfig.json
+
+# 上传通用 AGENTS.md/CLAUDE.md
+python skills/workspace-setup/scripts/sync_config.py upload --config skillconfig.json
+
+# 同步通用配置和 skills
+python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.json --sync-skills
 ```
 
-下载CLAUDE.md、AGENTS.md，创建workplace目录和当前版本目录结构。
+## 初始化流程
 
-### 同步配置文件
+1. 读取 `skillconfig.json`。
+2. 创建或保留 `workplace/{current_version}/` 过程文档目录。
+3. 下载或创建通用 `AGENTS.md`、`CLAUDE.md`。
+4. 创建项目独立 `PROJECT_RULES.md`，如果已存在则不覆盖。
+5. 创建项目独立 `project-kb/README.md` 和 `project-kb/code/README.md`，如果已存在则不覆盖。
+6. 更新 `skillconfig.json` 中的当前版本号。
 
-```bash
-# 上传配置文件到 filebrowser
-python scripts/sync_config.py upload --config skillconfig.json
+## 日常维护规则
 
-# 上传配置文件和skills目录
-python scripts/sync_config.py upload --config skillconfig.json --sync-skills
+- 修改通用入口规则后，使用 `sync_config.py upload` 上传到配置包。
+- 修改项目规则或项目知识库时，不要上传到通用配置包。
+- 如果某条规则多个项目都需要，迁移到 `AGENTS.md`。
+- 如果某条规则只对当前项目有效，保留在 `PROJECT_RULES.md`。
+- 修改代码后，使用 `personal-kb` 的代码镜像知识库规则同步更新 `project-kb/code/`。
 
-# 从 filebrowser 下载配置文件
-python scripts/sync_config.py download --config skillconfig.json
+## 过程文档目录
 
-# 下载配置文件和skills目录
-python scripts/sync_config.py download --config skillconfig.json --sync-skills
+`workplace/` 继续用于需求、方案、计划、测试和归档，不承担项目规则或代码知识库职责。
 
-# 双向同步（检查变更）
-python scripts/sync_config.py sync --config skillconfig.json
-```
-
-### 版本管理
-
-```bash
-# 创建新版本（如从1.0升级到1.1）
-python scripts/version_manager.py create --config skillconfig.json
-
-# 归档当前版本到archive
-python scripts/version_manager.py archive --config skillconfig.json
-
-# 查看版本状态
-python scripts/version_manager.py status --config skillconfig.json
-```
-
-### 技能管理
-
-```bash
-# 搜索技能
-python scripts/skills_manager.py find "react testing"
-
-# 安装技能
-python scripts/skills_manager.py add "vercel-labs/agent-skills@react-best-practices"
-
-# 检查更新
-python scripts/skills_manager.py check
-
-# 更新所有技能
-python scripts/skills_manager.py update
-```
-
-## 工作流程
-
-### 1. 新项目初始化
-
-1. 创建 `skillconfig.json` 配置文件
-2. 运行 `init_workspace.py` 初始化工作区
-3. 配置文件自动从filebrowser下载（如果存在）
-4. workplace目录和版本结构自动创建
-
-### 2. 日常配置同步
-
-- 修改CLAUDE.md/AGENTS.md后，运行 `sync_config.py upload` 上传
-- 需要最新配置时，运行 `sync_config.py download` 下载
-- 定期运行 `sync_config.py sync` 保持同步
-
-### 3. 版本迭代
-
-1. 完成当前版本开发后，运行 `version_manager.py create` 创建新版本
-2. 新版本目录自动创建，版本号自动递增（1.0 → 1.1）
-3. 完成最终版本时，运行 `version_manager.py archive` 归档
-
-### 4. 技能安装
-
-使用 `skills_manager.py` 或直接运行npx skills命令：
-- `npx skills find [query]` - 搜索
-- `npx skills add <package> -g -y` - 安装
-- `npx skills check` - 检查更新
-- `npx skills update` - 更新
-
-## 版本子目录说明
-
-| 目录 | 用途 | 典型内容 |
-|------|------|----------|
-| `requirements/` | 需求文档 | 需求说明、用户故事、验收标准 |
-| `references/` | 参考文档 | API文档、设计规范、参考资料 |
-| `prototypes/` | 原型设计 | UI原型、流程图、架构图 |
-| `tech-design/` | 技术方案 | 技术选型、架构设计、数据库设计 |
-| `plan/` | 实施计划 | 任务分解、里程碑、进度跟踪 |
-| `tests/` | 测试文件 | 测试计划、测试用例、测试报告 |
-
-## 常见错误
-
-| 错误 | 说明 | 处理 |
-|------|------|------|
-| 配置文件缺失 | skillconfig.json不存在 | 手动创建配置文件 |
-| 登录失败 | filebrowser认证失败 | 检查用户名密码 |
-| 远程路径不存在 | filebrowser上无对应文件 | 检查remote_base_path和skill_name |
-| 版本目录已存在 | 目标版本已创建 | 使用archive先归档旧版本 |
+| 目录 | 用途 |
+|---|---|
+| `requirements/` | 需求文档 |
+| `references/` | 参考文档 |
+| `prototypes/` | 原型设计 |
+| `tech-design/` | 技术方案 |
+| `plan/` | 实施计划 |
+| `tests/` | 测试文件和测试计划 |
