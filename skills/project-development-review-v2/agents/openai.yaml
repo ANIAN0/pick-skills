@@ -1,4 +1,4 @@
 interface:
   display_name: "项目开发审查 v2"
-  short_description: "审查需求、技术方案和实施计划是否可靠。"
-  default_prompt: "使用 project-development-review-v2，审查这份项目开发文档是否可以进入下一阶段。"
+  short_description: "审查需求、方案、计划和执行证据。"
+  default_prompt: "使用 project-development-review-v2，审查项目开发产物或执行结果是否可以进入下一阶段，重点检查可追踪链路、真实证据和阻塞风险。"

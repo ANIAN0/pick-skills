@@ -27,9 +27,9 @@
 - `done`：真实实现已完成，验证已通过。
 - `not_verified`：实现已完成，但验证无法运行。
 - `blocked`：实现无法继续。
-- `partial`：计划工作仍有剩余。
+- `in_progress`：计划工作仍在进行，不能当作已完成。
 
-不要用 `done` 表示 `not_verified`、`blocked` 或 `partial`。
+不要用 `done` 表示 `not_verified`、`blocked`、`in_progress` 或 `skipped`。
 
 ## 如果验证无法运行
 

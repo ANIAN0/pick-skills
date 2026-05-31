@@ -36,7 +36,7 @@ description: 项目开发 v2 skill 套件的共享政策和交付契约。当维
 只读取当前任务需要的文件：
 
 - 修改 agent 如何提问或避免提问时，读 `references/question-policy.md`。
-- 修改 ID、状态值、交接规则、可追踪性或证据标准时，读 `references/delivery-contract.md`。
+- 修改 ID、状态值、版本目录、交接规则、可追踪性或证据标准时，读 `references/delivery-contract.md`。
 - 修改 mock、stub、fallback、验证或完成语言相关规则时，读 `references/no-simulation-policy.md`。
 - 修改阶段后审查、跨文档一致性或审查报告结构时，优先修改 `project-development-review-v2`。
 
