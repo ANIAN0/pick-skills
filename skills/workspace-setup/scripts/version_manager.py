@@ -26,8 +26,10 @@ VERSION_SUBDIRS = [
 
 
 def parse_version(version: str) -> tuple:
-    """解析版本号 (如 '1.0' -> (1, 0))"""
+    """解析版本号 (如 '1' -> (1, 0), '1.0' -> (1, 0))"""
     parts = version.split('.')
+    if len(parts) == 1:
+        return int(parts[0]), 0
     if len(parts) != 2:
         raise ValueError(f"无效版本号格式: {version}")
     return int(parts[0]), int(parts[1])
@@ -143,7 +145,11 @@ def create_version(config_path: str, target_version: str = None) -> Dict:
 
 
 def archive_version(config_path: str, target_version: str = None) -> Dict:
-    """归档版本目录"""
+    """将已完成版本目录移动到溯源归档区。
+
+    归档前应先人工完成无用文件清理，并把可复用内容沉淀到 workplace/global/、
+    workplace/tests/ 或 project-kb/。脚本只负责最后一步的目录移动。
+    """
     print("\n📦 开始归档版本...\n")
 
     config = load_config(config_path)
@@ -155,25 +161,26 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
     workplace_path = project_root / workplace_dir
     archive_path = workplace_path / "archive"
 
+    results = {
+        "archived_version": None,
+        "moved_path": None,
+        "errors": []
+    }
+
     # 确定要归档的版本
     if target_version:
         archive_version_num = target_version
     else:
-        # 归档当前版本之前的版本（不包括当前版本）
         status = get_version_status(config_path)
         versions = status["versions"]
         if current_version in versions:
-            # 归档当前版本之前所有版本
             archive_version_num = current_version
         else:
             results["errors"].append("无法确定要归档的版本")
-            return {"errors": ["无法确定要归档的版本"]}
+            print("❌ 无法确定要归档的版本")
+            return results
 
-    results = {
-        "archived_version": archive_version_num,
-        "moved_path": None,
-        "errors": []
-    }
+    results["archived_version"] = archive_version_num
 
     # 检查源版本目录
     source_path = workplace_path / archive_version_num
@@ -206,6 +213,7 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
 
     print(f"\n📊 归档完成:")
     print(f"   归档版本: {archive_version_num}")
+    print("   提醒: 归档前应已完成清理和可复用内容沉淀")
 
     return results
 

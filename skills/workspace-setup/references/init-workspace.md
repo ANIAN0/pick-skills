@@ -5,6 +5,7 @@
 ## 功能
 
 - 创建 `workplace/{current_version}/` 过程文档目录。
+- 创建 `workplace/global/` 和 `workplace/tests/`，用于跨迭代复用材料。
 - 从 FileBrowser 下载第 1 层通用 `AGENTS.md`、`CLAUDE.md`。
 - 创建第 2 层项目规则 `PROJECT_RULES.md`。
 - 创建第 3 层项目知识库入口 `project-kb/`。
@@ -51,6 +52,8 @@ python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.jso
 
 ```
 workplace/
+├── global/
+├── tests/
 ├── 1.0/
 │   ├── requirements/
 │   ├── references/
@@ -103,6 +106,8 @@ project-kb/
 🚀 开始初始化工作区...
 
 ✅ 创建工作目录: workplace
+✅ 创建全局目录: workplace/global
+✅ 创建全局目录: workplace/tests
 ✅ 创建归档目录: workplace/archive
 ✅ 创建版本目录: workplace/1.0
   ├── requirements/
@@ -118,7 +123,7 @@ project-kb/
 ✅ 创建项目规则模板: PROJECT_RULES.md
 
 📊 初始化完成:
-   目录创建: 8
+   目录创建: 10
    配置下载: 2
    配置创建: 0
 ```
@@ -129,3 +134,5 @@ project-kb/
 - `PROJECT_RULES.md`：项目独立维护。
 - `project-kb/`：项目独立维护。
 - `workplace/`：过程文档，不作为项目规则入口。
+- `workplace/global/`：跨迭代复用的过程资产、模板、脚本和说明。
+- `workplace/tests/`：跨迭代复用的测试方案、脚本、夹具和报告模板。

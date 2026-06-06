@@ -6,7 +6,7 @@
 
 管理项目版本目录：
 - `create` - 创建新版本目录（版本号自动递增）
-- `archive` - 归档已完成版本到 archive 目录
+- `archive` - 将已完成版本移动到 archive 目录，用于溯源归档
 - `status` - 查看当前版本状态
 
 ## 命令
@@ -33,7 +33,13 @@ python scripts/version_manager.py archive --config skillconfig.json
 python scripts/version_manager.py archive --config skillconfig.json --version 1.0
 ```
 
-将版本目录移动到 workplace/archive/ 下。
+将版本目录移动到 `workplace/archive/` 下。该命令只负责归档流程的第 3 步；执行前应先清理无用文件，并将可复用材料沉淀到全局目录、全局测试目录或知识库。
+
+归档流程分三步：
+
+1. 清理无用文件：删除临时草稿、重复副本、缓存、生成产物、一次性调试文件和已失效截图。
+2. 沉淀可复用内容：可复用的过程资产放入 `workplace/global/`；可复用测试方案、脚本、夹具和报告模板放入 `workplace/tests/`；稳定的项目知识、代码影响关系、测试映射和设计决策写入 `project-kb/`。
+3. 溯源归档：只把仍有追溯价值的需求、技术方案、实施计划、评审记录、测试结论和关键取舍移动到 `workplace/archive/{version}/`。
 
 ### 查看状态
 
@@ -53,6 +59,7 @@ python scripts/version_manager.py status --config skillconfig.json
 ## 版本号格式
 
 采用 `major.minor` 格式：
+- `1` - 兼容旧目录或旧命令，按 `1.0` 排序和递增
 - `1.0`, `1.1`, `1.2` - 主版本 1 的迭代版本
 - `2.0`, `2.1` - 主版本 2 的迭代版本
 
@@ -63,13 +70,17 @@ python scripts/version_manager.py status --config skillconfig.json
 每个版本目录包含以下子目录：
 
 ```
-{version}/
-├── requirements/   # 需求文档
-├── references/     # 参考文档
-├── prototypes/     # 原型设计
-├── tech-design/    # 技术方案
-├── plan/           # 实施计划
-└── tests/          # 测试文件
+workplace/
+├── global/         # 跨迭代复用的过程资产、模板、脚本和说明
+├── tests/          # 跨迭代复用的测试方案、脚本、夹具和报告模板
+├── {version}/
+│   ├── requirements/   # 需求文档
+│   ├── references/     # 参考文档
+│   ├── prototypes/     # 原型设计
+│   ├── tech-design/    # 技术方案
+│   ├── plan/           # 实施计划
+│   └── tests/          # 测试文件
+└── archive/
 ```
 
 ## 输出示例
@@ -101,6 +112,7 @@ python scripts/version_manager.py status --config skillconfig.json
 
 📊 归档完成:
    归档版本: 1.0
+   提醒: 归档前应已完成清理和可复用内容沉淀
 ```
 
 ### 查看状态
@@ -163,7 +175,7 @@ python scripts/version_manager.py archive --version 1.5
 
 | 错误 | 处理 |
 |------|------|
-| 版本号格式无效 | 抛出 ValueError |
+| 版本号格式无效 | 只接受 `major` 或 `major.minor`，其他格式抛出 ValueError |
 | 版本目录已存在 | 返回错误，提示归档或使用其他版本号 |
 | 归档目标已存在 | 返回错误 |
 | 源版本目录不存在 | 返回错误 |

@@ -23,6 +23,12 @@ VERSION_SUBDIRS = [
     "tests"           # 测试文件
 ]
 
+# 版本之外可长期复用的工作区目录。
+WORKPLACE_GLOBAL_DIRS = [
+    "global",          # 可复用的方案、模板、脚本和资产
+    "tests"            # 可复用的测试方案、测试脚本、夹具和报告模板
+]
+
 # 通用配置文件列表：这些文件应在所有项目中保持一致。
 CONFIG_FILES = ["CLAUDE.md", "AGENTS.md"]
 
@@ -60,7 +66,13 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     results["directories_created"].append(str(workplace_path))
     print(f"✅ 创建工作目录: {workplace_path}")
 
-    # 2. 创建archive目录
+    # 2. 创建长期复用目录和archive目录
+    for subdir in WORKPLACE_GLOBAL_DIRS:
+        global_path = workplace_path / subdir
+        global_path.mkdir(exist_ok=True)
+        results["directories_created"].append(str(global_path))
+        print(f"✅ 创建全局目录: {global_path}")
+
     archive_path = workplace_path / "archive"
     archive_path.mkdir(exist_ok=True)
     results["directories_created"].append(str(archive_path))
