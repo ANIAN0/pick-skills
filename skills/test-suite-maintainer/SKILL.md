@@ -1,496 +1,371 @@
 ---
 name: test-suite-maintainer
-description: 在项目迭代上线前维护和执行全量测试用例集。当用户提到"上线前测试"、"更新测试用例"、"全量测试"、"跑用例"、"维护测试集"、"测试覆盖"、"检测代码变更需要更新哪些测试"时触发此skill。也适用于用户指定功能模块需要添加或更新测试的场景。
+description: 在功能已完成开发、已转测并部署到测试或预发环境后，按功能模块维护完整流程验收测试方案与自动化/半自动化脚本。用户提到“上线前测试”“完整流程验证”“真实数据测试”“转测验收”“测试方案”“测试脚本”“更新测试用例”“全量验收”“跑用例”时触发此 skill。
 ---
 
 <SUBAGENT-STOP>
-如果你是作为子代理被派发执行特定任务，跳过此skill。
+如果你是作为子代理被派发执行特定任务，跳过此 skill。
 </SUBAGENT-STOP>
 
-# 测试用例集维护
+# 测试套件维护
 
-这个skill帮助你维护一份项目全量测试用例与自动化测试脚本，确保迭代过程中测试始终与代码同步。
+这个 skill 的目标不是补写开发阶段的单元测试，也不是用 mock 数据重复验证局部逻辑。它用于功能完成开发、已转测、并部署到可验证环境之后，维护和执行面向上线准入的完整流程测试。
 
-## 核心概念
+测试通过代表：功能在真实部署环境、真实配置、真实或准真实业务数据、真实服务链路下满足需求和设计约束，可以作为上线判断依据之一。
 
-**测试清单（test-manifest.yaml）** 是整个skill的核心。它记录：
-- 所有功能模块及其测试用例
-- 每个用例的状态（active/skip/pending）
-- 用例与代码路径的关联关系
-- 用例优先级和分类
+## 核心原则
 
-通过这份清单，你可以：
-1. 快速了解项目测试覆盖全貌
-2. 检测代码变更后确定哪些测试需要更新
-3. 上线前执行全量测试并验证覆盖
+1. **以已转测和已部署为前提**
+   - 默认功能代码已经完成开发并进入测试阶段。
+   - 默认相关服务、数据库、配置、权限、外部依赖或测试替身环境已经准备好。
+   - 如果环境未准备好，先输出环境缺口清单，不要退回去设计单元测试。
 
-**测试计划文档（test-plan.md）** 是脚本生成的评审中间产物。在新增或更新测试时，必须先生成一份整体测试方案，说明范围、优先级、前后端流程、数据准备、验证方式和脚本落点；经用户确认整体方案后，先按方案跑通真实流程，流程通过后才生成或修改自动化脚本。这样做是因为：
-- 测试脚本的逻辑正确性很难通过直接阅读代码快速评审
-- 先输出整体方案，评审者能先判断测试范围和主流程是否正确，而不是被拆散到多个脚本细节里
-- 真实流程没有跑通时，直接生成脚本会把错误流程固化成自动化资产
-- 文档、流程验证、脚本形成三层约束：方案确认后先证明流程成立，脚本只忠实自动化已跑通的流程
+2. **验证完整业务流程**
+   - 优先覆盖用户真实操作路径、接口链路、数据落库、状态流转、权限边界、异常恢复和跨模块协作。
+   - 不以函数级断言、mock 数据、孤立 fixture 作为主要验收手段。
+   - 必要时可以使用脚本自动执行流程，但脚本必须调用真实接口、真实页面或真实服务入口。
 
-## 推荐技术栈
+3. **每个功能模块独立维护**
+   - 每个功能模块必须有独立目录。
+   - 测试方案、测试脚本、执行报告和测试数据说明都放在该模块目录下。
+   - 不使用一个全局 `test-plan.md` 混放多个功能模块的方案。
 
-| 项目类型 | 测试框架 | 说明 |
-|---------|---------|------|
-| Python | pytest | fixture机制强大，插件生态丰富，按模块组织测试 |
-| 前端流程 / E2E | Playwright CLI + 真实 Microsoft Edge | 前端测试优先使用真实浏览器 Edge；跑通流程时使用 `playwright-cli attach` 连接远程调试 Edge |
-| NextJS 单元 / 组件逻辑 | Vitest | 仅用于非浏览器交互逻辑；涉及真实页面、路由、用户操作、接口串联时优先走 Edge |
+4. **先设计方案，确认后再写脚本**
+   - 根据需求文档、设计文档、接口文档、部署说明和用户补充信息，先完成测试方案。
+   - 方案必须经用户确认后，才创建或修改测试脚本。
+   - 如果用户修改方案，脚本必须按确认后的方案实现。
 
-## 目录结构
+5. **上线阻断标准清晰**
+   - 核心主流程失败、数据状态错误、权限错误、真实依赖不可用、关键异常流程不符合预期，均视为上线阻断。
+   - 不能用“单元测试已通过”替代完整流程验收。
 
-测试用例集维护在 `workplace/test/` 目录下：
+## 推荐目录结构
 
-```
+测试套件维护在项目的 `workplace/test/` 目录下。每个功能模块一个独立目录：
+
+```text
 workplace/test/
-├── test-manifest.yaml      # 全量用例清单（核心文件）
-├── test-plan.md            # 测试计划文档（评审中间产物）
-├── frontend/                # 前端真实流程 / E2E 脚本（优先 Edge）
+├── test-manifest.yaml
+├── modules/
 │   ├── auth/
-│   │   └── login.spec.ts
-│   └── ...
-├── python/                  # Python项目测试
-│   ├── conftest.py          # 共享fixtures和配置
-│   ├── pytest.ini           # pytest配置（可选）
-│   ├── auth/                # 功能模块：认证
-│   │   ├── test_login.py    # 登录测试
-│   │   └── test_register.py # 注册测试
-│   ├── payment/             # 功能模块：支付
-│   │   ├── test_checkout.py
-│   │   └── test_refund.py
-│   └── ...
-├── nextjs/                  # NextJS项目测试
-│   ├── vitest.config.ts     # Vitest配置
-│   ├── setup.ts             # 测试setup文件
-│   ├── auth/
-│   │   ├── login.test.ts
-│   │   ├── register.test.ts
+│   │   ├── test-plan.md
+│   │   ├── scripts/
+│   │   │   ├── login_flow.py
+│   │   │   └── register_flow.py
+│   │   ├── data.md
+│   │   └── reports/
+│   │       └── 2026-04-20.md
 │   ├── payment/
-│   │   ├── checkout.test.ts
-│   │   └── refund.test.ts
+│   │   ├── test-plan.md
+│   │   ├── scripts/
+│   │   │   ├── checkout_flow.py
+│   │   │   └── refund_flow.py
+│   │   ├── data.md
+│   │   └── reports/
+│   │       └── 2026-04-20.md
 │   └── ...
+└── shared/
+    ├── env.example.md
+    ├── helpers/
+    └── reports/
 ```
+
+目录职责：
+
+- `modules/<module>/test-plan.md`: 模块级完整流程测试方案。脚本生成前必须先有此文件并经确认。
+- `modules/<module>/scripts/`: 根据确认后的方案编写的自动化或半自动化测试脚本。
+- `modules/<module>/data.md`: 真实测试数据准备、账号、订单、配置、清理方式和数据风险说明。
+- `modules/<module>/reports/`: 每次执行后的验收报告。
+- `shared/`: 跨模块共用的环境说明、帮助函数和全量报告。
+- `test-manifest.yaml`: 全量模块清单和上线验收状态索引，不替代模块测试方案。
 
 ## test-manifest.yaml 格式
 
+`test-manifest.yaml` 用于索引模块和上线验收状态，不再承载所有测试用例细节。
+
 ```yaml
-version: "1.0"
+version: "2.0"
 project:
   name: "项目名称"
-  python_root: "src/"        # Python代码根目录（相对项目根）
-  nextjs_root: "app/"        # NextJS代码根目录
+  test_root: "workplace/test"
+  target_environment: "staging"
 
 modules:
-  auth:                      # 功能模块名
+  auth:
     description: "用户认证模块"
-    code_paths:              # 关联的代码路径（用于变更检测）
-      - "src/auth/"
-      - "app/api/auth/"
-    priority: high           # 模块优先级: high/medium/low
-    cases:
-      - name: "用户登录"
-        id: "auth-login-001"
-        status: active       # active/skip/pending
-        type: unit           # unit=独立逻辑; integration=调用真实接口/真实DB; e2e=完整用户流程
-        script: "python/auth/test_login.py::test_login_success"
-        coverage:
-          - "src/auth/login.py"
-          - "app/api/auth/login/route.ts"
-        last_run: "2026-04-15"
-        notes: "验证正常登录流程"
-
-      - name: "登录失败处理"
-        id: "auth-login-002"
-        status: active
-        type: unit
-        script: "python/auth/test_login.py::test_login_failure"
-        coverage: ["src/auth/login.py"]
-        last_run: "2026-04-15"
-        notes: "验证错误密码、账户锁定等场景"
+    priority: high
+    requirement_docs:
+      - "docs/requirements/auth.md"
+    design_docs:
+      - "docs/design/auth.md"
+    module_dir: "workplace/test/modules/auth"
+    plan: "workplace/test/modules/auth/test-plan.md"
+    scripts:
+      - "workplace/test/modules/auth/scripts/login_flow.py"
+      - "workplace/test/modules/auth/scripts/register_flow.py"
+    status: active
+    plan_status: confirmed
+    last_run: "2026-04-20"
+    last_result: pass
+    blockers: []
 
   payment:
     description: "支付处理模块"
-    code_paths: ["src/payment/", "app/api/payment/"]
     priority: high
-    cases:
-      - name: "支付流程"
-        id: "payment-checkout-001"
-        status: active
-        type: integration
-        script: "nextjs/payment/checkout.test.ts"
-        coverage: ["src/payment/checkout.py", "app/api/payment/route.ts"]
-        last_run: "2026-04-10"
-        notes: "完整支付流程测试，需mock支付网关"
+    requirement_docs:
+      - "docs/requirements/payment.md"
+    design_docs:
+      - "docs/design/payment.md"
+    module_dir: "workplace/test/modules/payment"
+    plan: "workplace/test/modules/payment/test-plan.md"
+    scripts:
+      - "workplace/test/modules/payment/scripts/checkout_flow.py"
+      - "workplace/test/modules/payment/scripts/refund_flow.py"
+    status: active
+    plan_status: draft
+    last_run: null
+    last_result: pending
+    blockers:
+      - "测试支付网关账号未配置"
 ```
 
-## test-plan.md 格式
+字段说明：
 
-测试计划文档是新增/更新测试时的评审入口，必须先给出整体方案，不能一开始按脚本或模块拆成零散片段。整体方案经用户确认后，先按方案跑通真实流程；只有流程通过并记录证据后，才能生成或修改脚本。
+- `priority`: `high` / `medium` / `low`，上线前优先执行高优先级模块。
+- `status`: `active` / `skip` / `pending`，控制是否纳入执行。
+- `plan_status`: `draft` / `confirmed`，只有 `confirmed` 才能生成或修改脚本。
+- `last_result`: `pass` / `fail` / `blocked` / `pending`。
+- `blockers`: 记录影响上线验收的问题。
+
+## 模块测试方案格式
+
+每个模块的 `test-plan.md` 必须以真实流程验收为中心。
 
 ```markdown
-# 测试计划
+# 用户认证模块测试方案
 
-**操作类型**: 新增 / 更新
-**关联模块**: auth, payment
-**日期**: 2026-04-20
+**模块**: auth
+**方案状态**: draft
+**目标环境**: staging
+**设计依据**:
+- docs/requirements/auth.md
+- docs/design/auth.md
+**创建日期**: 2026-04-20
 
-## 变更概要
+## 验收目标
 
-- 新增用户注册模块测试（3个用例）
-- 更新支付退款测试以适配新退款策略（2个用例）
+- 验证用户注册、登录、会话保持、退出登录在真实部署环境下完整可用。
+- 验证用户数据正确写入数据库，并能被后续流程读取。
+- 验证关键异常路径不会产生错误状态。
 
-## 整体测试方案
+## 环境前提
 
-| 范围 | 验证目标 | 执行方式 | 工具 | 通过标准 |
-|------|---------|---------|------|---------|
-| 后端注册接口 | 注册、重复注册、参数校验 | 先用脚本直接调用真实接口跑通流程 | Python/Node 脚本 | 响应、数据库写入和清理符合预期 |
-| 前端注册页面 | 用户从页面提交注册表单 | 先用真实 Edge 手动/半自动跑通 | Playwright CLI attach | 页面状态、网络请求和结果提示符合预期 |
+| 项目 | 要求 | 状态 |
+| --- | --- | --- |
+| 前端服务 | staging 前端已部署 | 待确认 |
+| 后端服务 | staging API 已部署 | 待确认 |
+| 数据库 | 可写入测试用户数据 | 待确认 |
+| 外部依赖 | 邮件或验证码服务测试通道可用 | 待确认 |
 
-## 流程跑通门禁
+## 测试数据
 
-- 后端流程：按计划中的请求、数据库检查和清理步骤先跑通，记录命令和关键结果
-- 前端流程：启动真实 Edge 并用 Playwright CLI 连接，按页面路径完成用户操作
-- 任一流程未跑通时，不生成自动化脚本；先修正方案或暴露阻塞问题
+| 数据项 | 来源 | 用途 | 清理方式 |
+| --- | --- | --- | --- |
+| 测试用户账号 | 真实创建 | 注册和登录流程 | 测试后删除或标记 |
 
----
+## 验收场景
 
-## 脚本清单
+| 场景ID | 场景名称 | 优先级 | 类型 | 预期结果 |
+| --- | --- | --- | --- | --- |
+| auth-flow-001 | 新用户注册后登录 | high | e2e | 用户可注册、登录成功、数据库状态正确 |
+| auth-flow-002 | 错误密码登录失败 | high | e2e | 返回明确错误，登录态不创建 |
 
-### 1. python/auth/test_register.py [新增]
+## 场景流程
 
-测试用户注册功能，覆盖正常注册、重复注册、参数校验三个场景。
+### auth-flow-001 新用户注册后登录
 
-**用例列表：**
+1. 使用真实前端页面或真实注册接口提交新用户信息。
+2. 验证响应成功，并记录用户 ID。
+3. 查询数据库或后台接口确认用户已创建，状态正确。
+4. 使用该用户执行登录。
+5. 验证登录态、返回用户信息和页面跳转符合设计。
+6. 执行退出登录。
+7. 清理测试用户或按数据策略标记。
 
-| 用例ID | 函数名 | 测试目标 | 前置条件 | 预期结果 |
-|--------|--------|---------|---------|---------|
-| auth-reg-001 | test_register_success | 正常注册流程 | 数据库无该用户 | 返回201，用户创建成功 |
-| auth-reg-002 | test_register_duplicate | 重复用户名注册 | 数据库已存在该用户 | 返回409，提示用户已存在 |
-| auth-reg-003 | test_register_invalid_input | 参数校验 | 无 | 非法邮箱/短密码返回422 |
+### auth-flow-002 错误密码登录失败
 
-**执行流程（test_register_success）：**
-1. 构造合法注册请求体（username, email, password）
-2. 调用 POST /api/auth/register
-3. 断言响应状态码 201
-4. 断言响应体包含 user_id 字段
-5. 查询数据库确认用户记录已创建
-6. 清理测试数据
+1. 准备一个已存在测试用户。
+2. 使用错误密码调用真实登录入口。
+3. 验证登录失败响应符合设计。
+4. 验证不会创建有效登录态。
+5. 验证用户状态未被错误修改。
 
-**执行流程（test_register_duplicate）：**
-1. 先注册一个用户（复用 fixture）
-2. 用相同用户名再次调用注册接口
-3. 断言响应状态码 409
-4. 断言错误信息包含"已存在"
+## 脚本计划
 
-**执行流程（test_register_invalid_input）：**
-1. 分别传入空用户名、非法邮箱、短密码
-2. 每种情况断言返回 422
-3. 断言错误信息指出具体字段问题
+| 脚本路径 | 覆盖场景 | 执行方式 |
+| --- | --- | --- |
+| scripts/login_flow.py | auth-flow-001, auth-flow-002 | 调用 staging 真实 API |
 
-**依赖：** conftest.py 中的 db_session fixture
+## 上线阻断标准
 
----
-
-### 2. python/payment/test_refund.py [更新]
-
-适配新退款策略（部分退款 + 退款原因必填）。
-
-**变更内容：**
-
-| 用例ID | 变更类型 | 说明 |
-|--------|---------|------|
-| payment-refund-001 | 修改 | test_full_refund：新增退款原因参数 |
-| payment-refund-002 | 新增 | test_partial_refund：测试部分退款场景 |
-
-**执行流程（test_full_refund 变更）：**
-1. 构造退款请求，新增 `reason` 字段（必填）
-2. 调用 POST /api/payment/refund
-3. 断言响应状态码 200
-4. 断言退款金额等于订单金额
-5. 断言退款记录包含 reason 字段
-
-**执行流程（test_partial_refund 新增）：**
-1. 构造部分退款请求（amount < 订单总额 + reason）
-2. 调用 POST /api/payment/refund
-3. 断言响应状态码 200
-4. 断言退款金额等于请求金额
-5. 断言订单状态变为"部分退款"
+- 注册或登录主流程失败。
+- 用户数据写入错误或状态不一致。
+- 错误密码产生有效登录态。
+- 测试环境关键依赖不可用且无法替代验证。
 ```
 
-### test-plan.md 的关键规则
+方案规则：
 
-1. **先整体方案，后脚本清单**：先说明测试范围、主流程、工具、数据、通过标准，再列脚本章节
-2. **每个脚本一个章节**，用 `### 脚本路径 [新增/更新]` 作为标题
-3. **用例列表用表格**，列出函数名、测试目标、前置条件、预期结果
-4. **每个用例必须有执行流程**，按步骤描述：准备数据 → 调用接口/函数/页面操作 → 断言结果 → 清理
-5. **前端流程必须标注真实 Edge 验证方式**，包括启动 Edge、连接 Playwright CLI、页面路径、关键操作和观察点
-6. **更新操作要标注变更类型**：修改/新增/删除，并说明原用例的变化
-7. **文档只描述行为，不写代码** — 评审者关注的是测试逻辑是否完整，不是语法
+1. 每个模块一个 `test-plan.md`。
+2. 方案必须引用需求和设计依据；如果缺少文档，要明确写出依据缺口。
+3. 每个验收场景必须包含环境前提、真实数据、执行步骤、预期结果和清理方式。
+4. 方案只写测试逻辑和验收标准，不写代码。
+5. 方案状态为 `draft` 时不能写脚本；用户确认后改为 `confirmed`。
 
 ## 工作流程
 
-### 场景一：迭代上线前执行测试
+### 场景一：初始化模块测试套件
 
-1. **读取清单** - 从 `workplace/test/test-manifest.yaml` 加载全量用例
-2. **筛选执行** - 只执行 `status: active` 的用例
-3. **优先级排序** - high > medium > low
-4. **运行测试** - 使用对应框架执行
-5. **生成报告** - 记录执行结果，更新 `last_run` 字段
+适用于用户要求为某个功能模块建立上线验收测试。
 
-执行命令：
-```powershell
-# Python测试
-pytest workplace/test/python/ -v --tb=short
+1. 识别功能模块名称和边界。
+2. 查找需求文档、设计文档、接口文档和部署说明。
+3. 创建 `workplace/test/modules/<module>/` 目录。
+4. 编写 `test-plan.md`，状态为 `draft`。
+5. 编写或更新 `data.md`，说明真实测试数据准备和清理方式。
+6. 更新 `test-manifest.yaml`，登记模块、方案路径和 `plan_status: draft`。
+7. 暂停并要求用户确认测试方案。
+8. 用户确认后，将 `plan_status` 改为 `confirmed`，再创建脚本。
 
-# 前端真实浏览器流程测试优先使用 Edge
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222
-npx playwright-cli attach --cdp=http://127.0.0.1:9222
+### 场景二：根据已确认方案创建测试脚本
 
-# NextJS 单元/组件逻辑测试
-vitest run --config workplace/test/nextjs/vitest.config.ts
+适用于用户已经确认模块测试方案。
 
-# 指定模块
-pytest workplace/test/python/auth/ -v
-vitest run --config workplace/test/nextjs/vitest.config.ts auth/
-```
+1. 读取 `modules/<module>/test-plan.md`。
+2. 确认方案状态为 `confirmed`，或用户在当前对话中明确确认。
+3. 根据“脚本计划”创建 `scripts/` 下的脚本。
+4. 脚本必须忠实实现方案中的场景流程和断言。
+5. 脚本默认调用真实入口，不 mock 自身业务链路。
+6. 更新 `test-manifest.yaml` 的脚本路径。
+7. 如可执行，运行脚本并生成模块报告。
 
-### 场景二：代码变更后更新测试
+### 场景三：更新已有模块测试方案
 
-1. **检测变更** - 使用 `git diff` 获取变更文件
-2. **关联分析** - 遍历manifest，匹配 `code_paths` 和 `coverage`
-3. **识别影响** - 列出所有受影响的测试用例
-4. **生成整体计划文档** - 先写整体测试方案，再写需要更新的脚本及其新执行流程
-5. **用户评审** - 展示计划文档，用户确认测试范围、流程和工具选择正确后再继续
-6. **按方案跑通流程** - 后端用脚本调用真实接口/服务，前端用 Playwright CLI 连接真实 Edge 执行页面流程
-7. **更新脚本** - 只有流程跑通后，才根据确认且已验证的计划文档更新对应测试脚本
-8. **同步清单** - 更新manifest中的用例描述、状态等
+适用于需求或设计变更后更新上线验收测试。
 
-变更检测命令：
-```bash
-git diff HEAD~5 --name-only          # 最近5次提交
-git diff main...feature-branch --name-only  # 分支差异
-git diff --cached --name-only        # 暂存区变更
-```
+1. 读取模块当前 `test-plan.md` 和相关文档变更。
+2. 标出新增、修改、删除的验收场景。
+3. 更新模块 `test-plan.md`，状态改为 `draft`。
+4. 同步更新 `data.md` 中的数据准备和清理策略。
+5. 更新 `test-manifest.yaml` 的 `plan_status: draft`。
+6. 暂停并要求用户确认方案。
+7. 用户确认后再更新脚本。
 
-### 场景三：新增功能添加测试
+### 场景四：执行上线前完整流程验收
 
-1. **确认模块** - 判断新功能属于哪个模块
-2. **设计用例** - 分析功能点，设计测试用例列表
-3. **生成整体计划文档** - 先写整体测试方案，再写待创建的脚本及其执行流程
-4. **用户评审** - 展示计划文档，用户确认测试范围、流程和工具选择正确后再继续
-5. **按方案跑通流程** - 后端用脚本验证接口和数据，前端用真实 Edge + Playwright CLI 验证页面用户路径
-6. **编写脚本** - 只有流程跑通后，才根据确认且已验证的计划文档创建测试文件
-7. **注册清单** - 在manifest中添加用例记录
+适用于“上线前测试”“跑全量验收”“真实流程验证”。
 
-### 场景四：上线前真实流程验证
+1. 读取 `test-manifest.yaml`。
+2. 筛选 `status: active` 且 `plan_status: confirmed` 的模块。
+3. 按 `priority: high > medium > low` 排序。
+4. 检查每个模块的环境前提和测试数据是否就绪。
+5. 执行模块 `scripts/` 下的脚本，或按方案进行半自动化验证。
+6. 记录每个场景的实际结果、证据、数据记录和问题。
+7. 生成模块报告到 `modules/<module>/reports/<date>.md`。
+8. 生成全量报告到 `shared/reports/<date>-full.md`。
+9. 更新 `test-manifest.yaml` 的 `last_run`、`last_result` 和 `blockers`。
 
-场景一跑的是自动化测试套件（单元+集成），适合 CI 过程中的快速反馈。**上线前还需要额外一步：用真实环境跑通核心主流程**，确认代码在真实服务、真实数据库、真实配置下可以端到端工作。
+验收结论：
 
-这两件事的定位不同：
+- 所有 high 模块通过，且无上线阻断问题：可以进入上线评审。
+- 任一 high 模块失败：不建议上线。
+- 任一 high 模块 blocked：必须先补齐环境、数据或依赖后重测。
 
-| | 场景一（自动化测试套件） | 场景四（上线前真实流程验证） |
-|---|---|---|
-| **目的** | 防回归、快速反馈 | 确认主流程在真实环境跑通 |
-| **数据** | 测试 fixtures | 测试环境真实数据 |
-| **服务** | 可 mock 外部依赖 | 真实服务（不 mock 自身业务链路） |
-| **时机** | 每次提交/PR | 上线前一次 |
+### 场景五：查看覆盖和上线风险
 
-**上线前真实流程验证步骤**：
+1. 汇总 `test-manifest.yaml` 中所有模块状态。
+2. 列出没有测试方案的模块。
+3. 列出 `plan_status != confirmed` 的模块。
+4. 列出 `last_result` 为 `fail` 或 `blocked` 的模块。
+5. 列出只有脚本但缺少方案确认的模块。
+6. 给出上线风险判断。
 
-1. **确认环境就绪** — 测试环境服务已启动，数据库/外部依赖已初始化
-2. **识别核心流程** — 从 manifest 中找 `priority: high` 的 `type: integration` 或 `type: e2e` 用例；如果没有，说明测试集缺少真实流程用例，需要先补充
-3. **后端用脚本执行核心流程** — 对接口、服务和数据链路，使用 Python/Node 脚本调用真实本地或测试环境服务，确认请求发出 → 后端处理 → 数据写入/外部调用 → 响应正确返回
-4. **前端用真实 Edge 执行核心流程** — 对页面、路由和用户操作，启动 Edge 远程调试并用 Playwright CLI attach，确认页面真实渲染、请求真实发出、结果真实可见
-5. **标记问题** — 任何流程测试失败 = 上线阻断，不得以"单元测试通过"绕过，也不得为未跑通流程生成自动化脚本
-6. **生成验证报告** — 记录哪些主流程已验证通过，哪些有问题
+## 测试脚本编写要求
 
-前端真实 Edge 连接命令：
+脚本可以使用 Python、Playwright、pytest、Vitest、curl 或项目已有工具链。选择依据是能否稳定执行真实流程，而不是框架偏好。
 
-```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222
-npx playwright-cli attach --cdp=http://127.0.0.1:9222
-```
+脚本必须满足：
 
-**注意**：如果 manifest 中所有 `priority: high` 用例都是 `type: unit`，这本身就是一个风险信号——说明核心功能缺乏集成验证，上线前应先补充 integration 类型用例。
+- 从环境变量或配置文件读取目标环境地址、账号和密钥，不硬编码敏感信息。
+- 调用真实页面、真实接口或真实服务入口。
+- 对业务结果、数据状态和关键副作用做断言。
+- 记录足够的失败信息，方便定位问题。
+- 包含测试数据清理或隔离策略。
+- 不使用 mock 数据替代真实业务链路。
 
-## Skill 执行步骤
+可以接受的测试替身：
 
-### Step 1: 理解用户意图
+- 第三方支付、短信、邮件等外部服务可使用官方 sandbox 或测试通道。
+- 法规、费用或生产风险较高的外部动作可使用预发专用替身。
+- 替身必须在 `data.md` 和报告中明确说明。
 
-确认用户要做什么：
-- **执行测试** - "上线前跑测试"、"执行全量用例"
-- **更新测试** - "代码变了，更新相关测试"
-- **添加测试** - "新功能完成，添加测试用例"
-- **查看覆盖** - "看看测试覆盖情况"
+不应使用：
 
-意图不明确时询问澄清。
-
-### Step 2: 读取测试清单
-
-读取 `workplace/test/test-manifest.yaml`：
-- 不存在 → 初始化测试集（Step 5）
-- 存在 → 解析内容继续
-
-### Step 3: 执行对应操作
-
-**执行测试（场景一）或上线前真实流程验证（场景四）：**
-- 用户说"跑测试"/"执行用例" → 走场景一，执行自动化测试套件
-- 用户说"上线前验证"/"确认主流程能跑通" → 走场景四，执行真实流程验证
-- 两者都需要时：先跑场景一自动化套件，再跑场景四真实流程
-
-场景一步骤：
-1. 筛选active用例
-2. 按优先级执行
-3. 收集结果更新last_run
-4. 生成报告
-
-**更新测试：**
-1. git diff或用户指定变更范围
-2. 匹配manifest关联
-3. 列出受影响用例
-4. 生成 test-plan.md，先给出整体测试方案，再描述每个需更新脚本的变更内容和新的执行流程
-5. 用户评审确认整体方案后，按方案先跑通流程：后端用脚本，前端用真实 Edge + Playwright CLI
-6. 流程跑通后，按计划文档更新脚本和manifest；流程未跑通时停止脚本生成并报告阻塞
-
-**添加测试：**
-1. 分析功能测试点
-2. 生成 test-plan.md，先给出整体测试方案，再描述每个待创建脚本的用例列表和执行流程
-3. 用户评审确认整体方案后，按方案先跑通流程：后端用脚本，前端用真实 Edge + Playwright CLI
-4. 流程跑通后，按计划文档创建测试文件
-5. manifest注册用例
-
-**查看覆盖：**
-1. 统计manifest信息
-2. 展示模块覆盖
-3. 指出缺失/pending用例
-
-### Step 4: 更新测试清单
-
-任何操作后更新 `test-manifest.yaml`：last_run、状态、新用例、notes
-
-### Step 5: 初始化测试集（如需要）
-
-清单不存在时：
-1. 分析项目结构，识别功能模块
-2. 设计目录结构
-3. 生成 test-plan.md，先描述整体测试方案，再描述每个模块的测试脚本计划和执行流程
-4. 用户评审确认计划文档
-5. 按确认后的方案先跑通代表性核心流程：后端用脚本，前端用真实 Edge + Playwright CLI
-6. 创建manifest骨架
-7. 扫描现有测试文件
-8. 按确认且已跑通的计划文档迁移或创建测试
-
-## 测试脚本编写指南
-
-脚本编写前必须完成两件事：
-1. `test-plan.md` 的整体方案已被用户确认
-2. 计划中的目标流程已真实跑通，并记录了命令、入口、关键结果和失败处理结论
-
-如果流程未跑通，停止生成脚本；先修正测试方案、暴露环境问题或记录阻塞。
-
-### Python (pytest)
-
-```python
-# workplace/test/python/auth/test_login.py
-import pytest
-
-def test_login_success():
-    """测试正常登录"""
-    # 实现测试
-
-def test_login_failure_wrong_password():
-    """测试密码错误"""
-    # 实现测试
-
-@pytest.fixture
-def mock_user():
-    return {"username": "testuser", "password": "testpass"}
-```
-
-### 前端真实流程（Edge + Playwright CLI）
-
-前端测试优先使用真实 Microsoft Edge。涉及页面、路由、表单、登录态、网络请求、可视状态或用户路径时，先用以下方式连接真实浏览器跑通流程：
-
-```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222
-npx playwright-cli attach --cdp=http://127.0.0.1:9222
-```
-
-跑通时记录：
-- 页面 URL 和初始状态
-- 用户操作步骤
-- 关键网络请求和响应
-- 页面可见结果
-- 数据写入或后端副作用
-
-### NextJS 单元 / 组件逻辑（Vitest）
-
-Vitest 只用于不需要真实浏览器的纯逻辑、工具函数或轻量组件行为。只要测试目标包含真实页面交互，应优先使用 Edge 真实浏览器流程。
-
-```typescript
-// workplace/test/nextjs/auth/login.test.ts
-import { describe, it, expect, beforeEach } from 'vitest'
-
-describe('Login', () => {
-  it('should login successfully', async () => {
-    // 实现测试
-  })
-
-  it('should handle wrong password', async () => {
-    // 实现测试
-  })
-})
-```
+- 只调用内部函数的单元测试作为上线验收。
+- 与真实部署环境无关的纯 fixture 测试。
+- 大量 mock 自身业务模块后仍宣称完整流程通过。
 
 ## 报告格式
 
-执行完成后生成：
+模块报告示例：
 
 ```markdown
-# 测试执行报告
+# 用户认证模块验收报告
 
+**模块**: auth
 **执行时间**: 2026-04-20 14:30
-**项目**: 项目名称
+**目标环境**: staging
+**结论**: pass
 
 ## 执行统计
 
 | 指标 | 数值 |
-|-----|-----|
-| 总用例数 | 45 |
-| 执行用例 | 42 |
-| 通过 | 40 |
-| 失败 | 2 |
-| 耗时 | 5m32s |
+| --- | --- |
+| 场景总数 | 2 |
+| 通过 | 2 |
+| 失败 | 0 |
+| 阻塞 | 0 |
 
-## 模块覆盖
+## 场景结果
 
-| 模块 | 用例数 | 通过 | 失败 | 覆盖率 |
-|-----|-------|-----|-----|-------|
-| auth | 12 | 12 | 0 | 100% |
-| payment | 8 | 6 | 2 | 75% |
+| 场景ID | 场景名称 | 结果 | 证据 |
+| --- | --- | --- | --- |
+| auth-flow-001 | 新用户注册后登录 | pass | user_id=12345 |
+| auth-flow-002 | 错误密码登录失败 | pass | response=401 |
 
-## 失败详情
+## 数据处理
 
-1. **payment-checkout-001**: 支付流程
-   - 错误: Mock支付网关超时
-   - 路径: nextjs/payment/checkout.test.ts
+- 测试用户已删除。
+- 登录会话已失效。
 
-## 建议
+## 问题和风险
 
-- 修复payment模块失败用例后可上线
+- 无。
 ```
+
+全量报告必须包含：
+
+- 各模块结论。
+- high 优先级模块是否全部通过。
+- 失败和阻塞项。
+- 上线建议。
 
 ## 最佳实践
 
-1. **保持同步** - 代码变更时检查manifest
-2. **优先级管理** - 核心模块标记high
-3. **状态管理** - 过时用例标记skip而非删除
-4. **关联准确** - code_paths和coverage要准确
-5. **定期清理** - 清理skip无用用例
-6. **整体计划先行** - 新增或更新测试时，必须先输出 test-plan.md 的整体测试方案并经用户确认，不能一开始就按脚本或模块拆散
-7. **先跑通流程再脚本化** - 方案确认后，后端用脚本、前端用真实 Edge + Playwright CLI 先跑通目标流程；流程未跑通时禁止生成自动化脚本
-8. **前端优先真实 Edge** - 涉及页面、路由、用户操作、网络请求或可见状态时，优先用 Microsoft Edge 真实浏览器验证；Vitest 只覆盖不依赖真实浏览器的逻辑
-9. **计划与脚本一致** - 如果用户在评审中修改了计划文档，先按修改后的方案重新跑通流程，再生成脚本；如果后续需要调整脚本逻辑，应先更新计划文档并重新验证流程
-10. **核心功能要有集成测试** - 对 priority: high 的功能，尽量维护 type: integration 或 type: e2e 的用例，而不是只有 unit；单元测试通过不等于真实环境跑得通
-11. **上线前验证走场景四** - 上线前除了跑场景一自动化套件，还要用场景四确认核心主流程在真实环境下端到端跑通；如果 manifest 中高优先级用例全是 unit，说明集成验证覆盖缺失，应先补充
+1. **先方案后脚本**：任何新增或变更都先更新模块 `test-plan.md`，确认后再改脚本。
+2. **模块隔离**：不要把多个功能的方案堆在一个全局文件里。
+3. **真实链路优先**：上线验收关注真实环境端到端结果。
+4. **数据可追踪**：测试数据来源、用途和清理方式必须写清楚。
+5. **阻断项明确**：失败、阻塞、可接受风险要分开记录。
+6. **脚本忠实于方案**：脚本逻辑变更前先更新方案。
+7. **不要倒退到开发测试**：单元测试和 mock 测试属于开发阶段质量保障，不是此 skill 的主要产出。
