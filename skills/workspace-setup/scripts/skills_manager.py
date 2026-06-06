@@ -12,7 +12,7 @@ from typing import Dict, List
 def run_skills_command(args: List[str]) -> Dict:
     """运行 npx skills 命令"""
     cmd = ["npx", "skills"] + args
-    print(f"\n🔧 执行命令: {' '.join(cmd)}\n")
+    print(f"\n[RUN] 执行命令: {' '.join(cmd)}\n")
 
     try:
         result = subprocess.run(
@@ -31,14 +31,14 @@ def run_skills_command(args: List[str]) -> Dict:
             "returncode": result.returncode
         }
     except subprocess.TimeoutExpired:
-        print("❌ 命令超时")
+        print("[FAIL] 命令超时")
         return {
             "success": False,
             "output": "命令超时",
             "returncode": -1
         }
     except Exception as e:
-        print(f"❌ 执行异常: {e}")
+        print(f"[FAIL] 执行异常: {e}")
         return {
             "success": False,
             "output": str(e),
@@ -48,7 +48,7 @@ def run_skills_command(args: List[str]) -> Dict:
 
 def find_skills(query: str = "") -> Dict:
     """搜索技能"""
-    print(f"\n🔍 搜索技能: {query if query else '(交互式)'}")
+    print(f"\n[SEARCH] 搜索技能: {query if query else '(交互式)'}")
     args = ["find"]
     if query:
         args.extend(query.split())
@@ -57,7 +57,7 @@ def find_skills(query: str = "") -> Dict:
 
 def add_skill(package: str, global_install: bool = True, skip_confirm: bool = True) -> Dict:
     """安装技能"""
-    print(f"\n📥 安装技能: {package}")
+    print(f"\n[DOWNLOAD] 安装技能: {package}")
     args = ["add", package]
     if global_install:
         args.append("-g")
@@ -68,19 +68,19 @@ def add_skill(package: str, global_install: bool = True, skip_confirm: bool = Tr
 
 def check_updates() -> Dict:
     """检查技能更新"""
-    print("\n🔔 检查技能更新...")
+    print("\n[CHECK] 检查技能更新...")
     return run_skills_command(["check"])
 
 
 def update_skills() -> Dict:
     """更新所有技能"""
-    print("\n⬆️ 更新所有技能...")
+    print("\n[UPLOAD] 更新所有技能...")
     return run_skills_command(["update"])
 
 
 def list_installed() -> Dict:
     """列出已安装技能"""
-    print("\n📋 已安装技能...")
+    print("\n[LIST] 已安装技能...")
     return run_skills_command(["list"])
 
 
@@ -145,7 +145,7 @@ def main():
 
     elif args.command == "add":
         if not args.args:
-            print("❌ 请指定要安装的技能包名")
+            print("[FAIL] 请指定要安装的技能包名")
             return
         package = args.args[0]
         add_skill(

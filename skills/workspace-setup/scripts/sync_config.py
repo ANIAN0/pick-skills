@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from filebrowser_client import load_config, get_client, get_remote_path
+from filebrowser_client import load_config, get_client, get_remote_path, get_remote_root
 
 
 CONFIG_FILES = ["CLAUDE.md", "AGENTS.md"]
@@ -48,14 +48,14 @@ def collect_local_files(local_dir: str) -> Dict[str, Dict]:
 
 def upload_directory(client, local_dir: str, remote_dir: str) -> Tuple[int, int]:
     """上传整个目录"""
-    print(f"  📁 上传目录: {local_dir} -> {remote_dir}")
+    print(f"  [DIR] 上传目录: {local_dir} -> {remote_dir}")
 
     local_files = collect_local_files(local_dir)
     success, failed = 0, 0
 
     for rel_path, info in local_files.items():
         remote_path = remote_dir.rstrip('/') + '/' + rel_path
-        print(f"    ⬆️ {rel_path}")
+        print(f"    [UPLOAD] {rel_path}")
         if client.upload_file(info["path"], remote_path, override=True):
             success += 1
         else:
@@ -66,7 +66,7 @@ def upload_directory(client, local_dir: str, remote_dir: str) -> Tuple[int, int]
 
 def download_directory(client, remote_dir: str, local_dir: str) -> Tuple[int, int]:
     """下载整个目录（简化版本，递归获取）"""
-    print(f"  📁 下载目录: {remote_dir} -> {local_dir}")
+    print(f"  [DIR] 下载目录: {remote_dir} -> {local_dir}")
 
     success, failed = 0, 0
 
@@ -87,7 +87,7 @@ def download_directory(client, remote_dir: str, local_dir: str) -> Tuple[int, in
                         continue
                     rel_path = item_path[len(remote_dir):] if remote_dir != "/" else item_path[1:]
                     local_path = os.path.join(local_base, rel_path.lstrip('/'))
-                    print(f"    ⬇️ {rel_path.lstrip('/')}")
+                    print(f"    [DOWNLOAD] {rel_path.lstrip('/')}")
                     if client.download_file(item_path, local_path):
                         success += 1
                     else:
@@ -99,7 +99,7 @@ def download_directory(client, remote_dir: str, local_dir: str) -> Tuple[int, in
 
 def upload_configs(config_path: str, sync_skills: bool = False) -> Dict:
     """上传配置文件到 filebrowser"""
-    print("\n📤 开始上传配置文件...\n")
+    print("\n[SEND] 开始上传配置文件...\n")
 
     config = load_config(config_path)
     client = get_client(config)
@@ -117,11 +117,7 @@ def upload_configs(config_path: str, sync_skills: bool = False) -> Dict:
         return results
 
     # 确保云端目录存在
-    ws_config = config.get("workspace", {})
-    fb_config = config.get("filebrowser", {})
-    base_path = fb_config.get("remote_base_path", "/config")
-    config_pack = ws_config.get("config_pack", "")
-    remote_dir = f"{base_path.rstrip('/')}/{config_pack}"
+    remote_dir = get_remote_root(config)
     client.create_directory(remote_dir)
 
     # 上传配置文件
@@ -136,7 +132,7 @@ def upload_configs(config_path: str, sync_skills: bool = False) -> Dict:
                 results["errors"].append(f"上传失败: {filename}")
         else:
             results["skipped"].append(f"{filename} (本地不存在)")
-            print(f"⚠️ 跳过: {filename} - 本地文件不存在")
+            print(f"[WARN] 跳过: {filename} - 本地文件不存在")
 
     # 上传skills目录
     if sync_skills:
@@ -150,7 +146,7 @@ def upload_configs(config_path: str, sync_skills: bool = False) -> Dict:
         else:
             results["skipped"].append("skills (本地不存在)")
 
-    print(f"\n📊 上传完成:")
+    print(f"\n[STATS] 上传完成:")
     print(f"   配置文件: {len(results['uploaded'])}")
     if sync_skills:
         print(f"   skills文件: {results['skills_uploaded']}")
@@ -162,7 +158,7 @@ def upload_configs(config_path: str, sync_skills: bool = False) -> Dict:
 
 def download_configs(config_path: str, sync_skills: bool = False) -> Dict:
     """从 filebrowser 下载配置文件"""
-    print("\n📥 开始下载配置文件...\n")
+    print("\n[DOWNLOAD] 开始下载配置文件...\n")
 
     config = load_config(config_path)
     client = get_client(config)
@@ -188,15 +184,11 @@ def download_configs(config_path: str, sync_skills: bool = False) -> Dict:
             results["downloaded"].append(filename)
         else:
             results["skipped"].append(f"{filename} (云端不存在)")
-            print(f"⚠️ 跳过: {filename} - 云端文件不存在")
+            print(f"[WARN] 跳过: {filename} - 云端文件不存在")
 
     # 下载skills目录
     if sync_skills:
-        ws_config = config.get("workspace", {})
-        fb_config = config.get("filebrowser", {})
-        base_path = fb_config.get("remote_base_path", "/config")
-        config_pack = ws_config.get("config_pack", "")
-        remote_skills = f"{base_path.rstrip('/')}/{config_pack}/{SKILLS_DIR}"
+        remote_skills = f"{get_remote_root(config)}/{SKILLS_DIR}"
         local_skills = project_root / SKILLS_DIR
 
         success, failed = download_directory(client, remote_skills, str(local_skills))
@@ -204,7 +196,7 @@ def download_configs(config_path: str, sync_skills: bool = False) -> Dict:
         if failed > 0:
             results["errors"].append(f"skills目录下载失败: {failed}个文件")
 
-    print(f"\n📊 下载完成:")
+    print(f"\n[STATS] 下载完成:")
     print(f"   配置文件: {len(results['downloaded'])}")
     if sync_skills:
         print(f"   skills文件: {results['skills_downloaded']}")
@@ -216,7 +208,7 @@ def download_configs(config_path: str, sync_skills: bool = False) -> Dict:
 
 def sync_configs(config_path: str, sync_skills: bool = False) -> Dict:
     """双向同步配置文件（基于修改时间）"""
-    print("\n🔄 开始双向同步配置文件...\n")
+    print("\n[SYNC] 开始双向同步配置文件...\n")
 
     config = load_config(config_path)
     client = get_client(config)
@@ -260,28 +252,28 @@ def sync_configs(config_path: str, sync_skills: bool = False) -> Dict:
 
         # 决定同步方向
         if local_exists and remote_mtime == 0:
-            print(f"  ⬆️ {filename} (云端缺失)")
+            print(f"  [UPLOAD] {filename} (云端缺失)")
             if client.upload_file(str(local_path), remote_path, override=True):
                 results["uploaded"].append(filename)
             else:
                 results["errors"].append(f"上传失败: {filename}")
 
         elif not local_exists and remote_mtime > 0:
-            print(f"  ⬇️ {filename} (本地缺失)")
+            print(f"  [DOWNLOAD] {filename} (本地缺失)")
             if client.download_file(remote_path, str(local_path)):
                 results["downloaded"].append(filename)
             else:
                 results["errors"].append(f"下载失败: {filename}")
 
         elif local_mtime > remote_mtime:
-            print(f"  ⬆️ {filename} (本地较新)")
+            print(f"  [UPLOAD] {filename} (本地较新)")
             if client.upload_file(str(local_path), remote_path, override=True):
                 results["uploaded"].append(filename)
             else:
                 results["errors"].append(f"上传失败: {filename}")
 
         elif remote_mtime > local_mtime:
-            print(f"  ⬇️ {filename} (云端较新)")
+            print(f"  [DOWNLOAD] {filename} (云端较新)")
             if client.download_file(remote_path, str(local_path)):
                 results["downloaded"].append(filename)
             else:
@@ -289,15 +281,11 @@ def sync_configs(config_path: str, sync_skills: bool = False) -> Dict:
 
         else:
             results["skipped"].append(filename)
-            print(f"  ⏭️ {filename} (无需更新)")
+            print(f"  [SKIP] {filename} (无需更新)")
 
     # skills目录同步（简化：上传本地所有文件）
     if sync_skills:
-        ws_config = config.get("workspace", {})
-        fb_config = config.get("filebrowser", {})
-        base_path = fb_config.get("remote_base_path", "/config")
-        config_pack = ws_config.get("config_pack", "")
-        remote_skills = f"{base_path.rstrip('/')}/{config_pack}/{SKILLS_DIR}"
+        remote_skills = f"{get_remote_root(config)}/{SKILLS_DIR}"
         local_skills = project_root / SKILLS_DIR
 
         if local_skills.exists():
@@ -306,7 +294,7 @@ def sync_configs(config_path: str, sync_skills: bool = False) -> Dict:
             if failed > 0:
                 results["errors"].append(f"skills目录上传失败: {failed}个文件")
 
-    print(f"\n📊 同步完成:")
+    print(f"\n[STATS] 同步完成:")
     print(f"   上传配置: {len(results['uploaded'])}")
     print(f"   下载配置: {len(results['downloaded'])}")
     if sync_skills:

@@ -33,13 +33,13 @@ class FileBrowserClient:
             if response.status_code == 200:
                 self.token = response.text.strip()
                 self.session.headers.update({"X-Auth": self.token})
-                print(f"✅ 登录成功: {self.username}")
+                print(f"[OK] 登录成功: {self.username}")
                 return True
             else:
-                print(f"❌ 登录失败: {response.status_code} - {response.text}")
+                print(f"[FAIL] 登录失败: {response.status_code} - {response.text}")
                 return False
         except Exception as e:
-            print(f"❌ 登录异常: {e}")
+            print(f"[FAIL] 登录异常: {e}")
             return False
 
     def check_connection(self) -> bool:
@@ -70,16 +70,16 @@ class FileBrowserClient:
                 with open(local_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
-                print(f"✅ 下载成功: {remote_path} -> {local_path}")
+                print(f"[OK] 下载成功: {remote_path} -> {local_path}")
                 return True
             elif response.status_code == 404:
-                print(f"⚠️ 远程文件不存在: {remote_path}")
+                print(f"[WARN] 远程文件不存在: {remote_path}")
                 return False
             else:
-                print(f"❌ 下载失败: {response.status_code}")
+                print(f"[FAIL] 下载失败: {response.status_code}")
                 return False
         except Exception as e:
-            print(f"❌ 下载异常: {e}")
+            print(f"[FAIL] 下载异常: {e}")
             return False
 
     def upload_file(self, local_path: str, remote_path: str, override: bool = True) -> bool:
@@ -90,13 +90,13 @@ class FileBrowserClient:
             with open(local_path, 'rb') as f:
                 response = self.session.post(url, data=f, params=params)
                 if response.status_code == 200:
-                    print(f"✅ 上传成功: {local_path} -> {remote_path}")
+                    print(f"[OK] 上传成功: {local_path} -> {remote_path}")
                     return True
                 else:
-                    print(f"❌ 上传失败: {response.status_code} - {response.text}")
+                    print(f"[FAIL] 上传失败: {response.status_code} - {response.text}")
                     return False
         except Exception as e:
-            print(f"❌ 上传异常: {e}")
+            print(f"[FAIL] 上传异常: {e}")
             return False
 
     def list_remote(self, remote_path: str = "/") -> Dict:
@@ -116,7 +116,7 @@ class FileBrowserClient:
         try:
             response = self.session.post(url)
             if response.status_code in [200, 201]:
-                print(f"✅ 创建目录: {remote_path}")
+                print(f"[OK] 创建目录: {remote_path}")
                 return True
             return False
         except Exception:
@@ -144,10 +144,13 @@ def get_client(config: Dict) -> FileBrowserClient:
     return client
 
 
-def get_remote_path(config: Dict, filename: str) -> str:
-    """获取云端配置包路径"""
+def get_remote_root(config: Dict) -> str:
+    """获取全局配置同步根目录。"""
     fb_config = config.get("filebrowser", {})
-    ws_config = config.get("workspace", {})
     base_path = fb_config.get("remote_base_path", "/config")
-    config_pack = ws_config.get("config_pack", "default")
-    return f"{base_path.rstrip('/')}/{config_pack}/{filename}"
+    return base_path.rstrip("/") or "/"
+
+
+def get_remote_path(config: Dict, filename: str) -> str:
+    """获取云端全局配置文件路径"""
+    return f"{get_remote_root(config)}/{filename}"

@@ -93,7 +93,7 @@ def get_version_status(config_path: str) -> Dict:
 
 def create_version(config_path: str, target_version: str = None) -> Dict:
     """创建新版本目录"""
-    print("\n🆕 开始创建新版本...\n")
+    print("\n[CREATE] 开始创建新版本...\n")
 
     config = load_config(config_path)
     ws_config = config.get("workspace", {})
@@ -119,25 +119,25 @@ def create_version(config_path: str, target_version: str = None) -> Dict:
     new_version_path = workplace_path / new_version
     if new_version_path.exists():
         results["errors"].append(f"版本 {new_version} 已存在")
-        print(f"❌ 版本 {new_version} 已存在，请先归档或使用其他版本号")
+        print(f"[FAIL] 版本 {new_version} 已存在，请先归档或使用其他版本号")
         return results
 
     # 创建版本目录
     new_version_path.mkdir(parents=True, exist_ok=True)
     results["directories_created"].append(str(new_version_path))
-    print(f"✅ 创建版本目录: {new_version}")
+    print(f"[OK] 创建版本目录: {new_version}")
 
     # 创建子目录
     for subdir in VERSION_SUBDIRS:
         subdir_path = new_version_path / subdir
         subdir_path.mkdir(exist_ok=True)
         results["directories_created"].append(str(subdir_path))
-        print(f"  ├── {subdir}/")
+        print(f"  - {subdir}/")
 
     # 更新配置中的当前版本
     update_config_version(config_path, new_version)
 
-    print(f"\n📊 创建完成:")
+    print(f"\n[STATS] 创建完成:")
     print(f"   新版本: {new_version}")
     print(f"   目录数: {len(results['directories_created'])}")
 
@@ -150,7 +150,7 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
     归档前应先人工完成无用文件清理，并把可复用内容沉淀到 workplace/global/、
     workplace/test/ 或 project-kb/。脚本只负责最后一步的目录移动。
     """
-    print("\n📦 开始归档版本...\n")
+    print("\n[ARCHIVE] 开始归档版本...\n")
 
     config = load_config(config_path)
     ws_config = config.get("workspace", {})
@@ -177,7 +177,7 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
             archive_version_num = current_version
         else:
             results["errors"].append("无法确定要归档的版本")
-            print("❌ 无法确定要归档的版本")
+            print("[FAIL] 无法确定要归档的版本")
             return results
 
     results["archived_version"] = archive_version_num
@@ -186,7 +186,7 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
     source_path = workplace_path / archive_version_num
     if not source_path.exists():
         results["errors"].append(f"版本 {archive_version_num} 目录不存在")
-        print(f"❌ 版本 {archive_version_num} 目录不存在")
+        print(f"[FAIL] 版本 {archive_version_num} 目录不存在")
         return results
 
     # 确保归档目录存在
@@ -198,20 +198,20 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
     # 检查目标是否已存在
     if target_path.exists():
         results["errors"].append(f"归档目录 {archive_version_num} 已存在")
-        print(f"❌ 归档目录 {archive_version_num} 已存在")
+        print(f"[FAIL] 归档目录 {archive_version_num} 已存在")
         return results
 
     # 移动目录
     try:
         shutil.move(str(source_path), str(target_path))
         results["moved_path"] = str(target_path)
-        print(f"✅ 归档成功: {archive_version_num} -> archive/{archive_version_num}")
+        print(f"[OK] 归档成功: {archive_version_num} -> archive/{archive_version_num}")
     except Exception as e:
         results["errors"].append(f"移动失败: {e}")
-        print(f"❌ 归档失败: {e}")
+        print(f"[FAIL] 归档失败: {e}")
         return results
 
-    print(f"\n📊 归档完成:")
+    print(f"\n[STATS] 归档完成:")
     print(f"   归档版本: {archive_version_num}")
     print("   提醒: 归档前应已完成清理和可复用内容沉淀")
 
@@ -231,7 +231,7 @@ def print_status(config_path: str):
     """打印版本状态"""
     status = get_version_status(config_path)
 
-    print("\n📋 版本状态:\n")
+    print("\n[STATUS] 版本状态:\n")
     print(f"当前版本: {status['current_version']}")
     print(f"\n活跃版本:")
     for v in status['versions']:

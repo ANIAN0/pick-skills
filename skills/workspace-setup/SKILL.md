@@ -68,7 +68,6 @@ description: |
 ```json
 {
   "workspace": {
-    "config_pack": "config-1",
     "current_version": "1.0",
     "workplace_dir": "workplace",
     "project_rules_file": "PROJECT_RULES.md",
@@ -85,7 +84,6 @@ description: |
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `config_pack` | string | 是 | 云端通用配置包名称 |
 | `current_version` | string | 是 | 当前过程文档版本号 |
 | `workplace_dir` | string | 否 | 过程文档目录，默认 `workplace` |
 | `project_rules_file` | string | 否 | 项目规则文件，默认 `PROJECT_RULES.md` |
@@ -95,12 +93,12 @@ description: |
 | `password` | string | 是 | 登录密码 |
 | `remote_base_path` | string | 否 | 云端顶层目录，默认 `/config` |
 
-## 配置包同步边界
+## 全局配置同步边界
 
-云端配置包只同步第 1 层通用入口和通用 skills：
+云端全局配置目录只同步第 1 层通用入口和通用 skills：
 
 ```
-/config/config-1/
+/config/
 ├── AGENTS.md
 ├── CLAUDE.md
 └── skills/
@@ -111,7 +109,7 @@ description: |
 - `project-kb/`
 - `workplace/`
 
-这样可以让所有项目使用相同的入口命令，同时保留各项目独立规则和知识。
+这样可以让所有项目使用相同的入口命令，同时保留各项目独立规则和知识。旧配置中的 `workspace.config_pack` 不再参与路径计算。
 
 ## 脚本工具
 

@@ -76,9 +76,9 @@ python scripts/skills_manager.py list
 ### 搜索
 
 ```
-🔍 搜索技能: react testing
+[SEARCH] 搜索技能: react testing
 
-🔧 执行命令: npx skills find react testing
+[RUN] 执行命令: npx skills find react testing
 
 [输出 npx skills 的搜索结果]
 ```
@@ -86,9 +86,9 @@ python scripts/skills_manager.py list
 ### 安装
 
 ```
-📥 安装技能: vercel-labs/agent-skills@react-best-practices
+[DOWNLOAD] 安装技能: vercel-labs/agent-skills@react-best-practices
 
-🔧 执行命令: npx skills add vercel-labs/agent-skills@react-best-practices -g -y
+[RUN] 执行命令: npx skills add vercel-labs/agent-skills@react-best-practices -g -y
 
 [输出 npx skills 的安装结果]
 ```
@@ -96,9 +96,9 @@ python scripts/skills_manager.py list
 ### 检查更新
 
 ```
-🔔 检查技能更新...
+[CHECK] 检查技能更新...
 
-🔧 执行命令: npx skills check
+[RUN] 执行命令: npx skills check
 
 [输出 npx skills 的检查结果]
 ```
@@ -106,9 +106,9 @@ python scripts/skills_manager.py list
 ### 更新
 
 ```
-⬆️ 更新所有技能...
+[UPLOAD] 更新所有技能...
 
-🔧 执行命令: npx skills update
+[RUN] 执行命令: npx skills update
 
 [输出 npx skills 的更新结果]
 ```

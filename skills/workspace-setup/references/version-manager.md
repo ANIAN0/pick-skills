@@ -88,17 +88,17 @@ workplace/
 ### 创建新版本
 
 ```
-🆕 开始创建新版本...
+[CREATE] 开始创建新版本...
 
-✅ 创建版本目录: 1.1
-  ├── requirements/
-  ├── references/
-  ├── prototypes/
-  ├── tech-design/
-  ├── plan/
-  ├── tests/
+[OK] 创建版本目录: 1.1
+  - requirements/
+  - references/
+  - prototypes/
+  - tech-design/
+  - plan/
+  - tests/
 
-📊 创建完成:
+[STATS] 创建完成:
    新版本: 1.1
    目录数: 7
 ```
@@ -106,11 +106,11 @@ workplace/
 ### 归档版本
 
 ```
-📦 开始归档版本...
+[ARCHIVE] 开始归档版本...
 
-✅ 归档成功: 1.0 -> archive/1.0
+[OK] 归档成功: 1.0 -> archive/1.0
 
-📊 归档完成:
+[STATS] 归档完成:
    归档版本: 1.0
    提醒: 归档前应已完成清理和可复用内容沉淀
 ```
@@ -118,7 +118,7 @@ workplace/
 ### 查看状态
 
 ```
-📋 版本状态:
+[STATUS] 版本状态:
 
 当前版本: 1.1
 

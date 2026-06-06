@@ -29,7 +29,6 @@ python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.jso
 ```json
 {
   "workspace": {
-    "config_pack": "config-1",
     "current_version": "1.0",
     "workplace_dir": "workplace",
     "project_rules_file": "PROJECT_RULES.md",
@@ -42,7 +41,6 @@ python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.jso
 |---|---|---|
 | `workplace_dir` | `workplace` | 过程文档目录 |
 | `current_version` | `1.0` | 当前过程文档版本 |
-| `config_pack` | 空 | 通用配置包名称 |
 | `project_rules_file` | `PROJECT_RULES.md` | 项目独立规则文件 |
 | `project_kb_dir` | `project-kb` | 项目独立知识库目录 |
 
@@ -66,11 +64,11 @@ workplace/
 
 ### 2. 处理第 1 层通用入口
 
-如果配置了 `config_pack` 且未使用 `--skip-download`：
+如果配置了 `filebrowser` 且未使用 `--skip-download`：
 
 ```
-{remote_base_path}/{config_pack}/AGENTS.md
-{remote_base_path}/{config_pack}/CLAUDE.md
+{remote_base_path}/AGENTS.md
+{remote_base_path}/CLAUDE.md
 ```
 
 下载失败时创建默认模板：
@@ -103,26 +101,26 @@ project-kb/
 ## 输出示例
 
 ```text
-🚀 开始初始化工作区...
+[START] 开始初始化工作区...
 
-✅ 创建工作目录: workplace
-✅ 创建全局目录: workplace/global
-✅ 创建全局目录: workplace/test
-✅ 创建归档目录: workplace/archive
-✅ 创建版本目录: workplace/1.0
-  ├── requirements/
-  ├── references/
-  ├── prototypes/
-  ├── tech-design/
-  ├── plan/
-  ├── tests/
+[OK] 创建工作目录: workplace
+[OK] 创建全局目录: workplace/global
+[OK] 创建全局目录: workplace/test
+[OK] 创建归档目录: workplace/archive
+[OK] 创建版本目录: workplace/1.0
+  - requirements/
+  - references/
+  - prototypes/
+  - tech-design/
+  - plan/
+  - tests/
 
-📥 从 filebrowser 下载配置文件...
-✅ 下载成功: /config/config-1/AGENTS.md -> AGENTS.md
-✅ 下载成功: /config/config-1/CLAUDE.md -> CLAUDE.md
-✅ 创建项目规则模板: PROJECT_RULES.md
+[DOWNLOAD] 从 filebrowser 下载配置文件...
+[OK] 下载成功: /config/AGENTS.md -> AGENTS.md
+[OK] 下载成功: /config/CLAUDE.md -> CLAUDE.md
+[OK] 创建项目规则模板: PROJECT_RULES.md
 
-📊 初始化完成:
+[STATS] 初始化完成:
    目录创建: 10
    配置下载: 2
    配置创建: 0

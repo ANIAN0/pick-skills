@@ -39,7 +39,7 @@ DEFAULT_PROJECT_KB_DIR = "project-kb"
 
 def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     """初始化工作区"""
-    print("\n🚀 开始初始化工作区...\n")
+    print("\n[START] 开始初始化工作区...\n")
 
     # 加载配置
     config = load_config(config_path)
@@ -49,7 +49,6 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     # 获取配置
     workplace_dir = ws_config.get("workplace_dir", "workplace")
     current_version = ws_config.get("current_version", "1.0")
-    config_pack = ws_config.get("config_pack", "")
     project_rules_file = ws_config.get("project_rules_file", DEFAULT_PROJECT_RULES_FILE)
     project_kb_dir = ws_config.get("project_kb_dir", DEFAULT_PROJECT_KB_DIR)
 
@@ -64,36 +63,36 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     workplace_path = project_root / workplace_dir
     workplace_path.mkdir(exist_ok=True)
     results["directories_created"].append(str(workplace_path))
-    print(f"✅ 创建工作目录: {workplace_path}")
+    print(f"[OK] 创建工作目录: {workplace_path}")
 
     # 2. 创建长期复用目录和archive目录
     for subdir in WORKPLACE_GLOBAL_DIRS:
         global_path = workplace_path / subdir
         global_path.mkdir(exist_ok=True)
         results["directories_created"].append(str(global_path))
-        print(f"✅ 创建全局目录: {global_path}")
+        print(f"[OK] 创建全局目录: {global_path}")
 
     archive_path = workplace_path / "archive"
     archive_path.mkdir(exist_ok=True)
     results["directories_created"].append(str(archive_path))
-    print(f"✅ 创建归档目录: {archive_path}")
+    print(f"[OK] 创建归档目录: {archive_path}")
 
     # 3. 创建当前版本目录
     version_path = workplace_path / current_version
     version_path.mkdir(exist_ok=True)
     results["directories_created"].append(str(version_path))
-    print(f"✅ 创建版本目录: {version_path}")
+    print(f"[OK] 创建版本目录: {version_path}")
 
     # 4. 创建版本子目录
     for subdir in VERSION_SUBDIRS:
         subdir_path = version_path / subdir
         subdir_path.mkdir(exist_ok=True)
         results["directories_created"].append(str(subdir_path))
-        print(f"  ├── {subdir}/")
+        print(f"  - {subdir}/")
 
     # 5. 处理通用配置文件
-    if download_configs and config_pack:
-        print(f"\n📥 从 filebrowser 下载配置文件...")
+    if download_configs and config.get("filebrowser"):
+        print(f"\n[DOWNLOAD] 从 filebrowser 下载配置文件...")
         client = get_client(config)
         if client.login():
             for filename in CONFIG_FILES:
@@ -125,7 +124,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
                 results["configs_created"].append(filename)
     else:
         # 不下载时创建默认配置文件
-        print(f"\n📝 创建默认配置文件...")
+        print(f"\n[WRITE] 创建默认配置文件...")
         for filename in CONFIG_FILES:
             local_path = project_root / filename
             if not local_path.exists():
@@ -145,7 +144,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     update_config_version(config_path, current_version)
 
     # 输出结果
-    print(f"\n📊 初始化完成:")
+    print(f"\n[STATS] 初始化完成:")
     print(f"   目录创建: {len(results['directories_created'])}")
     print(f"   配置下载: {len(results['configs_downloaded'])}")
     print(f"   配置创建: {len(results['configs_created'])}")
@@ -153,7 +152,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     if results["errors"]:
         print(f"   错误: {len(results['errors'])}")
         for err in results["errors"]:
-            print(f"   ❌ {err}")
+            print(f"   [FAIL] {err}")
 
     return results
 
@@ -217,7 +216,7 @@ def create_config_template(
 
     content = templates.get(filename, f"# {filename}\n\n")
     filepath.write_text(content, encoding='utf-8')
-    print(f"✅ 创建模板: {filename}")
+    print(f"[OK] 创建模板: {filename}")
 
 
 def create_project_rules_template(filepath: Path, project_kb_dir: str):
@@ -268,7 +267,7 @@ def create_project_rules_template(filepath: Path, project_kb_dir: str):
 - 发现重要项目知识缺失时，补充到本文件或第 3 层知识库。
 """
     filepath.write_text(content, encoding="utf-8")
-    print(f"✅ 创建项目规则模板: {filepath.name}")
+    print(f"[OK] 创建项目规则模板: {filepath.name}")
 
 
 def init_project_kb(kb_path: Path, project_rules_file: str):

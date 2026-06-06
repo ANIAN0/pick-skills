@@ -58,17 +58,17 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 ## 云端路径
 
 ```
-{remote_base_path}/{config_pack}/AGENTS.md
-{remote_base_path}/{config_pack}/CLAUDE.md
-{remote_base_path}/{config_pack}/skills/
+{remote_base_path}/AGENTS.md
+{remote_base_path}/CLAUDE.md
+{remote_base_path}/skills/
 ```
 
 示例：
 
 ```
-/config/config-1/AGENTS.md
-/config/config-1/CLAUDE.md
-/config/config-1/skills/
+/config/AGENTS.md
+/config/CLAUDE.md
+/config/skills/
 ```
 
 ## 同步逻辑
