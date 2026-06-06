@@ -21,7 +21,7 @@ description: |
 │       └── README.md
 ├── workplace/             ← 需求、方案、计划、测试等过程文档
 │   ├── global/            ← 跨迭代复用的过程资产、模板、脚本和说明
-│   ├── tests/             ← 跨迭代复用的测试方案、脚本、夹具和报告模板
+│   ├── test/              ← 跨迭代复用的测试方案、脚本、夹具和报告模板
 │   ├── 1.0/
 │   └── archive/
 ├── skillconfig.json
@@ -162,7 +162,7 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 | 顶层目录 | 用途 |
 |---|---|
 | `global/` | 跨迭代复用的过程资产、模板、脚本、说明和参考材料 |
-| `tests/` | 跨迭代复用的测试方案、测试脚本、夹具、测试数据说明和报告模板 |
+| `test/` | 与 `test-suite-maintainer` 联动的跨迭代测试方案、测试脚本、夹具、测试数据说明和报告模板 |
 | `archive/` | 已完成迭代的溯源归档，只保留仍有追溯价值的需求、技术、计划、评审和结论文档 |
 
 每个版本目录包含：
@@ -181,7 +181,7 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 归档不是简单移动整个版本目录，应分成三步完成：
 
 1. 清理无用文件：删除临时草稿、重复副本、缓存、生成产物、一次性调试文件和已失效截图。删除前确认没有后续追溯或复用价值。
-2. 沉淀可复用内容：可复用的过程资产放到 `workplace/global/`；可复用的测试方案、脚本、夹具和报告模板放到 `workplace/tests/`；稳定的项目知识、代码影响关系、测试映射和设计决策写入 `project-kb/`。
+2. 沉淀可复用内容：可复用的过程资产放到 `workplace/global/`；可复用的测试方案、脚本、夹具和报告模板放到 `workplace/test/`；稳定的项目知识、代码影响关系、测试映射和设计决策写入 `project-kb/`。
 3. 溯源归档：将仍需要保留历史背景的需求、技术方案、实施计划、评审记录、测试结论和关键取舍归档到 `workplace/archive/{version}/`。
 
 `version_manager.py archive` 只执行第 3 步的目录移动。执行命令前，应先完成清理和可复用内容沉淀，避免把可长期使用的材料封存在历史版本里。

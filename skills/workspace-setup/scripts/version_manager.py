@@ -148,7 +148,7 @@ def archive_version(config_path: str, target_version: str = None) -> Dict:
     """将已完成版本目录移动到溯源归档区。
 
     归档前应先人工完成无用文件清理，并把可复用内容沉淀到 workplace/global/、
-    workplace/tests/ 或 project-kb/。脚本只负责最后一步的目录移动。
+    workplace/test/ 或 project-kb/。脚本只负责最后一步的目录移动。
     """
     print("\n📦 开始归档版本...\n")
 

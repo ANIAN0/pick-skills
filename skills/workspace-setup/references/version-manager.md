@@ -38,7 +38,7 @@ python scripts/version_manager.py archive --config skillconfig.json --version 1.
 归档流程分三步：
 
 1. 清理无用文件：删除临时草稿、重复副本、缓存、生成产物、一次性调试文件和已失效截图。
-2. 沉淀可复用内容：可复用的过程资产放入 `workplace/global/`；可复用测试方案、脚本、夹具和报告模板放入 `workplace/tests/`；稳定的项目知识、代码影响关系、测试映射和设计决策写入 `project-kb/`。
+2. 沉淀可复用内容：可复用的过程资产放入 `workplace/global/`；与 `test-suite-maintainer` 联动的测试方案、脚本、夹具和报告模板放入 `workplace/test/`；稳定的项目知识、代码影响关系、测试映射和设计决策写入 `project-kb/`。
 3. 溯源归档：只把仍有追溯价值的需求、技术方案、实施计划、评审记录、测试结论和关键取舍移动到 `workplace/archive/{version}/`。
 
 ### 查看状态
@@ -72,7 +72,7 @@ python scripts/version_manager.py status --config skillconfig.json
 ```
 workplace/
 ├── global/         # 跨迭代复用的过程资产、模板、脚本和说明
-├── tests/          # 跨迭代复用的测试方案、脚本、夹具和报告模板
+├── test/           # 跨迭代复用的测试方案、脚本、夹具和报告模板
 ├── {version}/
 │   ├── requirements/   # 需求文档
 │   ├── references/     # 参考文档
