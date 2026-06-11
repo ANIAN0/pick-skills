@@ -1,38 +1,60 @@
 ---
 name: filebrowser-skill
 description: |
-  管理和操作 FileBrowser 文件管理系统。当用户提到文件上传、文件下载、文件分享、文件搜索、文件同步、云端文件管理或任何与 filebrowser 相关的操作时触发此 skill。支持上传文件获取分享链接、搜索下载文件、本地云端双向同步等功能。适用于个人文件管理、团队文件共享、云端备份同步等场景。
+  管理和操作 FileBrowser 文件管理系统。当用户提到文件上传、文件下载、文件分享、文件搜索、文件同步、云端文件管理或任何与 filebrowser 相关的操作时触发此 skill。支持上传文件获取分享链接、搜索下载文件、目录管理等功能。适用于个人文件管理、团队文件共享等场景。
 ---
 
 # FileBrowser Skill
 
-管理你的 FileBrowser 文件管理实例，支持文件操作、分享管理、搜索下载和同步功能。
+管理你的 FileBrowser 文件管理实例，支持文件操作、分享管理和搜索功能。
+
+## 安装
+
+### 方式一：从 GitHub Release 下载预编译二进制（推荐）
+
+访问 [GitHub Releases](https://github.com/ANIAN0/filebrowser-cli/releases) 下载对应平台的二进制文件：
+
+- Windows: `filebrowser-cli-windows-amd64.exe`
+- Linux: `filebrowser-cli-linux-amd64`
+- macOS: `filebrowser-cli-darwin-amd64`
+
+下载后重命名为 `filebrowser-cli`（Windows 为 `filebrowser-cli.exe`）并添加到 PATH。
+
+### 方式二：使用 go install
+
+```bash
+go install github.com/ANIAN0/filebrowser-cli@latest
+```
+
+### 方式三：从源码编译
+
+```bash
+git clone https://github.com/ANIAN0/filebrowser-cli.git
+cd filebrowser-cli
+make build
+# 二进制文件在 bin/filebrowser-cli
+```
 
 ## 配置
 
-配置从项目根目录的 `skillconfig.json` 文件读取。
+配置使用 YAML 格式，支持 `${ENV_VAR}` 环境变量插值。
 
-### 配置文件位置
+### 配置文件位置（按优先级）
 
-```
-项目根目录/
-├── skillconfig.json          ← 配置文件
-├── skills/
-│   └── filebrowser-skill/
-│       └── SKILL.md
-└── ...
-```
+1. `--config <path>` 命令行参数
+2. `FILEBROWSER_CLI_CONFIG` 环境变量
+3. 二进制同级目录的 `config.yaml`（项目安装模式）
+4. 用户目录：`~/.config/filebrowser-cli/config.yaml`（Unix）或 `%APPDATA%\filebrowser-cli\config.yaml`（Windows）
 
-### 配置格式
+### 配置文件示例
 
-```json
-{
-  "filebrowser": {
-    "instance_url": "http://your-server:8080",
-    "username": "admin",
-    "password": "your-password"
-  }
-}
+```yaml
+version: 1
+instance_url: "http://your-server:8080"
+username: "admin"
+password: "${FB_PASSWORD}"  # 支持环境变量插值
+default_expires: 24
+default_unit: "hours"
 ```
 
 ### 配置字段
@@ -41,54 +63,126 @@ description: |
 |------|------|------|------|
 | `instance_url` | string | 是 | FileBrowser 实例地址 |
 | `username` | string | 是 | 登录用户名 |
-| `password` | string | 是 | 登录密码 |
+| `password` | string | 是 | 登录密码（支持 `${ENV_VAR}` 插值） |
+| `default_expires` | int | 否 | 分享默认过期时间 |
+| `default_unit` | string | 否 | 时间单位：seconds/minutes/hours/days |
 
-## API 服务
+## CLI 工具
 
-按需读取对应的接口文档。
-
-| 服务 | 文档 | 功能 |
-|------|------|------|
-| **Auth Service** | `references/auth-service.md` | 登录认证、Token 管理 |
-| **Resource Service** | `references/resource-service.md` | 文件上传、下载、预览、删除 |
-| **Share Service** | `references/share-service.md` | 创建分享、获取分享链接、删除分享 |
-| **Search Service** | `references/search-service.md` | 文件搜索 |
-
-## 同步脚本
-
-### upload_and_share.py - 上传单文件获取分享链接
-
-上传单个文件并自动创建分享链接，输出预览、下载、直接查看链接。
+### 认证
 
 ```bash
-python scripts/upload_and_share.py --url <url> --user <user> --password <pwd> --file <file>
+# 登录
+filebrowser-cli login
+
+# 续期 token
+filebrowser-cli renew
+
+# 显示当前用户
+filebrowser-cli whoami
 ```
 
-**参数:**
-| 参数 | 说明 |
-|------|------|
-| `--file` | 本地文件路径 |
-| `--remote` | 远程路径（可选，默认使用文件名） |
-| `--expires` | 过期时间数值（可选） |
-| `--unit` | 时间单位：seconds/minutes/hours/days |
-| `--share-password` | 分享密码保护（可选） |
-
-### directory_sync.py - 目录同步工具
-
-上传、下载或同步整个目录。
+### 文件操作
 
 ```bash
-python scripts/directory_sync.py <command> --url <url> --user <user> --password <pwd> --local <local> --remote <remote>
+# 列出目录
+filebrowser-cli ls /
+filebrowser-cli ls /documents --long
+
+# 显示目录树
+filebrowser-cli tree /documents
+
+# 查看文件信息
+filebrowser-cli info /documents/report.pdf
+
+# 上传文件
+filebrowser-cli upload ./local.pdf /remote/path.pdf
+filebrowser-cli upload ./local.pdf /remote/path.pdf --override
+
+# 下载文件
+filebrowser-cli download /remote/path.pdf ./local.pdf
+
+# 创建目录
+filebrowser-cli mkdir /new-folder
+
+# 删除文件/目录
+filebrowser-cli rm /path/to/delete
+
+# 移动/重命名
+filebrowser-cli mv /old/path /new/path
+
+# 复制
+filebrowser-cli cp /source /destination
 ```
 
-**命令:**
-| 命令 | 说明 |
+### 预览
+
+```bash
+# 获取缩略图（256x256）
+filebrowser-cli preview /image.png --size thumb
+
+# 获取大图（1080x1080）
+filebrowser-cli preview /image.png --size big --output ./preview.png
+```
+
+### 分享管理
+
+```bash
+# 创建分享链接
+filebrowser-cli share create /documents/report.pdf
+filebrowser-cli share create /documents/report.pdf --expires 24 --unit hours
+filebrowser-cli share create /documents/report.pdf --password mypassword
+
+# 列出所有分享
+filebrowser-cli share list
+
+# 查看分享信息
+filebrowser-cli share info /documents/report.pdf
+
+# 删除分享
+filebrowser-cli share delete <hash>
+```
+
+### 搜索
+
+```bash
+# 搜索文件
+filebrowser-cli search / "report"
+filebrowser-cli search / "report" --limit 50
+```
+
+### JSON 输出
+
+所有命令支持 `--json` 标志，输出可被 `jq` 解析的 JSON：
+
+```bash
+filebrowser-cli ls / --json | jq '.items'
+filebrowser-cli share create /file.pdf --json | jq '.hash'
+```
+
+## 全局选项
+
+| 选项 | 说明 |
 |------|------|
-| `upload` | 上传整个目录到云端 |
-| `download` | 从云端下载整个目录 |
-| `sync-up` | 智能上传（只上传变化的文件） |
-| `sync-down` | 智能下载（只下载变化的文件） |
-| `sync` | 双向同步（本地云端互相同步） |
+| `--config <path>` | 指定配置文件路径 |
+| `--json` | 输出 JSON 格式 |
+| `--verbose, -v` | 详细日志到 stderr |
+| `--timeout <seconds>` | HTTP 请求超时（默认 60） |
+| `--no-color` | 禁用颜色输出 |
+| `--version` | 输出版本信息 |
+| `--help, -h` | 显示帮助 |
+
+## 退出码
+
+| 退出码 | 含义 | 触发条件 |
+|--------|------|----------|
+| `0` | 成功 | 请求成功（2xx） |
+| `1` | 客户端错误 | HTTP 4xx（401/403/404/409） |
+| `2` | 服务端错误 | HTTP 5xx（500/502/503/504） |
+| `3` | 网络错误 | DNS 失败、连接超时、连接拒绝 |
+| `4` | 配置错误 | 配置文件不存在、字段缺失、环境变量未设置 |
+
+错误详情输出到 stderr，成功数据输出到 stdout。
 
 ## 基础信息
 
@@ -96,17 +190,6 @@ python scripts/directory_sync.py <command> --url <url> --user <user> --password 
 - **认证方式**: JWT Token
 - **认证 Header**: `X-Auth: <token>`
 - **Token 获取**: 登录接口返回纯文本 Token
-
-## 权限说明
-
-| 权限 | 说明 |
-|------|------|
-| `create` | 创建文件/目录 |
-| `modify` | 修改文件内容 |
-| `delete` | 删除文件 |
-| `share` | 创建分享链接 |
-| `download` | 下载文件 |
-| `rename` | 重命名文件 |
 
 ## 外部访问链接格式
 
@@ -125,7 +208,29 @@ python scripts/directory_sync.py <command> --url <url> --user <user> --password 
 | `200` | 成功 | - |
 | `201` | 创建成功 | - |
 | `204` | 删除成功 | - |
-| `401` | 未认证/Token过期 | 重新登录 |
+| `401` | 未认证/Token过期 | 重新运行 `filebrowser-cli login` |
 | `403` | 无权限 | 检查用户权限 |
 | `404` | 资源不存在 | 检查路径 |
-| `409` | 文件已存在 | 使用 override 参数 |
+| `409` | 文件已存在 | 使用 `--override` 参数 |
+
+## 使用示例
+
+```bash
+# 登录
+filebrowser-cli login
+
+# 列出根目录
+filebrowser-cli ls /
+
+# 上传文件
+filebrowser-cli upload ./report.pdf /documents/report.pdf
+
+# 创建分享链接
+filebrowser-cli share create /documents/report.pdf --expires 24 --unit hours
+
+# 搜索文件
+filebrowser-cli search / "report"
+
+# 使用 JSON 输出
+filebrowser-cli ls / --json | jq '.items'
+```

@@ -1,55 +1,75 @@
 # Memos Skill
 
-管理和操作 [Memos](https://github.com/usememos/memos) 备忘录系统的 Claude Skill。
-
-适用于个人知识管理、快速记录想法、整理笔记内容。
+管理和操作 Memos 备忘录系统。
 
 ## 功能
 
-- **备忘录管理**: 创建、查询、更新、删除
-- **高级搜索**: Google AIP-160 过滤语法
-- **附件上传**: 图片、文件附件
+- 创建、读取、更新、删除备忘录
+- 搜索和过滤备忘录
+- 管理评论
+- 上传和管理附件
+- 标签管理
 
-## 快速开始
+## 安装
 
-### 1. 配置
+### 方式一：从 GitHub Release 下载预编译二进制（推荐）
 
-在项目根目录创建 `skillconfig.json`：
+访问 [GitHub Releases](https://github.com/ANIAN0/memos-cli/releases) 下载对应平台的二进制文件：
 
-```json
-{
-  "memos": {
-    "instance_url": "https://your-memos-instance.com",
-    "access_token": "your-access-token"
-  }
-}
+- Windows: `memos-cli-windows-amd64.exe`
+- Linux: `memos-cli-linux-amd64`
+- macOS: `memos-cli-darwin-amd64`
+
+下载后重命名为 `memos-cli`（Windows 为 `memos-cli.exe`）并添加到 PATH。
+
+### 方式二：使用 go install
+
+```bash
+go install github.com/ANIAN0/memos-cli@latest
 ```
 
-### 2. 获取令牌
+### 方式三：从源码编译
 
-1. 登录 Memos → Settings → Tokens
-2. Create Token → 复制令牌
-
-### 3. 使用
-
-触发关键词：
-- "帮我记个备忘录..."
-- "搜索关于 xxx 的笔记"
-- "查看我的备忘录列表"
-
-## 项目结构
-
-```
-memos-skill/
-├── SKILL.md              # 接口索引 + 配置说明
-├── README.md             # 本文件
-└── references/
-    ├── memo-service.md   # 备忘录接口
-    └── attachment-service.md  # 附件接口
+```bash
+git clone https://github.com/ANIAN0/memos-cli.git
+cd memos-cli
+make build
+# 二进制文件在 bin/memos-cli
 ```
 
-## 相关链接
+## 配置
 
-- [Memos 官方仓库](https://github.com/usememos/memos)
+创建配置文件 `~/.config/memos-cli/config.yaml`：
 
-MIT
+```yaml
+version: 1
+instance_url: "https://your-memos-instance.com"
+access_token: "${MEMOS_TOKEN}"
+```
+
+设置环境变量：
+
+```bash
+export MEMOS_TOKEN="your-token"
+```
+
+## 使用示例
+
+```bash
+# 创建备忘录
+memos-cli memo create --content "Hello World" --visibility PRIVATE
+
+# 列出备忘录
+memos-cli memo list
+
+# 搜索备忘录
+memos-cli memo search "Hello"
+
+# 上传附件
+memos-cli attachment upload ./image.png
+```
+
+## 文档
+
+- [SKILL.md](SKILL.md) - 完整的 skill 文档
+- [references/](references/) - API 接口文档
