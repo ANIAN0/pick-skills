@@ -1,0 +1,4 @@
+interface:
+  display_name: "无人值守研发 v2"
+  short_description: "串联 v2 研发全流程，强制审查、回退和测试放行。"
+  default_prompt: "使用 $unattended-development-v2，从需求澄清到技术方案、任务计划、实现、审查回退和端到端验收完成无人值守研发闭环。"
