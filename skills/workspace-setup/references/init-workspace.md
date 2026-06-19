@@ -6,11 +6,11 @@
 
 - 创建 `workplace/{current_version}/` 过程文档目录。
 - 在当前实际版本目录创建 `graph/nodes/` 与 `graph/.derived/`，不创建业务节点。
-- 解析全局研究知识库 `knowledge.global_dir`；显式路径不可用时返回错误。
+- 调用 `personal-kb/scripts/kb_cli.py check-global` 解析全局研究知识库；显式路径不可用时返回错误。
 - 创建 `workplace/global/` 和 `workplace/test/`，其中 `workplace/test/` 与 `test-suite-maintainer` 联动，用于跨迭代复用材料。
 - 从 FileBrowser 下载第 1 层通用 `AGENTS.md`、`CLAUDE.md`。
 - 创建第 2 层项目规则 `PROJECT_RULES.md`。
-- 创建第 3 层项目知识库入口 `project-kb/`。
+- 调用 `personal-kb/scripts/kb_cli.py init-project` 创建并校验第 3 层项目知识库 `project-kb/`；`workspace-setup` 不复制知识库模板。
 - 已存在的项目规则和项目知识库不会被覆盖。
 
 ## 命令

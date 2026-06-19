@@ -1,78 +1,61 @@
-# 节点 Schema
+# 文档节点 Schema
 
 以下字段是项目研发 v3 扩展，不得描述为 OKF 标准字段。
 
-## 项目节点
+## 事实粒度
 
-`workplace/<version>/graph/nodes/` 下每个文件都是带 YAML Frontmatter 的 UTF-8 Markdown。
+一份可独立阅读的 Markdown 产物对应一个图节点。`R-*`、`A-*`、`F-*`、`D-*`、`C-*`、`T-*`、`V-*`、`REV-*` 是文档内部条目，不单独创建 Markdown 或图节点。
 
-| 必填字段 | 类型 | 规则 |
+新项目文档位于 `graph/stories/US-*/...`；旧 `graph/nodes/` 仅只读兼容。文档 ID 来自 Frontmatter，与文件路径解耦。
+
+## 必填字段
+
+| 字段 | 类型 | 规则 |
 |---|---|---|
-| `type` | string | 固定为 `project-development/node`。 |
-| `id` | string | 稳定、非空、项目图谱内唯一，且与文件路径无关。 |
-| `node_type` | enum | 使用下列节点类型之一。 |
-| `title` | string | 非空、用户可读标题。 |
-| `status` | enum | v3 生命周期状态。 |
-| `revision` | integer | 从 1 开始；语义源内容变化时递增。 |
+| `type` | string | 固定为 `project-development/document-node`。 |
+| `id` | string | 稳定、非空、图内唯一。 |
+| `document_type` | enum | 使用下列完整文档类型之一。 |
+| `title` | string | 非空、用户可读。 |
+| `status` | enum | 使用公共生命周期状态。 |
+| `revision` | integer | 从 1 开始，语义变化时递增。 |
+| `parent` | string/null | 根需求可为空，其余指向一个文档节点。 |
+| `scope_ref` | mapping | 包含 `document` 和可空的 `item`。 |
+| `relations` | list | 只保存注册的正向关系。 |
 
-| 可选/条件字段 | 类型 | 规则 |
-|---|---|---|
-| `parent` | string/null | 仅根节点可为 null；非根节点只指向一个项目节点 ID。 |
-| `relations` | list | 默认 `[]`，条目遵循关系 Schema。 |
-| `confirmation` | mapping/null | 遵循确认协议；确认门禁消费者继续前必须有效。 |
-
-允许的 `node_type`：
+允许的 `document_type`：
 
 ```text
-user-story
-requirement
-capability
-verification
+requirements
+tech-design
+task-list
+test-plan
+verification-report
 research-task
+review-report
+root-cause-report
 ui-spec
 prototype
-technical-decision
-change-contract
-review-finding
-root-cause
-task
-acceptance
-evidence
-workflow-run
 ```
 
-允许的 `status`：
+允许的 `status`：`draft`、`confirmed`、`ready`、`in_progress`、`blocked`、`done`、`stale`、`superseded`。
 
-```text
-draft
-confirmed
-ready
-in_progress
-blocked
-done
-stale
-superseded
+## 范围引用（scope_ref）
+
+```yaml
+scope_ref:
+  document: DOC-REQ-M-001
+  item: F-001
 ```
 
-## 关系条目
+- `document` 必须指向 requirements 文档；需求文档自身指向自己。
+- `item: null` 表示整份需求范围；`F-*` 表示需求正文中的独立闭环功能点。
+- 同一功能范围的 tech-design、task-list、test-plan、verification-report 必须使用完全相同的 `scope_ref`。
+- `F-*` 不得单独制造占位 Markdown。
 
-每个关系包含：已注册的 `type`、稳定目标 ID `target`，以及与注册表一致的 `scope`（project/knowledge）。只保存源到目标关系，不把反向链接或子节点列表持久化为事实。
+## 内部条目与证据
+
+文档正文保存普通研发条目和追踪关系。Task List 内的 `T-*` 保存执行属性；Test Plan 内的 `V-*` 保存正负场景；Verification Report 内保存真实命令、结果、时间、产物和执行者。未知字段必须保留。
 
 ## 知识报告
 
-全局 Knowledge Report 是 `type: project-development/knowledge-report` 的 UTF-8 Markdown，不是项目节点，因此没有 node_type、parent 或项目生命周期要求。必填字段：`type`、`id`、`title`、`topics`、`sources`、`updated_at`、`review_after`、`confidence`。每个来源必须可检索并具备可识别出处；正文保存可复用结论，修订记录变化摘要，不静默覆盖已被项目使用的结论。
-
-## 保留与所有权
-
-- 读取者必须接受并保留未知字段。
-- backlinks、children、computed impact 和索引时间等派生字段只进入 `.derived/`。
-- 内部图脚本对源 Markdown 只读。
-- 语义编辑由人或阶段 Skill 负责，并递增 revision。
-
-## 能力与验证配对
-
-Capability 与其 Verification 共享 parent；至少一个 Verification 以 `verifies` 指向 Capability 后才能通过门禁。
-
-## Task 扩展字段
-
-Task 还需定义 `criticality`（core/supporting）、`infrastructure`、`risk`（high/medium/low）、`executor_requirement`（senior/standard）、`executor_profile` 和 `approval`。核心或基础设施任务进入 in_progress 前必须有 senior 或明确人工审批。
+全局 Knowledge Report 继续使用 `type: project-development/knowledge-report`，不受 Story 目录和项目生命周期约束。

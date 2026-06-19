@@ -1,36 +1,18 @@
 # 证据策略
 
-## Evidence 节点
+## 存放位置
 
-使用 `node_type: evidence`，并以 `evidences` 从 Evidence 指向被证明的 Verification 或 Task。
+Evidence 是 Verification Report 内部的不可伪造执行记录，不是独立 Markdown/图节点。大型日志、截图和报告作为真实文件产物被报告引用。
 
-| 字段 | 规则 |
-|---|---|
-| `command` | 精确命令或具体观察步骤。 |
-| `exit_code` | 命令执行后的真实退出码。 |
-| `stdout` / `stderr` | 真实相关输出或其产物路径。 |
-| `timestamp` | 带时区的 ISO 8601 观察时间。 |
-| `result` | passed、failed、blocked 或 not_verified。 |
-| `artifact_paths` | 持久日志、截图、报告或回归资产路径。 |
-| `executor` | 实际执行观察的人员或环境。 |
+每条执行记录至少包含：关联 `T-*`/`V-*`、精确命令或观察步骤、真实退出码、stdout/stderr 摘要或产物路径、带时区时间、结果、artifact paths 和实际 executor。
 
-不得编造输出、退出码、时间、执行者或产物路径。大型原始输出保存为产物，节点中只写摘要。
-
-## 结果语义
-
-- passed：检查真实运行或直接观察，且符合标准。
-- failed：真实运行或观察，但不符合标准。
-- blocked：明确前置条件阻止执行。
-- not_verified：实现可能存在，但所需观察未完成。
+结果只允许 `passed`、`failed`、`blocked`、`not_verified`。重试追加记录，不覆盖历史失败。
 
 ## 完成门禁
 
-- Task 至少关联一个适用 Verification，并有覆盖完成断言的 passed Evidence。
-- Verification 的正向及必要负向路径均有 passed Evidence 才能 done。
-- Acceptance/Workflow Run 以 depends-on 关联范围内每个 Verification/Task，且每个目标都有可追踪 passed Evidence；Evidence 仍只指向 Verification/Task。
-- failed、blocked、not_verified、模拟、mock、硬编码或未执行观察不能满足 done。
-- 失败和已替代 Evidence 作为历史保留；重试新增 Evidence，不改旧结果。
+- Task List 中的任务只有在关联验证有真实 passed 记录后才能 done。
+- Test Plan 的正向和必要负向路径均有 passed 记录后，Verification Report 才能形成通过结论。
+- failed、blocked、not_verified、mock、固定回复、硬编码或未执行观察不能满足完成。
+- G-ACCEPT 必须确认包含真实证据的 Verification Report；确认不能替代测试，测试也不能替代用户验收。
 
-## 评审与责任
-
-评审发现不清晰、矛盾或无依据断言时创建 review-finding，记录严重级别、责任方、来源节点、影响和所需修复。外部事实不确定时创建 Research Task，完整报告写入全局知识库，项目决策以 uses-knowledge 引用。执行失败时保存真实 Evidence 并关联责任 Finding/Root Cause，不得弱化 Verification。
+评审发现和根因作为 Review/Root Cause Report 内部条目保存并引用责任文档，不为每条 Finding/Evidence 建文件。

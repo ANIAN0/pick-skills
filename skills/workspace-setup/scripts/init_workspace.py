@@ -7,10 +7,16 @@
 import os
 import json
 import argparse
+import sys
 from pathlib import Path
 from typing import Dict, List
 
 from filebrowser_client import load_config, get_client, get_remote_path
+
+PERSONAL_KB_SCRIPTS = Path(__file__).resolve().parents[2] / "personal-kb" / "scripts"
+if str(PERSONAL_KB_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(PERSONAL_KB_SCRIPTS))
+from kb_cli import check_global, init_project  # noqa: E402
 
 
 # 版本目录结构
@@ -39,24 +45,15 @@ DEFAULT_GLOBAL_KB_DIR = "~/personal-kb"
 
 
 def resolve_knowledge_global_dir(config: Dict, project_root: Path) -> tuple[Path, bool, str | None]:
-    """解析全局研究知识库路径；显式配置不可用时返回可观察错误。"""
+    """委托 personal-kb 检查全局研究知识库边界。"""
     knowledge_config = config.get("knowledge", {})
     configured = knowledge_config.get("global_dir")
     raw_path = configured or DEFAULT_GLOBAL_KB_DIR
     expanded = Path(os.path.expandvars(os.path.expanduser(raw_path)))
     if not expanded.is_absolute():
-        expanded = project_root / expanded
-    resolved = expanded.resolve()
-
-    if configured is None:
-        return resolved, resolved.is_dir() and os.access(resolved, os.R_OK | os.W_OK), None
-    if not resolved.exists():
-        return resolved, False, f"全局知识库目录不存在: {resolved}"
-    if not resolved.is_dir():
-        return resolved, False, f"全局知识库路径不是目录: {resolved}"
-    if not os.access(resolved, os.R_OK | os.W_OK):
-        return resolved, False, f"全局知识库目录不可读写: {resolved}"
-    return resolved, True, None
+        raw_path = str((project_root / expanded).resolve())
+    result = check_global(raw_path, explicit=configured is not None)
+    return Path(result["root"]), bool(result["available"]), result["error"]
 
 
 def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
@@ -82,6 +79,8 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
         "directories_created": [],
         "configs_downloaded": [],
         "configs_created": [],
+        "knowledge_files_created": [],
+        "warnings": [],
         "errors": [],
         "knowledge_global_dir": str(knowledge_global_dir),
         "knowledge_available": knowledge_available,
@@ -181,7 +180,16 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
 
     # 7. 创建项目独立规则和知识库入口
     create_project_rules_template(project_root / project_rules_file, project_kb_dir)
-    init_project_kb(project_root / project_kb_dir, project_rules_file)
+    kb_result = init_project(
+        project_root,
+        project_kb_dir=project_kb_dir,
+        project_rules_file=project_rules_file,
+    )
+    results["personal_kb"] = kb_result
+    results["knowledge_files_created"].extend(kb_result["created"])
+    results["warnings"].extend(kb_result.get("warnings", []))
+    if kb_result.get("error"):
+        results["errors"].append(kb_result["error"])
 
     # 8. 更新配置中的当前版本
     update_config_version(config_path, current_version)
@@ -313,74 +321,6 @@ def create_project_rules_template(filepath: Path, project_kb_dir: str):
 """
     filepath.write_text(content, encoding="utf-8")
     print(f"[OK] 创建项目规则模板: {filepath.name}")
-
-
-def init_project_kb(kb_path: Path, project_rules_file: str):
-    """创建项目知识库入口和代码镜像目录。已存在内容不覆盖。"""
-    kb_path.mkdir(exist_ok=True)
-    code_path = kb_path / "code"
-    code_path.mkdir(exist_ok=True)
-
-    readme_path = kb_path / "README.md"
-    if not readme_path.exists():
-        readme_path.write_text(
-            f"""# 项目知识库
-
-本目录是第 3 层项目知识库，服务于代码修改前的影响分析和测试选择。
-
-- 第 2 层项目规则：[[../{project_rules_file}]]
-- 代码文件说明入口：[[code/README]]
-
-知识库必须按项目代码文件结构组织：每个代码文件对应一份说明文档，路径放在 `code/` 下并保留源码相对路径。
-""",
-            encoding="utf-8"
-        )
-
-    code_readme_path = code_path / "README.md"
-    if not code_readme_path.exists():
-        code_readme_path.write_text(
-            """# 代码文件说明
-
-本目录按源码相对路径镜像项目代码结构。
-
-## 命名规则
-
-- 源码文件 `src/foo/bar.ts` 对应 `project-kb/code/src/foo/bar.ts.md`。
-- 源码文件 `scripts/build.py` 对应 `project-kb/code/scripts/build.py.md`。
-- 目录说明可以使用该目录下的 `README.md`。
-
-## 单文件说明模板
-
-```markdown
-# 源码相对路径
-
-## 功能点
-
-- 
-
-## 相关文件
-
-- [[其他源码文件对应的说明文档]]
-
-## 重要逻辑
-
-- 
-
-## 测试文件
-
-- 
-
-## 修改注意事项
-
-- 
-
-## 最近更新
-
-- YYYY-MM-DD：
-```
-""",
-            encoding="utf-8"
-        )
 
 
 def update_config_version(config_path: str, version: str):

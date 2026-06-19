@@ -1,29 +1,17 @@
 ---
-type: project-development/node
+type: project-development/workflow-run
 id: RUN-001
-node_type: workflow-run
 title: 替换为工作流运行标题
 status: in_progress
-parent: US-001
-revision: 1
-relations: []
-confirmation: null
-workflow_mode: full
-entry_node: US-001
-started_at: 2026-06-19T00:00:00+08:00
+scope_ref: {document: DOC-REQ-US-001, item: null}
+current_gate: G-REQ
+gate_confirmations: {}
+resume_document_id: DOC-REQ-US-001
+started_at: null
 completed_at: null
 result: in_progress
 evidence_paths: []
 ---
+# 工作流运行
 
-## 范围
-
-记录所选入口模式和本次运行的边界目标。
-
-## 进度
-
-链接当前节点、阻塞发现和下一个允许动作。
-
-## 完成条件
-
-只有关联验收和 Evidence 满足声明范围后才写完成摘要。
+记录暂停原因、恢复文档和四个阶段确认；无人值守不得填写人工确认。
