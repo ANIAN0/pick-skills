@@ -1,10 +1,10 @@
 ---
 name: workspace-setup
 description: |
-  快速配置和管理项目工作区。当用户提到工作区初始化、CLAUDE.md/AGENTS.md 管理、项目规则文件、项目知识库入口、配置文件同步、创建版本目录、归档旧版本或使用 npx skills 管理技能时触发此 skill。支持三层项目上下文结构：通用入口、项目规则、项目知识库。
+  快速配置和管理项目工作区。当用户提到工作区初始化、CLAUDE.md/AGENTS.md 管理、项目规则文件、项目知识库入口、项目研发 v3 图目录、全局研究知识库路径、配置文件同步、创建版本目录、归档旧版本或使用 npx skills 管理技能时触发此 skill。支持三层项目上下文结构并兼容初始化节点化研发目录。
 ---
 
-# Workspace Setup Skill
+# 工作区初始化 Skill
 
 本 skill 管理所有项目都复用的工作区入口，并初始化项目独立维护的规则和知识库骨架。
 
@@ -23,6 +23,9 @@ description: |
 │   ├── global/            ← 跨迭代复用的过程资产、模板、脚本和说明
 │   ├── test/              ← 跨迭代复用的测试方案、脚本、夹具和报告模板
 │   ├── 1.0/
+│   │   └── graph/
+│   │       ├── nodes/    ← Markdown 事实节点
+│   │       └── .derived/ ← 可删除重建的索引和视图
 │   └── archive/
 ├── skillconfig.json
 └── skills/
@@ -73,11 +76,11 @@ description: |
     "project_rules_file": "PROJECT_RULES.md",
     "project_kb_dir": "project-kb"
   },
+  "knowledge": {
+    "global_dir": "~/personal-kb"
+  },
   "filebrowser": {
-    "instance_url": "http://your-server:8080",
-    "username": "admin",
-    "password": "your-password",
-    "remote_base_path": "/config"
+    "cli_config": "~/.config/filebrowser-cli/config.yaml"
   }
 }
 ```
@@ -88,17 +91,17 @@ description: |
 | `workplace_dir` | string | 否 | 过程文档目录，默认 `workplace` |
 | `project_rules_file` | string | 否 | 项目规则文件，默认 `PROJECT_RULES.md` |
 | `project_kb_dir` | string | 否 | 项目知识库目录，默认 `project-kb` |
-| `instance_url` | string | 是 | FileBrowser 服务地址 |
-| `username` | string | 是 | 登录用户名 |
-| `password` | string | 是 | 登录密码 |
-| `remote_base_path` | string | 否 | 云端顶层目录，默认 `/config` |
+| `knowledge.global_dir` | string | 否 | 全局研究知识库目录，默认建议 `~/personal-kb`；支持路径展开 |
+| `filebrowser.cli_config` | string | 否 | `filebrowser-cli` 配置路径；不填时由 CLI 按自身优先级解析。 |
+
+FileBrowser 操作统一调用 `filebrowser-cli`，不直接访问 HTTP API。先按 `filebrowser-skill` 完成 CLI 安装、`config validate` 和登录。`AGENTS.md`、`CLAUDE.md` 和可选 `skills/` 固定同步到云端根目录 `/`，不允许项目配置改写。旧配置中的 `instance_url`、`username`、`password` 仅作为兼容输入，适配器会创建进程内临时 CLI 配置，不在命令行回显密码；新配置不要继续保存这些字段。
 
 ## 全局配置同步边界
 
 云端全局配置目录只同步第 1 层通用入口和通用 skills：
 
 ```
-/config/
+/
 ├── AGENTS.md
 ├── CLAUDE.md
 └── skills/
@@ -116,13 +119,20 @@ description: |
 | 脚本 | 文档 | 功能 |
 |---|---|---|
 | `init_workspace.py` | `references/init-workspace.md` | 初始化三层入口、过程文档目录，可下载通用配置 |
+| 项目图与全局知识库 | `references/project-graph.md` | 说明节点事实源、派生目录和 global_dir 可用性 |
 | `sync_config.py` | `references/sync-config.md` | 同步第 1 层通用入口和可选 skills |
+| `filebrowser_client.py` | `filebrowser-skill` | 将同步操作适配到 `filebrowser-cli`，不直接调用 HTTP API |
 | `version_manager.py` | `references/version-manager.md` | 创建版本、归档版本 |
 | `skills_manager.py` | `references/skills-manager.md` | 管理 npx skills 命令 |
 
 ## 快速命令
 
 ```bash
+# 先验证 filebrowser-cli
+filebrowser-cli --version
+filebrowser-cli config validate
+filebrowser-cli login
+
 # 初始化工作区
 python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.json
 
@@ -140,10 +150,12 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 
 1. 读取 `skillconfig.json`。
 2. 创建或保留 `workplace/{current_version}/` 过程文档目录。
-3. 下载或创建通用 `AGENTS.md`、`CLAUDE.md`。
-4. 创建项目独立 `PROJECT_RULES.md`，如果已存在则不覆盖。
-5. 创建项目独立 `project-kb/README.md` 和 `project-kb/code/README.md`，如果已存在则不覆盖。
-6. 更新 `skillconfig.json` 中的当前版本号。
+3. 在实际版本目录创建 `graph/nodes/` 和 `graph/.derived/`，不创建伪业务节点。
+4. 解析 `knowledge.global_dir`；显式路径不可用时报告错误。
+5. 下载或创建通用 `AGENTS.md`、`CLAUDE.md`。
+6. 创建项目独立 `PROJECT_RULES.md`，如果已存在则不覆盖。
+7. 创建项目独立 `project-kb/README.md` 和 `project-kb/code/README.md`，如果已存在则不覆盖。
+8. 更新 `skillconfig.json` 中的当前版本号。
 
 ## 日常维护规则
 

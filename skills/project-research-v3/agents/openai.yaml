@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目调研 v3"
+  short_description: "在全局知识库中复用有来源的调研"
+  default_prompt: "使用 $project-research-v3 将不确定项目节点转为有来源的调研任务和可复用知识报告。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "需求工作坊 v3"
+  short_description: "将用户故事拆分为已确认的需求图谱节点"
+  default_prompt: "使用 $requirements-workshop-v3 保留用户要求的交付物形态，并创建聚焦的需求、能力、验证和 UI 输入节点。"

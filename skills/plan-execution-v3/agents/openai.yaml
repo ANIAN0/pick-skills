@@ -1,0 +1,4 @@
+interface:
+  display_name: "计划执行 v3"
+  short_description: "用真实证据执行任务并定位失败责任"
+  default_prompt: "使用 $plan-execution-v3 执行下一个通过门禁的任务，运行真实验证并记录证据或责任失败节点。"

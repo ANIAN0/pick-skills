@@ -58,18 +58,12 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 ## 云端路径
 
 ```
-{remote_base_path}/AGENTS.md
-{remote_base_path}/CLAUDE.md
-{remote_base_path}/skills/
+/AGENTS.md
+/CLAUDE.md
+/skills/
 ```
 
-示例：
-
-```
-/config/AGENTS.md
-/config/CLAUDE.md
-/config/skills/
-```
+这些路径固定在 FileBrowser 云端根目录，由 `filebrowser-cli` 直接同步；项目配置不得增加 `/config` 等前缀。
 
 ## 同步逻辑
 

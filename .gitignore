@@ -18,3 +18,8 @@ skills-lock.json
 
 /参考文档
 /workplace
+/tests
+
+# Python 运行缓存
+__pycache__/
+*.py[cod]

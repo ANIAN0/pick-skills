@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术设计 v3"
+  short_description: "创建聚焦的技术决策与变更契约"
+  default_prompt: "使用 $tech-design-v3 将已确认需求节点转为有证据支撑的技术决策和变更契约节点。"

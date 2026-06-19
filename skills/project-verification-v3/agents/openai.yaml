@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目验证 v3"
+  short_description: "追踪验收、E2E 证据与回归资产"
+  default_prompt: "使用 $project-verification-v3 通过真实验收和 E2E 流程验证关联能力、定位失败并保存回归资产。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目研发评审 v3"
+  short_description: "定位责任节点并评审受影响子图"
+  default_prompt: "使用 $project-development-review-v3 定位问题责任节点、计算影响，并用聚焦证据关闭评审发现。"

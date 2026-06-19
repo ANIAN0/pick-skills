@@ -5,6 +5,8 @@
 ## 功能
 
 - 创建 `workplace/{current_version}/` 过程文档目录。
+- 在当前实际版本目录创建 `graph/nodes/` 与 `graph/.derived/`，不创建业务节点。
+- 解析全局研究知识库 `knowledge.global_dir`；显式路径不可用时返回错误。
 - 创建 `workplace/global/` 和 `workplace/test/`，其中 `workplace/test/` 与 `test-suite-maintainer` 联动，用于跨迭代复用材料。
 - 从 FileBrowser 下载第 1 层通用 `AGENTS.md`、`CLAUDE.md`。
 - 创建第 2 层项目规则 `PROJECT_RULES.md`。
@@ -33,6 +35,9 @@ python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.jso
     "workplace_dir": "workplace",
     "project_rules_file": "PROJECT_RULES.md",
     "project_kb_dir": "project-kb"
+  },
+  "knowledge": {
+    "global_dir": "~/personal-kb"
   }
 }
 ```
@@ -43,6 +48,7 @@ python skills/workspace-setup/scripts/init_workspace.py --config skillconfig.jso
 | `current_version` | `1.0` | 当前过程文档版本 |
 | `project_rules_file` | `PROJECT_RULES.md` | 项目独立规则文件 |
 | `project_kb_dir` | `project-kb` | 项目独立知识库目录 |
+| `knowledge.global_dir` | `~/personal-kb` | 全局研究知识库路径；支持 `~` 和环境变量展开 |
 
 ## 执行流程
 
@@ -58,7 +64,10 @@ workplace/
 │   ├── prototypes/
 │   ├── tech-design/
 │   ├── plan/
-│   └── tests/
+│   ├── tests/
+│   └── graph/
+│       ├── nodes/
+│       └── .derived/
 └── archive/
 ```
 
@@ -67,8 +76,8 @@ workplace/
 如果配置了 `filebrowser` 且未使用 `--skip-download`：
 
 ```
-{remote_base_path}/AGENTS.md
-{remote_base_path}/CLAUDE.md
+/AGENTS.md
+/CLAUDE.md
 ```
 
 下载失败时创建默认模板：
@@ -116,8 +125,8 @@ project-kb/
   - tests/
 
 [DOWNLOAD] 从 filebrowser 下载配置文件...
-[OK] 下载成功: /config/AGENTS.md -> AGENTS.md
-[OK] 下载成功: /config/CLAUDE.md -> CLAUDE.md
+[OK] 下载成功: /AGENTS.md -> AGENTS.md
+[OK] 下载成功: /CLAUDE.md -> CLAUDE.md
 [OK] 创建项目规则模板: PROJECT_RULES.md
 
 [STATS] 初始化完成:
@@ -134,3 +143,8 @@ project-kb/
 - `workplace/`：过程文档，不作为项目规则入口。
 - `workplace/global/`：跨迭代复用的过程资产、模板、脚本和说明。
 - `workplace/test/`：与 `test-suite-maintainer` 联动的跨迭代测试方案、脚本、夹具和报告模板。
+- `workplace/{current_version}/graph/nodes/`：项目研发 v3 Markdown 事实节点。
+- `workplace/{current_version}/graph/.derived/`：可删除重建的索引和静态视图。
+- `knowledge.global_dir`：全局研究报告位置，不复制到项目 `graph/nodes/`。
+
+图目录与全局知识库的详细边界见 [project-graph.md](project-graph.md)。

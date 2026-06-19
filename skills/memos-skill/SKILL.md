@@ -1,199 +1,293 @@
 ---
 name: memos-skill
-description: |
-  管理和操作 Memos 备忘录系统。当用户提到备忘录、memos、记录笔记、查看笔记、搜索备忘录、整理备忘录或任何与 memos 相关的操作时触发此 skill。支持创建备忘录、获取备忘录列表、搜索过滤、更新删除、管理评论和附件等功能。适用于个人知识管理、快速记录想法、整理笔记内容等场景。
+description: 使用 memos-cli 安装、更新、配置和操作 Memos。用户要求创建、读取、搜索、筛选、更新或删除 memo，管理评论与附件，安装或升级 memos-cli，配置 Memos access token，或排查该 CLI 在 PowerShell、Git Bash、MSYS2、Linux、macOS 中的调用问题时使用。
 ---
 
-# Memos Skill
+# Memos CLI
 
-管理你的 Memos 备忘录实例，支持备忘录、评论和附件操作。
+通过 `memos-cli` 操作 Memos。以当前二进制的 `--help` 为最终依据；不要猜测参数或绕过 CLI 直接拼 API 请求。
+
+## 执行流程
+
+1. 判断当前 shell 和操作系统。
+2. 定位命令，检查 PATH 中是否有多个副本。
+3. 命令不存在时安装；用户要求升级时更新。
+4. 运行 `config path` 和 `config validate`，必要时初始化配置。
+5. 读取和创建操作优先使用 `--json`，解析 stdout 并检查退出码。
+6. 更新、删除或创建公开 memo 前确认对象 ID、可见性和用户意图；完成后重新读取验证。
+
+## 定位和诊断
+
+PowerShell：
+
+```powershell
+Get-Command memos-cli -All -ErrorAction SilentlyContinue
+memos-cli --version
+memos-cli --help
+$LASTEXITCODE
+```
+
+Git Bash / Bash：
+
+```bash
+type -a memos-cli 2>/dev/null || true
+memos-cli --version
+memos-cli --help
+printf '%s\n' "$?"
+```
+
+如果存在多个副本，先确定实际执行路径。更新后版本不变时，用 `Get-Command ... -All` 或 `type -a` 找出 PATH 中较早的旧副本。不要未经确认删除任何副本。
 
 ## 安装
 
-### 方式一：从 GitHub Release 下载预编译二进制（推荐）
+优先使用已有 Go 工具链安装；没有 Go 时下载 Release 二进制。Go 版本要求为 1.21 或更高。
 
-访问 [GitHub Releases](https://github.com/ANIAN0/memos-cli/releases) 下载对应平台的二进制文件：
+### 使用 Go 安装
 
-- Windows: `memos-cli-windows-amd64.exe`
-- Linux: `memos-cli-linux-amd64`
-- macOS: `memos-cli-darwin-amd64`
+两个 shell 都可执行：
 
-下载后重命名为 `memos-cli`（Windows 为 `memos-cli.exe`）并添加到 PATH。
-
-### 方式二：使用 go install
-
-```bash
+```text
 go install github.com/ANIAN0/memos-cli@latest
 ```
 
-### 方式三：从源码编译
+PowerShell 将 Go bin 加入当前会话：
+
+```powershell
+$goBin = go env GOBIN
+if (-not $goBin) { $goBin = Join-Path (go env GOPATH) 'bin' }
+$env:Path = "$goBin;$env:Path"
+memos-cli --version
+```
+
+Git Bash / Bash：
 
 ```bash
-git clone https://github.com/ANIAN0/memos-cli.git
-cd memos-cli
-make build
-# 二进制文件在 bin/memos-cli
+go_bin="$(go env GOBIN)"
+[ -n "$go_bin" ] || go_bin="$(go env GOPATH)/bin"
+export PATH="$go_bin:$PATH"
+memos-cli --version
 ```
+
+只在用户要求持久化时修改 PowerShell 用户 PATH 或 `~/.bashrc`。
+
+### 下载 GitHub Release
+
+Release 资产命名为 `memos-cli-<os>-<arch>`，Windows 带 `.exe`。常见值：`windows-amd64.exe`、`windows-arm64.exe`、`linux-amd64`、`linux-arm64`、`darwin-amd64`、`darwin-arm64`。
+
+PowerShell（示例为 Windows amd64）：
+
+```powershell
+$asset = 'memos-cli-windows-amd64.exe'
+$base = 'https://github.com/ANIAN0/memos-cli/releases/latest/download'
+Invoke-WebRequest "$base/$asset" -OutFile ".\$asset"
+Invoke-WebRequest "$base/checksums.txt" -OutFile '.\checksums.txt'
+$expected = ((Select-String -Path '.\checksums.txt' -Pattern ([regex]::Escape($asset))).Line -split '\s+')[0]
+$actual = (Get-FileHash ".\$asset" -Algorithm SHA256).Hash
+if (-not $expected -or $actual.ToLowerInvariant() -ne $expected.ToLowerInvariant()) { throw 'checksum mismatch' }
+& ".\$asset" install
+```
+
+Git Bash / Bash（Windows Git Bash 示例）：
+
+```bash
+asset='memos-cli-windows-amd64.exe'
+base='https://github.com/ANIAN0/memos-cli/releases/latest/download'
+curl -fL "$base/$asset" -o "$asset"
+curl -fL "$base/checksums.txt" -o checksums.txt
+sha256sum -c checksums.txt --ignore-missing
+"./$asset" install
+```
+
+`install` 把当前二进制复制到默认用户目录：Windows 为 `%LOCALAPPDATA%\Programs\memos-cli`，Linux/macOS 为 `~/.local/bin`。也可使用 `install --dir <目录>`。根据命令输出把目录加入 PATH，然后重新定位并验证版本。
+
+### 从本地源码安装
+
+仅在用户明确要求源码版本时进入仓库。先执行 `git status --short`；不要删除、覆盖或暂存用户的未提交文件。运行测试失败时先报告源码错误，不要把编译失败误判为 PATH 或 shell 问题。
+
+PowerShell：
+
+```powershell
+go test ./...
+New-Item -ItemType Directory -Force .\bin | Out-Null
+go build -o .\bin\memos-cli.exe .
+& .\bin\memos-cli.exe install
+```
+
+Git Bash / Bash：
+
+```bash
+go test ./...
+mkdir -p ./bin
+go build -o ./bin/memos-cli.exe .   # Windows Git Bash
+./bin/memos-cli.exe install
+```
+
+在 Linux/macOS 将输出名改为 `./bin/memos-cli`。只有测试和构建成功后才执行安装。
+
+## 更新与卸载
+
+Release/自安装版本优先使用：
+
+```text
+memos-cli update
+memos-cli update --force
+memos-cli uninstall
+memos-cli uninstall --purge
+```
+
+`update` 下载与当前 OS/架构匹配的最新 Release，并在提供 `checksums.txt` 时校验。Windows 会在当前进程退出后替换文件；关闭或重启 shell，再运行命令定位和 `--version` 验证。`--purge` 会删除用户配置，只能在用户明确要求时使用。
+
+通过 Go 管理源码版本时也可再次执行：
+
+```text
+go install github.com/ANIAN0/memos-cli@latest
+```
+
+更新必须作用于 PATH 实际解析到的副本。
 
 ## 配置
 
-配置使用 YAML 格式，支持 `${ENV_VAR}` 环境变量插值。
+不要猜测配置位置。CLI 的优先级是 `--config`、`MEMOS_CLI_CONFIG`、随后是 `config path` 输出的候选路径。
 
-### 配置文件位置（按优先级）
+```text
+memos-cli config path
+memos-cli config init
+memos-cli config validate
+memos-cli config show
+```
 
-1. `--config <path>` 命令行参数
-2. `MEMOS_CLI_CONFIG` 环境变量
-3. 二进制同级目录的 `config.yaml`（项目安装模式）
-4. 用户目录：`~/.config/memos-cli/config.yaml`（Unix）或 `%APPDATA%\memos-cli\config.yaml`（Windows）
-
-### 配置文件示例
+`config init` 默认创建用户配置；已有文件时拒绝覆盖。只有用户明确允许时才使用 `--force`。示例：
 
 ```yaml
 version: 1
-instance_url: "https://your-memos-instance.com"
-access_token: "${MEMOS_TOKEN}"  # 支持环境变量插值
+instance_url: "https://memos.example.com"
+access_token: "${MEMOS_TOKEN}"
 default_page_size: 10
 default_visibility: "PRIVATE"
 ```
 
-### 配置字段
+在当前会话设置 token：
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `instance_url` | string | 是 | Memos 实例地址 |
-| `access_token` | string | 是 | 个人访问令牌（支持 `${ENV_VAR}` 插值） |
-| `default_page_size` | number | 否 | 默认分页大小（默认10） |
-| `default_visibility` | string | 否 | 默认可见性：`PRIVATE`/`PROTECTED`/`PUBLIC` |
-
-## CLI 工具
-
-### 备忘录操作
+```powershell
+$env:MEMOS_TOKEN = 'secret'        # PowerShell
+```
 
 ```bash
-# 创建备忘录
-memos-cli memo create --content "Hello World"
-memos-cli memo create --content "工作笔记" --visibility PRIVATE --tags work,urgent
+export MEMOS_TOKEN='secret'        # Git Bash / Bash
+```
 
-# 获取备忘录
+保留 `${MEMOS_TOKEN}` 插值，不要把 token 写入命令、日志或回复。`config show` 默认脱敏；不要用 `--redact=false` 暴露 token。使用 `memos-cli whoami` 验证实例和凭据。
+
+当前实现中，创建命令不能可靠地继承 `default_visibility`，列表也不应依赖 `default_page_size`。为获得确定行为，创建时显式传 `--visibility`，列表时显式传 `--page-size`。
+
+## Shell 规则
+
+- PowerShell 调用当前目录的 `.exe` 使用 `& '.\memos-cli.exe' ...`。
+- Git Bash 调用当前目录二进制使用 `./memos-cli.exe`；本地附件路径包含空格时必须加引号。
+- 全局参数统一放在子命令前，例如 `memos-cli --json --timeout 120 memo list`。
+- PowerShell 和 Bash 都用单引号保护 Memos filter 表达式；标签列表整体加引号。
+- 不要使用 `MSYS_NO_PATHCONV`：memos-cli 参数没有 FileBrowser 式远程绝对路径，禁用转换反而可能破坏本地附件路径。
+
+## Memo 命令
+
+```text
+memos-cli memo create --content <text> --visibility PRIVATE|PROTECTED|PUBLIC [--tags "tag1,tag2"]
 memos-cli memo get <id>
-
-# 列出备忘录
-memos-cli memo list
-memos-cli memo list --page-size 20
-memos-cli memo list --filter "tag=='work'"
-memos-cli memo list --sort "-createTime"
-
-# 更新备忘录
-memos-cli memo update <id> --content "更新内容"
-memos-cli memo update <id> --content "更新" --visibility PUBLIC
-
-# 删除备忘录
+memos-cli memo list [--page-size N] [--page-token TOKEN] [--filter EXPR] [--sort FIELD]
+memos-cli memo update <id> [--content <text>] [--visibility VALUE] [--tags "tag1,tag2"]
 memos-cli memo delete <id>
-
-# 搜索备忘录
-memos-cli memo search "关键词"
-memos-cli memo search "关键词" --page-size 50
+memos-cli memo search <query> [--page-size N]
 ```
 
-### 评论操作
+ID 可传数字 `123` 或完整名称 `memos/123`。创建后从 JSON 的 `name` 字段保存真实 ID，不要根据列表位置推断。
+
+示例：
+
+```powershell
+$memo = memos-cli --json memo create --content '会议记录' --visibility PRIVATE --tags 'work,meeting' | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw "memos-cli failed: $LASTEXITCODE" }
+memos-cli --json memo get $memo.name
+```
 
 ```bash
-# 列出评论
+memo_json="$(memos-cli --json memo create --content '会议记录' --visibility PRIVATE --tags 'work,meeting')" || exit $?
+memo_name="$(jq -r '.name' <<<"$memo_json")"
+memos-cli --json memo get "$memo_name"
+```
+
+多行内容没有 stdin 或 `--file` 参数，先读入变量：
+
+```powershell
+$content = Get-Content -Raw '.\memo.md'
+memos-cli memo create --content $content --visibility PRIVATE
+```
+
+```bash
+content="$(<./memo.md)"
+memos-cli memo create --content "$content" --visibility PRIVATE
+```
+
+注意：
+
+- `memo update` 只更新显式提供且非空的字段。先 `memo get`，再更新，再读取验证。
+- 当前实现不能通过 `--tags ''` 可靠清空全部标签；不要声称已清空。
+- `memo search` 会构造 `content.contains(...)` 过滤；查询词包含双引号时可能形成无效表达式，改用经服务端支持的 `memo list --filter` 或明确报告限制。
+- filter 语法由 Memos 服务端版本决定；先用小 `--page-size` 验证，不要自行改写用户表达式。
+- 删除和改为 `PUBLIC` 都是高影响操作，执行前必须核对 memo 内容和 ID。
+
+## 评论命令
+
+```text
 memos-cli comment list <memo-id>
-
-# 创建评论
-memos-cli comment create <memo-id> --content "评论内容"
+memos-cli comment create <memo-id> --content <text>
 ```
 
-### 附件操作
+评论创建的 `--content` 是必填项。使用 memo 的数字 ID 或 `memos/<id>`，完成后重新列出评论验证。
 
-```bash
-# 上传附件
-memos-cli attachment upload ./image.png
-memos-cli attachment upload ./document.pdf
+## 附件命令
 
-# 列出附件
-memos-cli attachment list
-memos-cli attachment list --page-size 20
-
-# 下载附件
-memos-cli attachment get <id> --output ./downloaded.png
-
-# 删除附件
+```text
+memos-cli attachment upload <local-file>
+memos-cli attachment list [--page-size N]
+memos-cli attachment get <id> --output <local-file>
 memos-cli attachment delete <id>
 ```
 
-### JSON 输出
+附件 ID 可传数字或 `attachments/<id>`。自动化下载必须显式使用 `--output`：当前实现宣称可使用原文件名，但省略输出路径会创建文件失败。下载后检查文件存在且大小非零。删除前先用列表确认 ID、文件名和大小。
 
-所有命令支持 `--json` 标志，输出可被 `jq` 解析的 JSON：
+## 机器可读输出
 
-```bash
-memos-cli memo list --json | jq '.items'
-memos-cli memo create --content "test" --json | jq '.name'
+列表类 JSON 固定为 `{"count":N,"items":[...]}`；创建、获取等单对象直接输出对象；错误写入 stderr 为 `{"code":N,"error":"..."}`。
+
+PowerShell：
+
+```powershell
+$result = memos-cli --json memo list --page-size 20 | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw "memos-cli failed: $LASTEXITCODE" }
+$result.items
 ```
 
-## 全局选项
-
-| 选项 | 说明 |
-|------|------|
-| `--config <path>` | 指定配置文件路径 |
-| `--json` | 输出 JSON 格式 |
-| `--verbose, -v` | 详细日志到 stderr |
-| `--timeout <seconds>` | HTTP 请求超时（默认 60） |
-| `--no-color` | 禁用颜色输出 |
-| `--version` | 输出版本信息 |
-| `--help, -h` | 显示帮助 |
-
-## 退出码
-
-| 退出码 | 含义 | 触发条件 |
-|--------|------|----------|
-| `0` | 成功 | 请求成功 |
-| `1` | 客户端错误 | Memos 错误码 3/5/7/16 |
-| `2` | 服务端错误 | 其他 Memos 错误码 |
-| `3` | 网络错误 | DNS 失败、连接超时、连接拒绝 |
-| `4` | 配置错误 | 配置文件不存在、字段缺失、环境变量未设置 |
-
-错误详情输出到 stderr，成功数据输出到 stdout。
-
-## 基础信息
-
-- **Base URL**: `{instance_url}/api/v1`
-- **认证**: `Authorization: Bearer <token>`
-- **内容类型**: `application/json`
-
-## 错误代码
-
-| 代码 | 含义 |
-|------|------|
-| 0 | 成功 |
-| 3 | 无效参数 |
-| 5 | 未找到 |
-| 7 | 未认证 |
-| 16 | 未授权 |
-
-## ID 格式
-
-- 备忘录: `memos/{id}`，如 `memos/123`
-- 评论: `memos/{id}/comments/{cid}`
-- 附件: `attachments/{id}`，如 `attachments/456`
-- 时间: ISO 8601，如 `2024-03-12T10:30:00Z`
-
-## 使用示例
+Git Bash / Bash：
 
 ```bash
-# 创建备忘录
-memos-cli memo create --content "Hello World" --visibility PRIVATE
-
-# 列出备忘录
-memos-cli memo list --page-size 10
-
-# 搜索备忘录
-memos-cli memo search "Hello"
-
-# 上传附件
-memos-cli attachment upload ./image.png
-
-# 使用 JSON 输出
-memos-cli memo list --json | jq '.items'
+json="$(memos-cli --json memo list --page-size 20)" || exit $?
+jq '.items' <<<"$json"
 ```
+
+退出码：`0` 成功，`1` 客户端/HTTP 4xx，`2` 服务端/HTTP 5xx，`3` 网络或超时，`4` 配置错误。使用 `--verbose` 排障，但不要回传 Authorization header 或 token。
+
+## 补全
+
+PowerShell 当前会话：
+
+```powershell
+memos-cli completion powershell | Out-String | Invoke-Expression
+```
+
+Git Bash 当前会话：
+
+```bash
+source <(memos-cli completion bash)
+```
+
+只在用户要求时将补全脚本持久写入 shell 配置。

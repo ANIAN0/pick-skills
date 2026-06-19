@@ -71,6 +71,7 @@ def download_directory(client, remote_dir: str, local_dir: str) -> Tuple[int, in
     success, failed = 0, 0
 
     def walk_and_download(remote_path: str, local_base: str):
+        nonlocal success, failed
         info = client.list_remote(remote_path)
         if not info:
             return

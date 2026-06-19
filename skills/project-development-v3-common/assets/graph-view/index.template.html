@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目图谱</title>
+<style>
+:root{color-scheme:dark;--bg:#111827;--panel:#1f2937;--line:#475569;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--warn:#fbbf24}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,sans-serif}header{padding:20px 24px;border-bottom:1px solid var(--line)}h1{margin:0 0 12px;font-size:24px}.controls{display:flex;gap:12px;flex-wrap:wrap}input,select{background:#0f172a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px 10px}.notice{margin-top:12px;color:var(--warn)}main{display:grid;grid-template-columns:minmax(320px,2fr) minmax(260px,1fr);gap:16px;padding:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-height:240px}.node{display:block;width:100%;margin:8px 0;padding:10px;text-align:left;border:1px solid var(--line);border-radius:7px;background:#0f172a;color:var(--text);cursor:pointer}.node:hover,.node.active{border-color:var(--accent)}.meta{color:var(--muted);font-size:13px}a{color:var(--accent)}@media(max-width:720px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-view-state="__VIEW_STATE__">
+<header><h1>项目图谱</h1><div class="controls"><input id="query" aria-label="筛选节点" placeholder="按 ID 或标题筛选"><select id="status" aria-label="筛选状态"><option value="">全部状态</option></select></div><div id="notice" class="notice" role="status"></div></header>
+<main><section class="panel"><h2>节点</h2><div id="nodes"></div></section><aside class="panel" id="detail"><h2>详情</h2><p class="meta">请选择一个节点。</p></aside></main>
+<script id="graph-data" type="application/json">__GRAPH_DATA__</script>
+<script>
+const graph=JSON.parse(document.getElementById('graph-data').textContent),state=document.body.dataset.viewState,nodesEl=document.getElementById('nodes'),detail=document.getElementById('detail'),notice=document.getElementById('notice'),query=document.getElementById('query'),status=document.getElementById('status');
+const messages={empty:'当前没有可显示的图谱节点。', 'stale-index':'警告：索引已经过期，请根据当前源文件重新构建。', 'missing-detail':'部分关系指向缺失的节点详情。', 'invalid-source':'图谱源无效，无法显示。'};notice.textContent=messages[state]||'';
+[...new Set(graph.nodes.map(n=>n.status).filter(Boolean))].sort().forEach(v=>status.add(new Option(v,v)));
+function show(n){document.querySelectorAll('.node').forEach(x=>x.classList.toggle('active',x.dataset.id===n.id));detail.innerHTML='<h2>详情</h2><dl><dt>ID</dt><dd>'+esc(n.id)+'</dd><dt>状态</dt><dd>'+esc(n.status)+'</dd><dt>类型</dt><dd>'+esc(n.node_type||'未知')+'</dd></dl><a href="'+encodeURI(n.source_path)+'">打开源 Markdown</a>';}
+function esc(v){const e=document.createElement('span');e.textContent=String(v??'');return e.innerHTML;}
+function render(){const q=query.value.toLowerCase(),s=status.value;nodesEl.textContent='';const shown=graph.nodes.filter(n=>(!s||n.status===s)&&(!q||String(n.id).toLowerCase().includes(q)||String(n.title||'').toLowerCase().includes(q)));shown.forEach(n=>{const b=document.createElement('button');b.className='node';b.dataset.id=n.id;b.innerHTML='<strong>'+esc(n.id)+'</strong> '+esc(n.title||'')+'<div class="meta">'+esc(n.status)+' · '+esc(n.source_path)+'</div>';b.onclick=()=>show(n);nodesEl.appendChild(b)});if(!shown.length&&state!=='empty')nodesEl.textContent='没有符合筛选条件的节点。';}
+query.addEventListener('input',render);status.addEventListener('change',render);render();
+</script>
+</body></html>

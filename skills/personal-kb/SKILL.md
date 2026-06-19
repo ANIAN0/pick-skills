@@ -1,11 +1,23 @@
 ---
 name: personal-kb
-description: 项目知识库管理 skill。用于创建、更新和检查第 3 层项目知识库，尤其是按代码文件结构镜像的代码说明文档。当用户提到“知识库”、“项目知识库”、“project-kb”、“Obsidian”、“代码文件说明”、“功能点整理”、“相关文件”、“测试覆盖”、“更新项目文档”时触发此 skill。
+description: 项目与个人知识库管理 skill。用于维护项目内按代码路径镜像的 code 知识库，以及由多个项目复用的全局 research Knowledge Report。当用户提到知识库、project-kb、代码文件说明、功能点、测试覆盖、技术调研、研究报告、来源追踪、报告过期或全局知识复用时触发。
 ---
 
 # 项目知识库管理 Skill
 
-本 skill 维护第 3 层项目知识库：`project-kb/`。它服务于代码修改前的影响分析、原有功能对比和定向测试选择。
+本 skill 提供两种明确模式。先按用户目标路由，不要混合存储边界：
+
+- `code`：维护项目内 `project-kb/` 的代码镜像说明，服务于影响分析和定向测试。
+- `research`：维护 `knowledge.global_dir` 下的全局 Knowledge Report，服务于跨项目调研复用和来源追踪。
+
+研究模式读取 [research-kb.md](references/research-kb.md)，并从 `assets/research-report.md` 创建报告。代码模式继续使用下文及现有 references，保持原行为。
+
+## Research 模式硬规则
+
+- 将完整报告只存入全局知识库，不复制进项目 `graph/nodes/`。
+- 使用稳定报告 ID；项目仅保存 Research Task、决策摘要和 `uses-knowledge` 正向关系。
+- 来源不足、`review_after` 已过期或 `knowledge.global_dir` 不可访问时保持 blocked/stale，不把搜索摘要包装成结论。
+- 更新被项目引用的报告时保留变化摘要、`updated_at` 与旧结论历史，不静默替换。
 
 ## 与三层结构的关系
 

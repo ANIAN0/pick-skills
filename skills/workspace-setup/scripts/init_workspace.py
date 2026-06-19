@@ -35,6 +35,28 @@ CONFIG_FILES = ["CLAUDE.md", "AGENTS.md"]
 # 项目级默认文件和目录：每个项目独立维护，不参与通用配置包同步。
 DEFAULT_PROJECT_RULES_FILE = "PROJECT_RULES.md"
 DEFAULT_PROJECT_KB_DIR = "project-kb"
+DEFAULT_GLOBAL_KB_DIR = "~/personal-kb"
+
+
+def resolve_knowledge_global_dir(config: Dict, project_root: Path) -> tuple[Path, bool, str | None]:
+    """解析全局研究知识库路径；显式配置不可用时返回可观察错误。"""
+    knowledge_config = config.get("knowledge", {})
+    configured = knowledge_config.get("global_dir")
+    raw_path = configured or DEFAULT_GLOBAL_KB_DIR
+    expanded = Path(os.path.expandvars(os.path.expanduser(raw_path)))
+    if not expanded.is_absolute():
+        expanded = project_root / expanded
+    resolved = expanded.resolve()
+
+    if configured is None:
+        return resolved, resolved.is_dir() and os.access(resolved, os.R_OK | os.W_OK), None
+    if not resolved.exists():
+        return resolved, False, f"全局知识库目录不存在: {resolved}"
+    if not resolved.is_dir():
+        return resolved, False, f"全局知识库路径不是目录: {resolved}"
+    if not os.access(resolved, os.R_OK | os.W_OK):
+        return resolved, False, f"全局知识库目录不可读写: {resolved}"
+    return resolved, True, None
 
 
 def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
@@ -51,12 +73,19 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
     current_version = ws_config.get("current_version", "1.0")
     project_rules_file = ws_config.get("project_rules_file", DEFAULT_PROJECT_RULES_FILE)
     project_kb_dir = ws_config.get("project_kb_dir", DEFAULT_PROJECT_KB_DIR)
+    knowledge_global_dir, knowledge_available, knowledge_error = resolve_knowledge_global_dir(
+        config,
+        project_root,
+    )
 
     results = {
         "directories_created": [],
         "configs_downloaded": [],
         "configs_created": [],
-        "errors": []
+        "errors": [],
+        "knowledge_global_dir": str(knowledge_global_dir),
+        "knowledge_available": knowledge_available,
+        "knowledge_error": knowledge_error,
     }
 
     # 1. 创建workplace目录
@@ -90,7 +119,21 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
         results["directories_created"].append(str(subdir_path))
         print(f"  - {subdir}/")
 
-    # 5. 处理通用配置文件
+    # 5. 创建当前版本的项目图目录。源节点和派生输出分离。
+    graph_path = version_path / "graph"
+    for graph_subdir in ("nodes", ".derived"):
+        subdir_path = graph_path / graph_subdir
+        subdir_path.mkdir(parents=True, exist_ok=True)
+        results["directories_created"].append(str(subdir_path))
+        print(f"  - graph/{graph_subdir}/")
+
+    if knowledge_error:
+        results["errors"].append(knowledge_error)
+        print(f"[FAIL] {knowledge_error}")
+    else:
+        print(f"[OK] 全局知识库路径: {knowledge_global_dir}")
+
+    # 6. 处理通用配置文件
     if download_configs and config.get("filebrowser"):
         print(f"\n[DOWNLOAD] 从 filebrowser 下载配置文件...")
         client = get_client(config)
@@ -136,11 +179,11 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
                 )
                 results["configs_created"].append(filename)
 
-    # 6. 创建项目独立规则和知识库入口
+    # 7. 创建项目独立规则和知识库入口
     create_project_rules_template(project_root / project_rules_file, project_kb_dir)
     init_project_kb(project_root / project_kb_dir, project_rules_file)
 
-    # 7. 更新配置中的当前版本
+    # 8. 更新配置中的当前版本
     update_config_version(config_path, current_version)
 
     # 输出结果
@@ -164,6 +207,8 @@ def create_config_template(
     project_kb_dir: str = DEFAULT_PROJECT_KB_DIR
 ):
     """创建配置文件模板"""
+    if filepath.exists():
+        return
     templates = {
         "CLAUDE.md": "@AGENTS.md\n",
         "AGENTS.md": (
@@ -341,6 +386,9 @@ def init_project_kb(kb_path: Path, project_rules_file: str):
 def update_config_version(config_path: str, version: str):
     """更新配置文件中的版本号"""
     config = load_config(config_path)
+    if config.get("workspace", {}).get("current_version") == version:
+        return
+    config.setdefault("workspace", {})
     config["workspace"]["current_version"] = version
 
     with open(config_path, 'w', encoding='utf-8') as f:
@@ -364,11 +412,12 @@ def main():
 
     args = parser.parse_args()
 
-    init_workspace(
+    results = init_workspace(
         config_path=args.config,
         download_configs=not args.skip_download
     )
+    return 1 if results["knowledge_error"] else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目研发 v3 公共协议"
+  short_description: "提供项目研发 v3 的共享节点图谱协议"
+  default_prompt: "使用 $project-development-v3-common 校验项目研发节点与工作流产物。"
