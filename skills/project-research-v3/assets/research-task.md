@@ -1,20 +1,22 @@
 ---
-type: project-development/node
-id: RES-001
-node_type: research-task
+type: project-development/document-node
+id: DOC-RESEARCH-001
+document_type: research-task
 title: 替换为一个可回答的调研问题
 status: draft
-parent: REQ-001
+parent: DOC-REQ-US-001
 revision: 1
+scope_ref: {document: DOC-REQ-US-001, item: null}
 relations:
-  - type: researches
-    target: REQ-001
+  - type: depends-on
+    target: DOC-REQ-US-001
     scope: project
 confirmation: null
 decision_to_unblock: 替换为待解锁的责任决策
 required_source_quality: 替换为可接受的一手或权威来源要求
 review_horizon: 2026-12-19
 update_of: null
+knowledge_ref: null
 ---
 
 ## 问题
@@ -27,4 +29,4 @@ update_of: null
 
 ## 项目摘要
 
-调研后只记录决策所需摘要，并将消费节点链接到全局报告 ID。
+调研后只记录决策所需摘要、稳定报告 ID、来源更新时间和 `review_after`，并将消费文档链接到全局报告 ID。完整报告不得复制到本文件。

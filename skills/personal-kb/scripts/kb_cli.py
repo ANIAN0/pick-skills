@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -96,6 +97,8 @@ def init_project(
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="初始化或检查 personal-kb 存储边界。")
     subparsers = parser.add_subparsers(dest="command", required=True)
     project = subparsers.add_parser("init-project", help="初始化项目内 project-kb")

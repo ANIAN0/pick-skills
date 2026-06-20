@@ -16,10 +16,10 @@ description: 从任意项目研发 v3 节点创建有范围、有来源的调研
 ## 工作流
 
 1. 从责任节点提取单一、可回答的不确定问题。
-2. 创建 Research Task，并用 `researches` 指向责任节点。
+2. 在责任范围目录的 `research/` 下创建 Research Task 文档，继承同一 `scope_ref`，并用 `depends-on` 指向责任文档。
 3. 先查询全局知识库，检查现有报告的适用范围、来源和有效期。
 4. 可复用时直接引用；需要更新时补充权威来源并修订同一知识条目。
-5. 完整报告写入全局知识库，项目图谱只保存摘要与 Knowledge Report ID。
+5. 完整报告写入全局知识库，项目图谱只保存摘要、Knowledge Report ID、来源更新时间与 `review_after`。
 6. 用 `uses-knowledge` 连接实际消费报告的项目节点。
 7. 来源不足或结论冲突时保持 blocked，并明确缺失证据。
 

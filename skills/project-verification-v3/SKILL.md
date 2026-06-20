@@ -1,36 +1,14 @@
 ---
 name: project-verification-v3
-description: 基于项目研发 v3 的能力、验证、任务和验收节点执行真实验收、E2E 与回归检查，保存可审计证据并定位失败责任。用于功能验收、发布前验证、失败归因，以及生成或更新可重复执行的回归资产；未验证结果不得当作完成。
+description: 为每个技术范围在执行前生成同目录 Test Plan，执行后聚合真实 Task List 记录和资产形成 Verification Report，并通过 G-ACCEPT 完成验收。
 ---
 
-# 项目验证 v3
+# 范围化项目验证 v3
 
-验证用户可见行为和发布关键契约。执行真实测试与观察，保存证据，并把失败交给最早的责任节点。
+1. 设计完成后立即调用 `scripts/verification_documents.py` 的 `create_test_plans`，为每个 Tech Design 创建同目录同 scope_ref Test Plan。
+2. Test Plan 的 `V-*` 是正文和结构化字段，不为每个验证建文件。
+3. 执行后调用 `finalize_verification`，只消费真实 Task List execution records，并重新检查 artifact paths。
+4. 每个 V-* 必须有可区分的 `positive` 和 `negative` passed 记录；不能用同一条记录同时满足两种场景。
+5. `finalize_verification` 只生成报告和 G-ACCEPT package，不接受确认身份；随后由独立 `accept_verification` 用户确认动作记录 G-ACCEPT。
 
-## 必读内容
-
-- 读取公共节点、生命周期、关系和证据协议。
-- 选择验收、E2E 或回归范围前读取 [验证工作流](references/verification-workflow.md)。
-- 生成或更新自动化回归资产前读取 [测试套件适配](references/test-suite-adapter.md)。
-
-## 工作流
-
-1. 校验图谱、确认哈希、能力/验证配对和任务证据。
-2. 从已确认能力及同级验证生成验收节点；不复制完整需求正文。
-3. 运行正向及必要负向验收路径，保存真实输出、截图、日志和命令结果。
-4. 跨能力关键旅程执行 E2E，局部变化执行聚焦回归。
-5. 失败时创建根因或评审发现并计算局部影响，不修改期望来迁就缺陷。
-6. 稳定通过的流程生成或更新自动化脚本，并记录来源验证和证据。
-7. 所有发布关键验证及最终评审通过后才允许完成。
-
-## 硬规则
-
-- Evidence 必须记录实际命令/观察、结果、时间、执行者和可读取产物。
-- failed、blocked、skipped、not_verified 或缺失产物都不能满足完成门禁。
-- UI/E2E 要求真实浏览器或等价真实运行环境；字符串检查不能替代可见行为验证。
-- 不扩大到无关分支，不重复已确认且未受影响的节点。
-- 不伪造截图、日志、退出码或自动化脚本成功结果。
-
-## 输出
-
-报告验收/E2E/回归范围、通过与失败验证、证据路径、失败责任、受影响节点、自动化资产变化和发布门禁状态。
+不以“已调用测试 Skill”代替结果，不创建 Acceptance/Evidence 条目文件，不放宽断言。

@@ -1,38 +1,14 @@
 ---
 name: plan-execution-v3
-description: 针对真实代码和依赖执行已通过门禁的项目研发 v3 任务节点，运行正向及必要负向验证，并记录持久证据、根因或评审发现。用于实施就绪任务或恢复失败任务；依赖、确认、执行者、断言或验证门禁不通过时拒绝执行。
+description: 执行已通过 G-PLAN 且具备同范围 Test Plan 的 Task List 内部 T-*，运行真实命令并把状态、证据和失败根因回写闭环文档。
 ---
 
-# 计划执行 v3
+# 文档闭环执行 v3
 
-一次执行一个就绪任务。真实代码变更和真实观察才是完成依据，节点文档本身不是实现。
-
-## 必读内容
-
-- 读取公共 Schema、生命周期、确认、关系和证据策略。
-- 修改代码或任务状态前读取 [执行门禁](references/execution-gates.md)。
-- 运行验证或记录失败前读取 [证据与失败责任](references/evidence-and-failure.md)。
-- 只读取当前任务、所属变更契约、关联验证、直接前置节点，以及受影响代码/知识条目。
-
-## 工作流
-
-1. 校验图谱并重新计算确认和影响状态。
-2. 选择依赖和执行者门禁均通过的最高优先级任务。
-3. 复核目标文件、执行断言、测试资产、负向路径和完成边界。
-4. 所有入口门禁通过后才把任务改为 in_progress。
-5. 实施边界明确的 Delta，不做无关重设计。
-6. 运行真实命令和观察，逐项检查 must-disappear/appear/propagate/persist。
-7. 写入关联任务和验证的不可变证据。
-8. 只有全部完成门禁通过才标记 done；否则保留真实失败并创建责任根因或评审发现。
-
-## 硬规则
-
-- 不得为了让测试通过而弱化验证、修改期望行为或引入降级替代。
-- 不得把生成的计划/设计文档、mock 输出、未执行命令、blocked、skipped 或 not_verified 当作完成。
-- 不得编造执行者审批、命令输出、退出码、时间戳、产物路径、来源或成功状态。
-- 保留用户改动和范围，不在实施阶段重做需求、架构或任务计划。
-- 上游变化后只重开局部影响范围内的节点。
-
-## 输出
-
-报告所选任务、变更文件、命令与观察、断言结果、证据 ID/路径、失败责任、状态和下一个通过门禁的任务。
+1. 验证图、G-PLAN、scope_ref、同范围 Test Plan、依赖 DAG 和 executor 门禁；资历取自本次真实执行上下文，不信任任务文档自报。
+2. 使用 `scripts/execute_task_list.py` 逐个执行结构化 T-* 的真实命令，禁止 shell 拼接和固定回复。
+3. 实现命令必须改变声明产物并通过 must appear/disappear/propagate/persist 断言；随后为每个 V-* 分别运行 positive/negative verification command。
+4. 把 task ID、verification IDs、verification case、scope、命令、exit code、stdout/stderr、时间、executor、artifact paths 和结果回写 Task List。
+5. 非零退出码、产物未变化、断言失败、缺任一正负场景、未运行、not_verified 或 blocked 均不得写 done；失败作为内部 Root Cause 条目保留。
+6. 已有有效 passed 记录的 done 任务恢复时不重跑；依赖失败只阻断下游。
+7. 不创建 Evidence 或 Root Cause 文件节点；Verification Report 后续消费这些不可覆盖的执行记录。

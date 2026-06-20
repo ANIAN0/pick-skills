@@ -4,14 +4,15 @@
 
 ```text
 workplace/{current_version}/graph/
-├── nodes/
+├── stories/
 └── .derived/
 ```
 
-- `nodes/` 保存项目研发 v3 的 Markdown 事实节点。
+- `stories/` 保存项目研发 v3 的层级 Markdown 事实文档。初始化时为空；流程仅按真实拆分创建 `US-*`、可选 `modules/M-*` 和可选 `features/F-*`。
 - `.derived/` 只保存可删除重建的索引和静态视图。
-- 初始化不创建示例 User Story、Requirement 或其他业务节点。
+- 初始化不创建示例 User Story、空 `modules/`、空 `features/` 或其他业务文档。
 - 已有目录和文件保持原内容；初始化只补齐缺失目录。
+- 旧项目已有 `graph/nodes/` 时保持原样并由读取器兼容；初始化器不删除、不移动、不自动迁移。
 
 实际路径由 `workspace.workplace_dir` 与 `workspace.current_version` 组合，不能把说明中的 `{current_version}` 当成持久化目录名。
 

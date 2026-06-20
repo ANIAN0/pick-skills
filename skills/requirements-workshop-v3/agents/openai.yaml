@@ -1,4 +1,4 @@
 interface:
   display_name: "需求工作坊 v3"
-  short_description: "将用户故事拆分为已确认的需求图谱节点"
-  default_prompt: "使用 $requirements-workshop-v3 保留用户要求的交付物形态，并创建聚焦的需求、能力、验证和 UI 输入节点。"
+  short_description: "确认用户故事并生成自适应层级的完整需求文档"
+  default_prompt: "使用 $requirements-workshop-v3 先确认整体用户故事，再按真实边界决定是否拆模块和功能点，把需求与内部 F-* 写入完整 requirements.md，并等待 G-REQ。"

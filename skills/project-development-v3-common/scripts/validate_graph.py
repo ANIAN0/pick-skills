@@ -8,8 +8,12 @@ from graph_core import load_graph
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate a project-development v3 Markdown graph without modifying it.")
-    parser.add_argument("graph_root", type=Path, help="Graph root or directory containing Markdown nodes")
+    parser = argparse.ArgumentParser(description="Validate a project-development v3 hierarchical Markdown graph without modifying it.")
+    parser.add_argument(
+        "graph_root",
+        type=Path,
+        help="Project or graph root containing stories/; legacy nodes/ remains read-only compatible",
+    )
     parser.add_argument("--json", action="store_true", dest="as_json", help="Emit one JSON result object")
     return parser
 

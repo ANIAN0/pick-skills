@@ -1,35 +1,28 @@
 ---
 name: requirements-workshop-v3
-description: 将项目想法、功能扩展或模糊请求拆分为项目研发 v3 的用户故事、需求、能力、验证、UI 规格和原型输入节点，同时保留用户要求的交付物形态。用于完整产品或 Skill 改造、已确认工作的扩展，以及技术设计前的需求澄清；当需求和验证已经明确时，识别 task/bug 快捷入口，不强制执行完整需求阶段。
+description: 将项目想法或功能请求整理为自适应层级的完整 requirements 文档。先确认整体 User Story，再按真实边界可选拆分最多 3 个模块和模块内最多 10 个独立闭环功能点，并通过 G-REQ 后交给技术设计。
 ---
 
-# 需求工作坊 v3
+# 自适应需求工作坊 v3
 
-保留用户要求的交付物，再把决策拆分为可独立确认的图谱节点。不要创建新的阶段级“需求简报”。
+保留用户要求的交付物形态，把 R/A/F 等条目写入少量完整需求文档，不拆成大量 Markdown。
 
-## 必读内容
+## 必读
 
-- 读取 `project-development-v3-common` 的节点 Schema、关系注册表、生命周期和确认协议。
-- 选择入口模式或确认节点前，读取 [需求工作流](references/requirements-workflow.md)。
-- 仅在请求涉及页面、视觉状态、UI 文档或原型交付物时，读取 [UI 与原型适配](references/ui-prototype-adapter.md)。
-- 节点包含可通过外部资料回答的不确定性时，调用 `project-research-v3`。
+- 读取 `project-development-v3-common` 的文档节点、关系、层级和确认协议。
+- 执行前读取 [自适应需求工作流](references/requirements-workflow.md)。
 
-## 入口路由
+## 执行
 
-- `full`：从新用户故事开始，拆分完整交付物。
-- `extension`：在有效且已确认的既有用户故事或需求下新增需求节点；保留未受影响的确认，不重复确认。
-- `task` / `bug`：需求和验证已经明确时转入快捷流程。只补缺失的责任节点，不制造完整故事树。
+1. 明确 deliverable 的 type、format、location、audience。
+2. 创建并请求确认整体 Story requirements。
+3. 仅按真实边界创建可选模块 requirements；`F-*` 保存在模块正文。
+4. 使用内部脚本 `scripts/generate_requirements.py` 做路径、数量和 G-REQ 确定性门禁；重复生成只允许字节一致的幂等结果，已有内容不同则报告 revision conflict，禁止覆盖。
+5. 生成动作不接受 G-REQ 身份；先返回 package document IDs，再由独立用户确认动作写入 G-REQ。哈希有效后重新调用会直接返回 ready，不重复提问。
 
-## 硬规则
+## 禁止
 
-- 拆分前记录 `deliverable_type`、`deliverable_components`、`entry_points` 和 `completion_boundary`。
-- 用户要求创建或改造 Skill/Skill 套件时，保持 `deliverable_type: skill-suite`，不得改写为通用应用、CLI 或管理产品。
-- 每个需求和能力节点只承担一个决策责任。
-- 同时创建同父级的能力与验证节点；验证通过 `verifies` 指向能力。
-- 有效确认哈希直接复用，只询问已变化或尚未解决的语义。
-- 完整调研只进入全局知识报告；项目节点只保存摘要和稳定关系。
-- 停在需求及 UI/原型输入，不设计生产架构、不写实现代码。
-
-## 输出
-
-将节点写入当前项目图谱，并报告新增或更新的节点 ID、剩余阻塞问题、调研分支、确认状态和下一个允许进入技术设计的节点。
+- 不为每个 Requirement、Capability、Verification 或 F-* 创建 Markdown。
+- 不预建空 modules/features。
+- 不自动确认 Story、数量超限决策或 G-REQ。
+- 不在需求阶段设计技术实现。

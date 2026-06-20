@@ -1,4 +1,4 @@
 interface:
   display_name: "技术设计 v3"
-  short_description: "创建聚焦的技术决策与变更契约"
-  default_prompt: "使用 $tech-design-v3 将已确认需求节点转为有证据支撑的技术决策和变更契约节点。"
+  short_description: "按确认需求范围生成完整技术方案文档"
+  default_prompt: "使用 $tech-design-v3 为已通过 G-REQ 的 Story、Module 或独立 F-* 范围生成同目录 tech-design.md，记录 D-* 与 C-*，并等待 G-DESIGN。"

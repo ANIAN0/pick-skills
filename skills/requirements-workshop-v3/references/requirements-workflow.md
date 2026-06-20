@@ -1,40 +1,25 @@
-# 需求工作流
+# 自适应需求工作流
 
-## 入口选择
+## 入口
 
-| 模式 | 入口 | 范围 |
-|---|---|---|
-| `full` | 新用户故事 | 完整交付物及其必要能力、验证、UI 输入。 |
-| `extension` | 已确认节点 | 仅新增分支及局部影响范围。 |
-| `task` | 明确任务意图 | 只补执行所缺的责任节点。 |
-| `bug` | 缺陷或根因 | 复现、预期、修复边界和回归验证。 |
+- `full`：先形成并确认整体 User Story，再评估是否需要模块和功能点。
+- `extension`：只更新受影响 requirements 文档，保留无关有效确认。
+- `task/bug`：需求与验证已经明确时交给总控快捷入口，不伪造新需求节点。
 
-入口不匹配时停止并说明缺少的上游节点，不得制造完整阶段树。
+## Story 确认与分解决策
 
-## 保留交付物
+1. 先创建 `stories/US-<id>-<slug>/requirements.md`，保留用户要求的 deliverable type、format、location、audience。
+2. 存在真实独立业务边界时才拆模块，通常不超过 3 个。创建模块前必须取得整体 Story 的真实用户确认。
+3. 模块 requirements 内仅在同时需要独立目标、实现、测试和验收闭环时定义 `F-*`，通常不超过 10 个。
+4. 超过第 3 个模块或第 10 个功能点时暂停并请求 decomposition decision；不得自动放行。
+5. 简单场景不创建 `modules/`、`features/` 或任何占位目录。
 
-首先记录：
+普通 Requirement、Capability、Verification 和验收条目写在 requirements 正文，不为每个条目创建 Markdown。`F-*` 也只存在于模块 requirements 正文，后续独立 Tech/Task/Test/Verification 通过同一 `scope_ref` 引用。
 
-- `deliverable_type`：如 `skill-suite`、library、service、document；
-- `deliverable_components`：最终必须交付的组成部分；
-- `entry_points`：用户或系统如何使用交付物；
-- `completion_boundary`：何时才算完成。
+## G-REQ
 
-后续节点不得改变这些字段的含义。用户要求 Skill 改造时，需求产物必须明确最终交付是一套 Skill，而不是通用项目管理产品或其他泛化软件产品。
+G-REQ 决策包包含 Story 和实际模块 requirements、deliverable 字段及 decomposition decision。按公共确认协议计算 scope hash。缺失用户确认、无人值守或哈希失配时必须暂停；哈希有效时恢复流程不重复确认。通过后把 document IDs、scope_ref、scope hash 和 deliverable 交给技术设计。
 
-## 节点拆分
+## UI/原型
 
-1. 用户故事描述单一、有边界的用户结果。
-2. 每个需求只记录一个需要确认的行为或约束。
-3. 每个能力描述一个可观察功能点。
-4. 每个能力同时创建同父级验证，并以 `verifies` 指向能力。
-5. UI 需求按页面、状态或交互责任拆分；原型是输入/证据，不替代行为节点。
-6. 子节点通过 `parent` 形成结构；语义依赖使用注册关系。
-
-## 确认与调研
-
-按公共确认协议计算语义哈希。哈希仍有效时直接复用，不重复提问。外部事实不明确时创建调研任务并阻塞责任节点，完整结果写入全局知识库。
-
-## 完成门禁
-
-进入技术设计前必须满足：交付物形态未漂移；需求责任单一；能力与验证成对；范围和负向路径明确；所需调研已关闭；已确认节点哈希有效；图校验通过。
+UI 和原型适配器接收 requirements document ID、内部 R/A/F 引用、scope_ref、页面/状态/交互要求及验收边界。产物只回链完整文档节点，不创建 Capability/Verification 文件。

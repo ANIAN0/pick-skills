@@ -1,36 +1,12 @@
 ---
 name: project-development-review-v3
-description: 评审项目研发 v3 的需求、设计、计划、实现和验证节点，把问题定位到最早责任节点，计算局部影响，并用真实关闭证据管理评审发现。用于阶段评审、失败回溯或变更后复核；不把问题泛化为全流程重跑。
+description: 将项目研发 v3 的评审发现聚合为范围化 Review Report，REV-* 作为内部条目定位责任文档和 R/A/F/D/C/T/V，并按真实影响集局部重审。
 ---
 
-# 项目研发评审 v3
+# 局部评审报告 v3
 
-发现错误、不明确和无证据描述，并将修复责任落到最早需要改变的节点。评审本身不代替责任 Skill 的修复。
-
-## 必读内容
-
-- 读取公共 Schema、关系、生命周期、确认、影响和证据协议。
-- 创建或关闭发现前读取 [Finding 契约](references/finding-contract.md)。
-- 执行阶段评审或局部恢复前读取 [评审工作流](references/review-workflow.md)。
-
-## 工作流
-
-1. 校验当前图谱和相关证据。
-2. 从观察点回溯到最早错误、模糊或无依据的责任节点。
-3. 创建 Finding，记录严重级别、责任节点、观察点、所需修复和关闭条件。
-4. 外部事实不明确时，从责任节点创建调研任务。
-5. 使用确定性工具计算完整影响集，并区分可执行影响与仅报告弱引用。
-6. BLOCKER/HIGH 只阻断责任节点及可执行影响范围。
-7. 修复后重新计算哈希和影响，验证关闭证据，再复核受影响子图。
-
-## 硬规则
-
-- 不在评审 Skill 中直接修改生产代码或替责任 Skill 改写节点。
-- 不自主批准高风险产品、安全、兼容或发布决策。
-- 不因局部问题把全图标记 stale，也不重复确认未受影响节点。
-- 没有真实、可读取关闭证据时，不得将 Finding 标记 done。
-- 完整影响集中保留 report-only references，但不把它们加入阻断和恢复输入。
-
-## 输出
-
-报告 Finding ID、严重级别、责任节点、完整及可执行影响集、调研分支、关闭证据、剩余阻塞和恢复节点。
+1. 使用公共影响工具计算责任文档的完整 impact set。
+2. 调用 `scripts/review_report.py` 在责任范围 supporting/ 下创建一个 Review Report；每个 REV-* 是内部条目，不建 Finding 文件。
+3. Finding 保存 responsible_document/item、owner skill、severity、impact set、review scope、close conditions/evidence。
+4. report-only 弱引用只审计，不进入阻断范围；BLOCKER/HIGH 未关闭时阻断受影响范围。
+5. 关闭前必须证明责任文档语义已变化，证据是可解析的 passed 记录且绑定 finding ID，并覆盖重算后的全部 review_scope；任一条件缺失不得关闭。

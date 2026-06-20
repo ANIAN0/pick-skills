@@ -4,6 +4,22 @@
 
 ## 研发流程
 
+### v3 图谱化研发套件
+
+- [unattended-development-v3](./skills/unattended-development-v3/SKILL.md) — full/extension/task/bug 统一入口、四个人工确认闸门和可恢复运行记录
+- [requirements-workshop-v3](./skills/requirements-workshop-v3/SKILL.md) — 自适应 Story/Module/Feature 需求文档
+- [tech-design-v3](./skills/tech-design-v3/SKILL.md) — 按需求范围生成技术设计
+- [implementation-planning-v3](./skills/implementation-planning-v3/SKILL.md) — 生成同范围任务清单并校验依赖 DAG
+- [plan-execution-v3](./skills/plan-execution-v3/SKILL.md) — 按依赖、运行时资历、执行断言和正负验证执行任务
+- [project-verification-v3](./skills/project-verification-v3/SKILL.md) — 生成 Test Plan、聚合正负验证并独立请求 G-ACCEPT
+- [project-development-review-v3](./skills/project-development-review-v3/SKILL.md) — 局部影响评审及证据化关闭
+- [project-research-v3](./skills/project-research-v3/SKILL.md) — 项目调研与全局知识复用
+- [project-development-v3-common](./skills/project-development-v3-common/SKILL.md) — 图、确认、影响、证据和派生视图公共协议
+
+阶段生成动作不会代替用户确认。先生成决策包，再由独立确认动作记录 `G-REQ/G-DESIGN/G-PLAN/G-ACCEPT`；修改已有文档必须使用显式 revision 更新，生成器不会静默覆盖。
+
+### 旧版线性流程
+
 - [requirements-workshop](./skills/requirements-workshop/SKILL.md) — 交互式讨论需求，产出需求文档
 - [code-to-requirements](./skills/code-to-requirements/SKILL.md) — 从代码反向生成需求文档
 - [tech-design](./skills/tech-design/SKILL.md) — 基于需求产出技术方案

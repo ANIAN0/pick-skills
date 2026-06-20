@@ -28,6 +28,18 @@ NODE_TYPES = {
     "evidence",
     "workflow-run",
 }
+DOCUMENT_TYPES = {
+    "requirements",
+    "tech-design",
+    "task-list",
+    "test-plan",
+    "verification-report",
+    "research-task",
+    "review-report",
+    "root-cause-report",
+    "ui-spec",
+    "prototype",
+}
 STATUSES = {
     "draft",
     "confirmed",
@@ -39,6 +51,10 @@ STATUSES = {
     "superseded",
 }
 RELATION_SCOPES = {
+    "derives-from": {"project"},
+    "plans": {"project"},
+    "tests": {"project"},
+    "reviews": {"project"},
     "depends-on": {"project"},
     "verifies": {"project"},
     "implements": {"project"},
@@ -51,6 +67,10 @@ RELATION_SCOPES = {
     "references": {"project", "knowledge"},
 }
 REQUIRED_FIELDS = {"type", "id", "node_type", "title", "status", "revision"}
+DOCUMENT_REQUIRED_FIELDS = {
+    "type", "id", "document_type", "title", "status", "revision",
+    "parent", "scope_ref", "relations",
+}
 FRONTMATTER_RE = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 HASH_EXCLUDED_FIELDS = {
     "confirmation",
@@ -59,6 +79,8 @@ HASH_EXCLUDED_FIELDS = {
     "children",
     "computed_impact",
     "last_indexed_at",
+    "execution_records",
+    "root_causes",
 }
 
 
@@ -127,6 +149,15 @@ class Node:
         value = self.data.get("node_type")
         return value if isinstance(value, str) else None
 
+    @property
+    def document_type(self) -> str | None:
+        value = self.data.get("document_type")
+        return value if isinstance(value, str) else None
+
+    @property
+    def kind(self) -> str | None:
+        return self.document_type or self.node_type
+
 
 @dataclass
 class Graph:
@@ -173,9 +204,22 @@ def _issue(
     )
 
 
-def _node_files(root: Path) -> list[Path]:
-    source = root / "nodes" if (root / "nodes").is_dir() else root
-    return sorted(path for path in source.rglob("*.md") if path.is_file())
+def _graph_root(root: Path) -> Path:
+    return root / "graph" if (root / "graph").is_dir() else root
+
+
+def _node_files(root: Path) -> tuple[list[Path], str, Path]:
+    graph_root = _graph_root(root)
+    stories = graph_root / "stories"
+    legacy = graph_root / "nodes"
+    if stories.is_dir():
+        return sorted(path for path in stories.rglob("*.md") if path.is_file()), "stories", graph_root
+    if legacy.is_dir():
+        return sorted(path for path in legacy.rglob("*.md") if path.is_file()), "legacy", graph_root
+    loose_legacy = sorted(path for path in graph_root.rglob("*.md") if path.is_file())
+    if loose_legacy:
+        return loose_legacy, "legacy", graph_root
+    return [], "missing", graph_root
 
 
 def _load_node(path: Path, root: Path, graph: Graph) -> Node | None:
@@ -254,11 +298,34 @@ def semantic_hash(node: Node) -> str:
         sort_keys=True,
         separators=(",", ":"),
     )
-    payload = encoded + "\n---body---\n" + normalize_body(node.body)
+    body = node.body
+    if node.document_type == "task-list":
+        body = body.split("\n## 执行记录\n", 1)[0]
+    payload = encoded + "\n---body---\n" + normalize_body(body)
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _validate_schema(graph: Graph, node: Node) -> None:
+    if node.data.get("type") == "project-development/document-node":
+        for name in sorted(DOCUMENT_REQUIRED_FIELDS):
+            if name not in node.data:
+                _issue(graph, "REQUIRED_FIELD", node, name, f"missing required field: {name}")
+        if node.document_type not in DOCUMENT_TYPES:
+            _issue(graph, "DOCUMENT_TYPE_INVALID", node, "document_type", "unknown document_type")
+        if not isinstance(node.data.get("id"), str) or not node.data.get("id", "").strip():
+            _issue(graph, "ID_INVALID", node, "id", "id must be a non-empty string")
+        scope_ref = node.data.get("scope_ref")
+        if not isinstance(scope_ref, dict):
+            _issue(graph, "SCOPE_REF_INVALID", node, "scope_ref", "scope_ref must be a mapping")
+        else:
+            document = scope_ref.get("document")
+            item = scope_ref.get("item")
+            if not isinstance(document, str) or not document:
+                _issue(graph, "SCOPE_DOCUMENT_INVALID", node, "scope_ref.document", "scope_ref.document must be a document ID")
+            if item is not None and (not isinstance(item, str) or not re.fullmatch(r"F-\d+", item)):
+                _issue(graph, "SCOPE_ITEM_INVALID", node, "scope_ref.item", "scope_ref.item must be null or F-* ID")
+        _validate_common_fields(graph, node)
+        return
     for name in sorted(REQUIRED_FIELDS):
         if name not in node.data:
             _issue(graph, "REQUIRED_FIELD", node, name, f"missing required field: {name}")
@@ -268,19 +335,7 @@ def _validate_schema(graph: Graph, node: Node) -> None:
         _issue(graph, "ID_INVALID", node, "id", "id must be a non-empty string")
     if node.data.get("node_type") not in NODE_TYPES:
         _issue(graph, "NODE_TYPE_INVALID", node, "node_type", "unknown node_type")
-    if not isinstance(node.data.get("title"), str) or not node.data.get("title", "").strip():
-        _issue(graph, "TITLE_INVALID", node, "title", "title must be a non-empty string")
-    if node.data.get("status") not in STATUSES:
-        _issue(graph, "STATUS_INVALID", node, "status", "unknown v3 lifecycle status")
-    revision = node.data.get("revision")
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        _issue(graph, "REVISION_INVALID", node, "revision", "revision must be an integer >= 1")
-    parent = node.data.get("parent")
-    if parent is not None and (not isinstance(parent, str) or not parent):
-        _issue(graph, "PARENT_INVALID", node, "parent", "parent must be a node ID or null")
-    relations = node.data.get("relations", [])
-    if not isinstance(relations, list):
-        _issue(graph, "RELATIONS_INVALID", node, "relations", "relations must be a list")
+    _validate_common_fields(graph, node)
     if node.node_type == "task":
         task_fields = {
             "criticality": {"core", "supporting"},
@@ -294,6 +349,22 @@ def _validate_schema(graph: Graph, node: Node) -> None:
             _issue(graph, "TASK_FIELD_INVALID", node, "infrastructure", "infrastructure must be boolean")
 
 
+def _validate_common_fields(graph: Graph, node: Node) -> None:
+    if not isinstance(node.data.get("title"), str) or not node.data.get("title", "").strip():
+        _issue(graph, "TITLE_INVALID", node, "title", "title must be a non-empty string")
+    if node.data.get("status") not in STATUSES:
+        _issue(graph, "STATUS_INVALID", node, "status", "unknown v3 lifecycle status")
+    revision = node.data.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        _issue(graph, "REVISION_INVALID", node, "revision", "revision must be an integer >= 1")
+    parent = node.data.get("parent")
+    if parent is not None and (not isinstance(parent, str) or not parent):
+        _issue(graph, "PARENT_INVALID", node, "parent", "parent must be a node ID or null")
+    relations = node.data.get("relations", [])
+    if not isinstance(relations, list):
+        _issue(graph, "RELATIONS_INVALID", node, "relations", "relations must be a list")
+
+
 def _validate_relations(graph: Graph, node: Node) -> None:
     relations = node.data.get("relations", [])
     if not isinstance(relations, list):
@@ -305,7 +376,7 @@ def _validate_relations(graph: Graph, node: Node) -> None:
             continue
         relation_type = relation.get("type")
         target = relation.get("target")
-        scope = relation.get("scope")
+        scope = relation.get("scope", "project" if node.document_type else None)
         if relation_type not in RELATION_SCOPES:
             _issue(graph, "RELATION_TYPE_UNKNOWN", node, f"{field_name}.type", "unknown relation type")
             continue
@@ -329,7 +400,11 @@ def _validate_relations(graph: Graph, node: Node) -> None:
             )
         target_node = graph.nodes.get(target) if scope == "project" and isinstance(target, str) else None
         direction_rules: dict[str, tuple[set[str], set[str]]] = {
-            "verifies": ({"verification"}, {"capability", "requirement"}),
+            "derives-from": ({"tech-design"}, {"requirements"}),
+            "plans": ({"task-list"}, {"tech-design"}),
+            "tests": ({"test-plan"}, {"tech-design"}),
+            "reviews": ({"review-report"}, set(DOCUMENT_TYPES)),
+            "verifies": ({"verification", "verification-report"}, {"capability", "requirement", "test-plan", "requirements"}),
             "implements": ({"task", "change-contract"}, set(NODE_TYPES)),
             "researches": ({"research-task"}, set(NODE_TYPES)),
             "specifies": ({"ui-spec"}, {"capability"}),
@@ -338,22 +413,113 @@ def _validate_relations(graph: Graph, node: Node) -> None:
         }
         if relation_type in direction_rules:
             source_types, target_types = direction_rules[relation_type]
-            if node.node_type not in source_types:
+            if node.kind not in source_types:
                 _issue(
                     graph,
                     "RELATION_SOURCE_TYPE",
                     node,
                     f"{field_name}.type",
-                    f"{relation_type} is not allowed from {node.node_type}",
+                    f"{relation_type} is not allowed from {node.kind}",
                 )
-            if target_node and target_node.node_type not in target_types:
+            if target_node and target_node.kind not in target_types:
                 _issue(
                     graph,
                     "RELATION_TARGET_TYPE",
                     node,
                     f"{field_name}.target",
-                    f"{relation_type} cannot target {target_node.node_type}",
+                    f"{relation_type} cannot target {target_node.kind}",
                 )
+
+
+def _path_parts(node: Node, graph_root: Path) -> tuple[str | None, str | None, str | None]:
+    try:
+        parts = node.path.relative_to(graph_root / "stories").parts
+    except ValueError:
+        return None, None, None
+    story = parts[0].split("-", 2)[:2] if parts else []
+    story_id = "-".join(story) if len(story) == 2 and story[0] == "US" else None
+    module_id = None
+    feature_id = None
+    for index, part in enumerate(parts):
+        if index and parts[index - 1] == "modules" and re.match(r"M-\d+-", part):
+            module_id = "-".join(part.split("-", 2)[:2])
+        if index and parts[index - 1] == "features" and re.match(r"F-\d+-", part):
+            feature_id = "-".join(part.split("-", 2)[:2])
+    return story_id, module_id, feature_id
+
+
+def _validate_hierarchical_layout(graph: Graph, graph_root: Path, layout: str) -> None:
+    if layout == "legacy":
+        for node in graph.all_nodes:
+            if node.document_type:
+                _issue(graph, "NEW_DOCUMENT_FLAT_LAYOUT", node, "type", "new document nodes must be stored under graph/stories")
+        return
+    if layout != "stories":
+        _issue(graph, "STORIES_MISSING", None, None, "graph/stories directory is required for new projects", file_name=graph_root.as_posix())
+        return
+
+    stories_root = graph_root / "stories"
+    for level in stories_root.rglob("*"):
+        if level.is_dir() and level.name in {"modules", "features"} and not any(level.rglob("*.md")):
+            _issue(graph, "EMPTY_HIERARCHY_LEVEL", None, None, f"empty {level.name} directory is not allowed", file_name=level.relative_to(graph.root).as_posix())
+
+    requirements_by_dir = {
+        node.path.parent: node
+        for node in graph.all_nodes
+        if node.document_type == "requirements"
+    }
+    closures: dict[tuple[str, str | None], set[str]] = {}
+    closure_gate_active: set[tuple[str, str | None]] = set()
+    for node in graph.all_nodes:
+        story_id, module_id, feature_id = _path_parts(node, graph_root)
+        if not story_id:
+            _issue(graph, "STORY_DIRECTORY_INVALID", node, None, "document must be below US-<number>-<slug>")
+            continue
+        scope_ref = node.data.get("scope_ref")
+        if not isinstance(scope_ref, dict):
+            continue
+        expected_requirements = requirements_by_dir.get(node.path.parent)
+        if node.document_type == "requirements" and module_id:
+            story_requirements = requirements_by_dir.get(node.path.parent.parent.parent)
+            if story_requirements and node.data.get("parent") != story_requirements.id:
+                _issue(graph, "PARENT_PATH_MISMATCH", node, "parent", f"module requirements parent must be {story_requirements.id}")
+        elif node.document_type == "requirements" and not module_id and node.data.get("parent") is not None:
+            _issue(graph, "PARENT_PATH_MISMATCH", node, "parent", "story requirements parent must be null")
+        if feature_id:
+            expected_requirements = requirements_by_dir.get(node.path.parent.parent.parent)
+            if scope_ref.get("item") != feature_id:
+                _issue(graph, "SCOPE_PATH_MISMATCH", node, "scope_ref.item", f"feature directory {feature_id} does not match scope_ref.item")
+        elif module_id and node.document_type != "requirements":
+            expected_requirements = requirements_by_dir.get(node.path.parent)
+            if scope_ref.get("item") is not None:
+                _issue(graph, "SCOPE_PATH_MISMATCH", node, "scope_ref.item", "module-level document scope_ref.item must be null")
+        elif not module_id and node.document_type != "requirements" and scope_ref.get("item") is not None:
+            _issue(graph, "SCOPE_PATH_MISMATCH", node, "scope_ref.item", "story-level document scope_ref.item must be null")
+        if expected_requirements and scope_ref.get("document") != expected_requirements.id:
+            _issue(graph, "SCOPE_PATH_MISMATCH", node, "scope_ref.document", f"scope_ref.document must be {expected_requirements.id}")
+        if feature_id and node.document_type in {"tech-design", "task-list", "test-plan", "verification-report"}:
+            closure_key = (scope_ref.get("document"), feature_id)
+            closures.setdefault(closure_key, set()).add(node.document_type)
+            if node.data.get("status") in {"ready", "in_progress", "done"}:
+                closure_gate_active.add(closure_key)
+
+    required = {"tech-design", "task-list", "test-plan"}
+    for (document_id, feature_id), present in closures.items():
+        if (document_id, feature_id) not in closure_gate_active:
+            continue
+        missing = sorted(required - present)
+        if missing:
+            owner = next(
+                (
+                    node
+                    for node in graph.all_nodes
+                    if isinstance(node.data.get("scope_ref"), dict)
+                    and node.data["scope_ref"].get("document") == document_id
+                    and _path_parts(node, graph_root)[2] == feature_id
+                ),
+                None,
+            )
+            _issue(graph, "FEATURE_CLOSURE_MISSING", owner, "scope_ref", f"feature {feature_id} missing: {', '.join(missing)}")
 
 
 def _validate_parents(graph: Graph) -> None:
@@ -574,7 +740,8 @@ def load_graph(root: Path | str) -> Graph:
         _issue(graph, "GRAPH_ROOT_INVALID", None, None, "graph root must be an existing directory", file_name=str(root_path))
         return graph
 
-    for path in _node_files(root_path):
+    node_files, layout, graph_root = _node_files(root_path)
+    for path in node_files:
         node = _load_node(path, root_path, graph)
         if node is None:
             continue
@@ -597,6 +764,7 @@ def load_graph(root: Path | str) -> Graph:
         _validate_executor_gate(graph, node)
         _validate_evidence_node(graph, node)
     _validate_parents(graph)
+    _validate_hierarchical_layout(graph, graph_root, layout)
     for node in graph.all_nodes:
         _validate_done_gates(graph, node)
     for node in graph.all_nodes:
@@ -613,7 +781,7 @@ def load_graph(root: Path | str) -> Graph:
                 continue
             relation_type = relation.get("type")
             target = relation.get("target")
-            scope = relation.get("scope")
+            scope = relation.get("scope", "project" if node.document_type else None)
             if not all(isinstance(value, str) for value in (relation_type, target, scope)):
                 continue
             edge = (relation_type, target, scope)

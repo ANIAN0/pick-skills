@@ -5,7 +5,7 @@
 ## 功能
 
 - 创建 `workplace/{current_version}/` 过程文档目录。
-- 在当前实际版本目录创建 `graph/nodes/` 与 `graph/.derived/`，不创建业务节点。
+- 在当前实际版本目录创建 `graph/stories/` 与 `graph/.derived/`，不创建业务文档或空模块/功能点层级。
 - 调用 `personal-kb/scripts/kb_cli.py check-global` 解析全局研究知识库；显式路径不可用时返回错误。
 - 创建 `workplace/global/` 和 `workplace/test/`，其中 `workplace/test/` 与 `test-suite-maintainer` 联动，用于跨迭代复用材料。
 - 从 FileBrowser 下载第 1 层通用 `AGENTS.md`、`CLAUDE.md`。
@@ -66,7 +66,7 @@ workplace/
 │   ├── plan/
 │   ├── tests/
 │   └── graph/
-│       ├── nodes/
+│       ├── stories/
 │       └── .derived/
 └── archive/
 ```
@@ -143,8 +143,9 @@ project-kb/
 - `workplace/`：过程文档，不作为项目规则入口。
 - `workplace/global/`：跨迭代复用的过程资产、模板、脚本和说明。
 - `workplace/test/`：与 `test-suite-maintainer` 联动的跨迭代测试方案、脚本、夹具和报告模板。
-- `workplace/{current_version}/graph/nodes/`：项目研发 v3 Markdown 事实节点。
+- `workplace/{current_version}/graph/stories/`：按 Story→可选模块→可选功能点组织的项目研发 v3 Markdown 事实文档。
 - `workplace/{current_version}/graph/.derived/`：可删除重建的索引和静态视图。
-- `knowledge.global_dir`：全局研究报告位置，不复制到项目 `graph/nodes/`。
+- `knowledge.global_dir`：全局研究报告位置，不复制到项目 `graph/stories/`。
+- 已有 `graph/nodes/` 只读兼容，初始化时不删除、不移动、不自动迁移。
 
 图目录与全局知识库的详细边界见 [project-graph.md](project-graph.md)。

@@ -1,4 +1,4 @@
 interface:
   display_name: "项目研发评审 v3"
-  short_description: "定位责任节点并评审受影响子图"
-  default_prompt: "使用 $project-development-review-v3 定位问题责任节点、计算影响，并用聚焦证据关闭评审发现。"
+  short_description: "按影响范围生成研发评审报告"
+  default_prompt: "使用 $project-development-review-v3 将当前范围的 REV-* 聚合到 review-report.md，定位责任文档和内部 ID，并只重审真实受影响范围。"

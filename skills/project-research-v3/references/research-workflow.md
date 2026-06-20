@@ -18,9 +18,9 @@ Research Task 只回答一个可验证问题，并记录责任节点、问题、
 
 ## 项目摘要
 
-项目图谱只写：Research Task ID、Knowledge Report ID、与责任节点直接相关的结论摘要、适用范围、有效期和剩余风险。完整来源、分析和历史只保存在全局知识库。
+Research Task 就近写入 Story、Module 或 Feature 范围目录的 `research/`，并使用与责任需求相同的 `scope_ref`。项目图谱只写：Research Task ID、Knowledge Report ID、与责任文档直接相关的结论摘要、适用范围、来源更新时间、有效期和剩余风险。完整来源、分析和历史只保存在全局知识库。
 
-消费节点通过 `uses-knowledge` 指向报告；Research Task 通过 `researches` 指向责任节点。
+消费文档通过 `uses-knowledge` 指向报告；Research Task 通过 `depends-on` 指向责任文档。
 
 ## stale 与 blocked
 

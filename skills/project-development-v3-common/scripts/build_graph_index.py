@@ -4,12 +4,13 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from graph_core import Graph, load_graph
+from graph_core import Graph, load_graph, semantic_hash
 
 
 def _digest_bytes(content: bytes) -> str:
@@ -35,19 +36,21 @@ def project_graph(graph: Graph, *, generated_at: str) -> dict[str, Any]:
         if not node.id:
             continue
         relations = node.data.get("relations", [])
-        nodes.append(
-            {
+        node_value = {
                 "id": node.id,
-                "node_type": node.node_type,
+                "document_type": node.document_type,
                 "title": node.data.get("title"),
                 "status": node.data.get("status"),
                 "parent": node.data.get("parent"),
                 "revision": node.data.get("revision"),
                 "relations": relations if isinstance(relations, list) else [],
+                "scope_ref": node.data.get("scope_ref"),
                 "source_path": node.relative_path,
                 "source_digest": _digest_bytes(node.path.read_bytes()),
             }
-        )
+        if node.node_type is not None:
+            node_value["node_type"] = node.node_type
+        nodes.append(node_value)
         parent = node.data.get("parent")
         if isinstance(parent, str):
             structural_edges.append({"source": node.id, "target": parent, "type": "parent"})
@@ -66,6 +69,39 @@ def project_graph(graph: Graph, *, generated_at: str) -> dict[str, Any]:
         "nodes": nodes,
         "structural_edges": structural_edges,
         "relation_edges": relation_edges,
+    }
+
+
+def project_documents(graph: Graph, *, generated_at: str) -> dict[str, Any]:
+    digest = source_digest(graph)
+    documents: dict[str, dict[str, Any]] = {}
+    item_pattern = re.compile(r"^#{2,6}\s+((?:R|A|F|D|C|T|V|REV)-\d+)\b\s*(.*)$", re.MULTILINE)
+    for node in sorted(graph.all_nodes, key=lambda item: (item.id or "", item.relative_path)):
+        if not node.id:
+            continue
+        source_bytes = node.path.read_bytes()
+        documents[node.id] = {
+            "id": node.id,
+            "document_type": node.document_type,
+            "title": node.data.get("title"),
+            "status": node.data.get("status"),
+            "scope_ref": node.data.get("scope_ref"),
+            "source_path": node.relative_path,
+            "source_digest": _digest_bytes(source_bytes),
+            "semantic_digest": semantic_hash(node),
+            "body": node.body,
+            "items": [
+                {"id": match.group(1), "title": match.group(2).strip()}
+                for match in item_pattern.finditer(node.body)
+            ],
+            "confirmation": node.data.get("confirmation"),
+        }
+    return {
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "source_digest": digest,
+        "document_count": len(documents),
+        "documents": documents,
     }
 
 
@@ -127,8 +163,10 @@ def build_index(graph_root: Path, output: Path) -> tuple[dict[str, Any], dict[st
     generated_at = datetime.now(timezone.utc).isoformat()
     graph_value = project_graph(graph, generated_at=generated_at)
     backlinks_value = project_backlinks(graph, generated_at=generated_at)
+    documents_value = project_documents(graph, generated_at=generated_at)
     _atomic_json(output / "graph.json", graph_value)
     _atomic_json(output / "backlinks.json", backlinks_value)
+    _atomic_json(output / "documents.json", documents_value)
     return graph_value, backlinks_value
 
 
@@ -152,6 +190,7 @@ def main() -> int:
                 "valid": True,
                 "graph": str(args.output / "graph.json"),
                 "backlinks": str(args.output / "backlinks.json"),
+                "documents": str(args.output / "documents.json"),
                 "node_count": graph_value["node_count"],
                 "edge_count": graph_value["edge_count"],
                 "source_digest": graph_value["source_digest"],

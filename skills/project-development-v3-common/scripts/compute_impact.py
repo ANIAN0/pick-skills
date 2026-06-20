@@ -10,6 +10,10 @@ from graph_core import Graph, load_graph
 
 
 STRONG_RELATIONS = {
+    "derives-from",
+    "plans",
+    "tests",
+    "reviews",
     "depends-on",
     "verifies",
     "implements",
@@ -65,13 +69,13 @@ def _require_valid_graph(graph: Graph, changed: str, *, allow_external_target: b
         raise ImpactError("CHANGED_NODE_UNKNOWN", f"changed node does not exist: {changed}", node_id=changed)
 
 
-def content_impact(graph: Graph, changed: str) -> list[ImpactItem]:
+def content_impact(graph: Graph, changed: str, *, scope_item: str | None = None) -> list[ImpactItem]:
     _require_valid_graph(graph, changed, allow_external_target=True)
     items: dict[str, ImpactItem] = {}
     _record(items, changed, "changed:content", [changed])
 
     node = graph.nodes.get(changed)
-    if node is not None:
+    if node is not None and scope_item is None:
         parent = node.data.get("parent")
         if isinstance(parent, str) and parent in graph.nodes:
             _record(items, parent, "structural:direct-parent", [changed, parent])
@@ -83,6 +87,10 @@ def content_impact(graph: Graph, changed: str) -> list[ImpactItem]:
     while queue:
         target, path = queue.popleft()
         for relation_type, source, _scope in graph.reverse_edges.get(target, []):
+            if target == changed and scope_item is not None:
+                source_scope = graph.nodes[source].data.get("scope_ref")
+                if not isinstance(source_scope, dict) or source_scope.get("document") != changed or source_scope.get("item") != scope_item:
+                    continue
             next_path = path + [source]
             if relation_type in STRONG_RELATIONS:
                 _record(items, source, f"reverse:{relation_type}", next_path)
@@ -150,9 +158,10 @@ def compute_impact(
     *,
     old_parent: str | None = None,
     new_parent: str | None = None,
+    scope_item: str | None = None,
 ) -> list[ImpactItem]:
     if change_kind == "content":
-        return content_impact(graph, changed)
+        return content_impact(graph, changed, scope_item=scope_item)
     if change_kind == "move":
         return move_impact(graph, changed, old_parent=old_parent, new_parent=new_parent)
     if change_kind == "delete":
@@ -167,6 +176,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--change-kind", required=True, choices=("content", "move", "delete"))
     parser.add_argument("--old-parent")
     parser.add_argument("--new-parent")
+    parser.add_argument("--scope-item", help="Optional F-* item changed inside a requirements document")
     parser.add_argument("--json", action="store_true", dest="as_json")
     return parser
 
@@ -181,6 +191,7 @@ def main() -> int:
             args.change_kind,
             old_parent=args.old_parent,
             new_parent=args.new_parent,
+            scope_item=args.scope_item,
         )
     except ImpactError as exc:
         result = {"valid": False, "change_kind": args.change_kind, "changed": args.changed, "impacts": [], "error": exc.as_dict()}
@@ -194,6 +205,7 @@ def main() -> int:
         "valid": True,
         "change_kind": args.change_kind,
         "changed": args.changed,
+        "scope_item": args.scope_item,
         "impacts": [asdict(item) for item in impacts],
         "error": None,
     }

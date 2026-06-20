@@ -6,7 +6,7 @@
 
 可复用完整报告存入全局根目录。项目只保存：
 
-- 通过 `researches` 关联不确定节点的 Research Task；
+- 在 Story/Module/Feature 范围 `research/` 目录中、通过 `scope_ref` 和 `depends-on` 关联责任文档的 Research Task；
 - 简洁决策摘要；
 - 指向稳定报告 ID 的 `uses-knowledge` 关系；
 - 判断时效和来源所需的引用元数据。

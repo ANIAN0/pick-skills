@@ -24,7 +24,7 @@ description: |
 │   ├── test/              ← 跨迭代复用的测试方案、脚本、夹具和报告模板
 │   ├── 1.0/
 │   │   └── graph/
-│   │       ├── nodes/    ← Markdown 事实节点
+│   │       ├── stories/  ← Story/模块/功能点层级 Markdown 事实文档
 │   │       └── .derived/ ← 可删除重建的索引和视图
 │   └── archive/
 ├── skillconfig.json
@@ -151,7 +151,7 @@ python skills/workspace-setup/scripts/sync_config.py sync --config skillconfig.j
 
 1. 读取 `skillconfig.json`。
 2. 创建或保留 `workplace/{current_version}/` 过程文档目录。
-3. 在实际版本目录创建 `graph/nodes/` 和 `graph/.derived/`，不创建伪业务节点。
+3. 在实际版本目录创建 `graph/stories/` 和 `graph/.derived/`，不预建 Story、modules、features 或伪业务节点；已有 `graph/nodes/` 保留但不迁移。
 4. 调用 `personal-kb check-global` 解析全局知识库；显式路径不可用时报告错误。
 5. 下载或创建通用 `AGENTS.md`、`CLAUDE.md`。
 6. 创建项目独立 `PROJECT_RULES.md`，如果已存在则不覆盖。

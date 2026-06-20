@@ -1,0 +1,12 @@
+{
+  "type": "project-development/workflow-run",
+  "id": "RUN-001",
+  "mode": "full",
+  "scope_ref": {"document": "DOC-REQ-US-001", "item": null},
+  "gate_packages": {},
+  "gate_status": {},
+  "status": "in_progress",
+  "current_gate": "G-REQ",
+  "resume_gate": null,
+  "pause_reason": null
+}

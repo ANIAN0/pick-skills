@@ -1,42 +1,15 @@
 ---
 name: implementation-planning-v3
-description: 将就绪的项目研发 v3 变更契约和验证节点拆分为小型、有序的任务节点，包含执行断言、依赖、风险、重要性、基础设施属性、执行者要求和审批门禁。用于 full/extension 实施计划，以及责任契约已存在时的 task/bug 快捷计划；不执行任务，也不重新设计上游决策。
+description: 为已通过 G-DESIGN 的每份 tech-design.md 在同目录生成一个同 scope_ref 的 task-list.md，把 T-* 保存在正文，并通过资历门禁和 G-PLAN 后交给执行。
 ---
 
-# 实施计划 v3
+# 范围化实施计划 v3
 
-创建实现就绪变更契约所需的最小任务子图。引用上游 ID 和本地执行事实，不把完整需求或技术文档复制进任务。
+1. 验证 G-DESIGN 及输入哈希。
+2. 为每份 Tech Design 在同目录创建一个 Task List；单个 `T-*` 是正文条目，不建独立文件。
+3. T-* 明确 C/V、无环依赖 DAG、文件、步骤、独立正负 verification commands、执行断言、证据路径、criticality/risk/infrastructure 和 executor。
+4. 核心或基础设施任务没有 senior profile 或真实人工批准时保持 blocked。
+5. 使用 `scripts/generate_task_list.py` 保证同目录、同 `scope_ref` 和 Tech hash 贯通。
+6. G-PLAN package 必须包含同范围 Test Plan；生成动作不记录确认，由独立用户确认动作确认。缺失或 stale 时不执行。
 
-## 必读内容
-
-- 读取公共节点、关系、生命周期、确认和证据协议。
-- 创建任务前读取 [任务契约](references/task-contract.md)。
-- 排序或分配任务前读取 [优先级与执行者](references/priority-and-executor.md)。
-
-## 入口路由
-
-- `full`：规划所选已确认故事子图中的全部就绪变更契约。
-- `extension`：只规划新增或受影响的就绪契约，保留无关任务。
-- `task`：只规划明确选中的就绪变更契约，不制造其他阶段。
-- `bug`：从根因和修复契约开始，只创建复现、修复、验证和回归任务。
-
-## 工作流
-
-1. 校验图谱、确认哈希、变更契约完整性和关联验证节点。
-2. 将每个可独立验证的 Delta 拆成一个或多个边界清晰的任务。
-3. 用 `implements` 关联变更契约，用 `depends-on` 关联验证和前置任务。
-4. 填写执行字段、精确文件/符号、断言、测试、负向路径和证据预期。
-5. 构建任务依赖 DAG，按优先级协议排列就绪任务。
-6. 应用执行者门禁；没有 senior 或明确审批的核心/基础设施任务保持 blocked。
-
-## 硬规则
-
-- 依赖顺序允许时，基础设施和核心任务优先于支撑任务。
-- 缺少关联验证或上游哈希 stale 时，不得将任务标记为 ready。
-- 没有 senior 执行者或明确人工审批时，核心/基础设施任务不得进入 in_progress。
-- 不执行代码、不弱化验证、不重新设计变更契约，也不以文档长度判断风险。
-- 不复制完整上游正文，只保留执行所需的 ID、哈希、目标、局部断言和相邻接口。
-
-## 输出
-
-报告有序任务 ID、依赖阻塞、执行者要求/审批、关联验证 ID，以及下一个可执行的核心或基础设施任务。
+不执行任务，不弱化 Verification，不为单个 T-* 建 Markdown。

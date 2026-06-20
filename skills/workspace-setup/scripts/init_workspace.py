@@ -120,7 +120,7 @@ def init_workspace(config_path: str, download_configs: bool = True) -> Dict:
 
     # 5. 创建当前版本的项目图目录。源节点和派生输出分离。
     graph_path = version_path / "graph"
-    for graph_subdir in ("nodes", ".derived"):
+    for graph_subdir in ("stories", ".derived"):
         subdir_path = graph_path / graph_subdir
         subdir_path.mkdir(parents=True, exist_ok=True)
         results["directories_created"].append(str(subdir_path))
