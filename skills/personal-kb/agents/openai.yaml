@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目知识库"
+  short_description: "维护当前项目的 OKF 领域、架构、代码、决策与流程知识"
+  default_prompt: "使用 $personal-kb 基于当前项目证据初始化、查询、迁移或更新 OKF 兼容的 project-kb。"

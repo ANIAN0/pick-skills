@@ -1,207 +1,126 @@
 ---
 name: personal-kb
-description: 项目与个人知识库管理 skill。用于维护项目内按代码路径镜像的 code 知识库，以及由多个项目复用的全局 research Knowledge Report。当用户提到知识库、project-kb、代码文件说明、功能点、测试覆盖、技术调研、研究报告、来源追踪、报告过期或全局知识复用时触发。
+description: 建设、查询、更新、迁移和检查当前项目的 OKF 兼容 `project-kb`，维护领域知识、架构、代码职责、技术决策、工作流、来源和测试映射。用于用户明确要求初始化或维护项目知识库、把已验证的项目结论沉淀为长期知识、复用已有项目知识、查询代码影响范围、迁移旧知识库或执行健康检查时；不管理全局或跨项目知识库。
 ---
 
-# 项目知识库管理 Skill
+# 项目知识库
 
-本 skill 提供两种明确模式。先按用户目标路由，不要混合存储边界：
+只维护当前项目根目录下的 `project-kb/`。把它作为一个项目级 Open Knowledge Format（OKF）bundle：内容可由人直接阅读、由 Agent 解析、由版本控制比较，并能脱离专用工具使用。
 
-- `code`：维护项目内 `project-kb/` 的代码镜像说明，服务于影响分析和定向测试。
-- `research`：维护 `knowledge.global_dir` 下的全局 Knowledge Report，服务于跨项目调研复用和来源追踪。
+## 存储结构
 
-研究模式读取 [research-kb.md](references/research-kb.md)，并从 `assets/research-report.md` 创建报告。代码模式继续使用下文及现有 references，保持原行为。
-
-`scripts/kb_cli.py` 是 `workspace-setup` 与本 Skill 的确定性接口：使用 `init-project` 初始化项目知识库，使用 `check-global` 检查全局知识库边界。`workspace-setup` 不得复制本 Skill 的模板或自行实现知识库初始化。
-
-## Research 模式硬规则
-
-- 将完整报告只存入全局知识库，不复制进项目 `graph/stories/`；项目 Research Task 仅保存摘要、稳定报告 ID 和时效元数据。
-- 使用稳定报告 ID；项目仅保存 Research Task、决策摘要和 `uses-knowledge` 正向关系。
-- 来源不足、`review_after` 已过期或 `knowledge.global_dir` 不可访问时保持 blocked/stale，不把搜索摘要包装成结论。
-- 更新被项目引用的报告时保留变化摘要、`updated_at` 与旧结论历史，不静默替换。
-
-## 与三层结构的关系
-
-```
-第 1 层：AGENTS.md / CLAUDE.md
-  ↓ 固定要求读取
-第 2 层：PROJECT_RULES.md
-  ↓ 链接并约束
-第 3 层：project-kb/
-```
-
-`PROJECT_RULES.md` 记录当前项目必须知道的规则和重要文件；`project-kb/` 记录可持续积累的项目知识。修改代码前，必须阅读目标代码文件对应的知识库条目。
-
-## 默认目录结构
-
-```
+```text
 project-kb/
-├── README.md              ← 知识库入口
-├── code/                  ← 按源码相对路径镜像的代码文件说明
-│   ├── README.md
-│   └── path/to/file.ext.md
-├── decisions/             ← 重要设计决策，可选
-├── workflows/             ← 跨文件流程说明，可选
-└── changelog.md           ← 知识库操作日志
+├── index.md
+├── log.md
+├── domain/
+├── architecture/
+├── code/
+├── decisions/
+└── workflows/
 ```
 
-初始只创建确定需要的目录。`code/` 是必需目录，其他目录按需创建。
+- `domain/`：术语、业务规则、核心对象和长期有效的功能知识。
+- `architecture/`：系统边界、模块职责、数据模型、接口契约和技术机制。
+- `code/`：按源码相对路径镜像文件知识；`src/app.ts` 对应 `code/src/app.ts.md`。
+- `decisions/`：重要且无法从当前代码直接推导的决策、理由和失效条件。
+- `workflows/`：跨文件业务流、数据流、运行流和故障处理流程。
 
-## 核心原则
+根 `index.md`、`log.md` 和 `code/index.md` 是最小结构；其他目录及其 `index.md` 在出现对应知识时创建。按知识内容分类，不按需求、方案、任务、执行或验收阶段分类。
 
-### 1. 代码结构镜像
+初始化或迁移时读取 [项目知识模板](references/project-templates.md)。可运行：
 
-每个代码文件对应一份说明文档，路径放在 `project-kb/code/` 下并保留源码相对路径。
-
-示例：
-
-| 源码文件 | 知识库条目 |
-|---|---|
-| `src/app/page.tsx` | `project-kb/code/src/app/page.tsx.md` |
-| `lib/db/client.ts` | `project-kb/code/lib/db/client.ts.md` |
-| `scripts/build.py` | `project-kb/code/scripts/build.py.md` |
-
-目录级概览使用该目录下的 `README.md`，例如 `project-kb/code/src/README.md`。
-
-### 2. 为修改服务
-
-单文件说明不是普通 API 文档，而是回答：
-- 这个代码文件有哪些功能点？
-- 修改它会影响哪些文件？
-- 哪些逻辑容易被破坏？
-- 应该运行哪些测试验证？
-
-### 3. 使用 Obsidian 双向链接
-
-相关文件必须使用 wiki link：
-
-```markdown
-- [[project-kb/code/lib/db/client.ts]]
-- [[project-kb/code/app/api/chat/route.ts]]
+```text
+python skills/personal-kb/scripts/kb_cli.py init-project --project-root <真实项目根目录>
+python skills/personal-kb/scripts/kb_cli.py validate-project --project-root <真实项目根目录>
 ```
 
-当 A 文档链接 B 文档时，应在 B 文档中补充反向关联，除非该关联只是临时阅读线索。
+脚本只创建最小 bundle 和校验确定性格式，不生成、改写或判断知识结论。不要在用户未明确要求初始化时创建知识库。
 
-### 4. 与项目规则分工
+## OKF 文件契约
 
-`PROJECT_RULES.md` 放“所有修改前必须知道的项目规则和重要文件入口”。
+每个非 `index.md`、非 `log.md` 的 Markdown 概念文档必须以 YAML frontmatter 开头，并包含非空 `type`：
 
-`project-kb/` 放“按文件和流程展开的详细知识”。
-
-如果某条知识只对单个代码文件有意义，放入对应代码说明；如果跨多个文件但不是强规则，放入 `workflows/` 或 `decisions/`。
-
-## 初始化流程
-
-首次使用时：
-
-1. 确认项目根目录存在 `PROJECT_RULES.md`；没有则提醒先运行 `workspace-setup` 或创建该文件。
-2. 创建 `project-kb/README.md`。
-3. 创建 `project-kb/code/README.md`。
-4. 扫描项目代码文件，优先为核心文件创建说明文档。
-5. 在 `PROJECT_RULES.md` 中确认已链接知识库入口。
-
-### 代码文件识别
-
-默认纳入：
-- 源码：`.ts`、`.tsx`、`.js`、`.jsx`、`.py`、`.go`、`.rs`、`.java`、`.kt`、`.cs`、`.php`、`.rb`
-- 配置：`package.json`、`tsconfig.json`、`pyproject.toml`、`Cargo.toml`、`go.mod`、`Dockerfile`、`docker-compose.yml`
-- 脚本：`scripts/`、`bin/`、`tools/` 下的可执行或构建脚本
-- 测试：测试文件本身也可以有说明，但主要应被业务代码条目引用
-
-默认排除：
-- `.git/`
-- `node_modules/`
-- `.venv/`、`venv/`
-- `dist/`、`build/`、`coverage/`
-- 缓存、产物、日志和锁文件，除非项目规则明确要求说明
-
-## 单文件说明模板
-
-```markdown
-# 源码相对路径
-
-## 功能点
-
-- 说明该文件对外承担的功能。
-- 拆分到可验证的功能点，不只描述技术实现。
-
-## 相关文件
-
-- [[project-kb/code/path/to/related.ext]]：说明关联原因。
-
-## 重要逻辑
-
-- 说明容易被修改破坏的业务规则、状态流转、边界条件、兼容约束。
-- 记录“为什么这样做”，不要只复述代码。
-
-## 测试文件
-
-- `tests/...`：覆盖哪些功能点。
-- `src/.../*.test.ts`：覆盖哪些边界。
-
-## 修改注意事项
-
-- 修改前需要检查的配置、迁移、兼容性或数据影响。
-- 修改后建议运行的定向命令。
-
-## 最近更新
-
-- YYYY-MM-DD：记录本条目因什么代码变更而更新。
+```yaml
+---
+type: Project Workflow
+title: 订单导入流程
+description: 描述订单文件从上传到结果反馈的完整处理流程。
+tags: [orders, import]
+timestamp: 2026-06-21T10:00:00+08:00
+---
 ```
 
-## 更新流程
+- 优先填写 `title`、`description`、`tags`、`timestamp`。
+- 只有存在规范资源 URI 时才填写 `resource`；代码条目使用扩展字段 `source_path` 保存项目相对路径。
+- 允许生产者扩展字段；读取和更新时保留未知字段，不因未知 `type` 拒绝文档。
+- 文件在 bundle 内的相对路径就是概念身份。不要无理由移动或复制同一概念。
+- 使用普通 Markdown 链接表达关系，不使用 `[[wiki link]]`。优先采用从当前文件可解析的相对链接，并在文字中说明关系。
+- 只有强关联需要补反向链接；引用、导航和来源链接不机械补反链。
+- 外部事实在正文 `# Citations` 中列出来源。项目文件、阶段文档和调研报告使用普通链接作为项目证据。
 
-当用户要求更新知识库，或代码修改影响已有文件时：
+根 `index.md` 使用 `okf_version: "0.1"` 声明版本并提供渐进导航。子目录 `index.md` 不使用 frontmatter，只列出现有概念及一句话摘要。`log.md` 按 `YYYY-MM-DD` 倒序记录有意义的创建、更新、移动和废弃，不记录读取操作。
 
-1. 读取 `PROJECT_RULES.md`，确认项目规则和知识库入口。
-2. 定位被修改或将被修改的代码文件。
-3. 找到对应 `project-kb/code/...ext.md`；不存在则创建。
-4. 对比代码当前状态，更新功能点、相关文件、重要逻辑和测试文件。
-5. 如果相关文件缺少反向链接，补齐。
-6. 在 `project-kb/changelog.md` 追加操作记录。
-7. 如发现“所有修改前都必须知道”的新规则，更新 `PROJECT_RULES.md`。
+## 写入门槛
 
-## 查询流程
+只写入同时满足以下条件的知识：
 
-当用户询问项目代码或影响范围：
+- 已由当前代码、配置、测试、运行结果、已确认阶段结论或可靠项目材料验证。
+- 对后续需求、设计、修改、影响分析、维护或验收具有持续价值。
+- 能归入一个稳定概念，而不是临时讨论、任务状态或未确认推断。
 
-1. 先查 `PROJECT_RULES.md`。
-2. 再查 `project-kb/code/` 中对应文件说明。
-3. 沿 `相关文件` 双向链接查找影响面。
-4. 综合测试文件字段给出建议验证命令。
-5. 如果知识库缺失或过时，明确指出并建议补充。
+不复制完整阶段入口、调研报告、审查报告、原始日志或一次性搜索结果。需要沉淀时，从来源中提取长期有效的结论，写入相应概念，并在正文链接原始证据；能修改来源文档时补回知识概念链接。
 
-## 健康检查
+调研报告标记“可复用”不等于自动写入。只有用户或调用流程明确要求沉淀时，才核对报告与当前项目状态并更新知识库。同一结论后续直接复用；结论变化时更新原概念和 `log.md`，不创建内容重复的新文件。
 
-检查维度：
+## 创建与更新
 
-| 维度 | 检查内容 |
-|---|---|
-| 覆盖率 | 核心代码文件是否有对应说明 |
-| 路径一致 | 知识库路径是否与源码相对路径一致 |
-| 双向链接 | 相关文件是否存在双向链接 |
-| 测试映射 | 代码文件是否列出相关测试 |
-| 逻辑完整 | 是否记录重要业务规则和边界条件 |
-| 过时条目 | 文档描述是否与代码现状不一致 |
-| 孤立条目 | 是否存在没有入口或关联的说明 |
+1. 读取 `PROJECT_RULES.md`、根 `index.md`、相关目录 `index.md` 和已有概念。
+2. 搜索是否已有同一概念；优先更新，不按来源阶段重复创建。
+3. 对照当前项目和来源确认事实、适用边界与冲突。
+4. 选择 `domain`、`architecture`、`code`、`decisions` 或 `workflows`；内容跨类时选择主要归属并链接其他概念。
+5. 使用 OKF frontmatter、结构化正文、标准链接和来源写入概念。
+6. 更新所在目录及根 `index.md` 的导航；强关联发生变化时检查必要反链。
+7. 在 `log.md` 记录知识变化、原因和证据，不把日志当知识正文。
+8. 运行 `validate-project`，再检查内容与项目事实是否一致。
 
-发现问题后，优先修复会影响当前修改判断的条目。
+代码新增、修改、删除或重命名时，只更新受影响条目。删除或移动概念前搜索所有引用；源码删除时说明废弃或删除对应条目，不能保留仍像有效事实的说明。
 
-## 操作日志
+## 查询与复用
 
-每次批量更新在 `project-kb/changelog.md` 追加：
+1. 先读取 `PROJECT_RULES.md` 和根 `index.md`，再进入相关目录。
+2. 按标题、描述、标签、`source_path` 和正文搜索已有概念。
+3. 沿有语义说明的链接检查领域、架构、代码、决策、流程和测试影响。
+4. 对照当前代码或原始证据核实会影响当前判断的关键结论。
+5. 明确区分知识库已有结论、当前项目观察和 Agent 推断；条目过时时不能当作事实。
 
-```markdown
-## YYYY-MM-DD | 操作类型 | 简述
+知识库缺失不阻止不依赖它的研发工作。若已有知识可以回答，不重复调研；若来源失效或事实已变化，更新原概念后再使用。
 
-- 触发：用户请求 / 代码变更 / 健康检查
-- 变更：创建或更新了哪些条目
-- 影响：覆盖了哪些代码文件和测试映射
-- 待跟进：仍缺失或需要人工确认的信息
-```
+## 代码概念
 
-## 使用参考
+代码概念必须包含 `type: Project Code` 和准确的 `source_path`，正文至少说明：文件承担的可验证能力、关键逻辑与边界、强关联文件及原因、相关测试及覆盖内容、修改风险和验证建议。不要只复述类名、函数名或目录结构。
 
-- `references/project-templates.md`：三层结构和代码镜像知识库模板。
-- `references/quality-criteria.md`：代码说明条目的质量评估标准。
+## 健康检查与迁移
+
+用户要求审计时读取 [质量标准](references/quality-criteria.md)。先运行 `validate-project` 检查 OKF frontmatter、保留文件、wiki link、目录结构和本地链接，再抽查概念是否与当前项目一致。
+
+旧知识库迁移时：
+
+1. 保留原文件，先建立迁移清单，不覆盖未知用户内容。
+2. 将根 `README.md`、目录 `README.md` 和 `changelog.md` 分别迁移为 `index.md`、目录 `index.md` 和 `log.md`。
+3. 为普通概念补充 `type` 等 frontmatter，将 wiki link 改为可解析的标准 Markdown 链接。
+4. 把非代码知识归入正确目录；不为追求格式一次性制造空概念。
+5. 校验链接和项目事实后再删除被完整替代的旧文件。
+
+## 提问与完成
+
+能从项目和知识库确认的信息自行检查。只有无法确定真实项目根目录、知识归属或事实冲突会导致错误写入时才提问；问题放在回复最后的 `## 需要你确认` 区块，一次只问一个并给出推荐处理和影响。
+
+报告完成前自检：范围仅限当前项目；概念有项目证据；OKF 最低字段完整；标准链接可解析；未知字段被保留；索引和日志已同步；没有复制过程文档、写入临时状态或把推断冒充事实。
+
+## 边界
+
+- 不管理全局知识库、跨项目报告、时效传播、自动沉淀队列、图谱或 Web 入口。
+- 不替研发阶段修改入口结论、任务状态或用户确认。
+- 不自动扫描并为全部代码生成低价值文档。
+- 不把 OKF 的宽容读取规则误作写入质量标准；新写入内容必须满足本 Skill 的证据和链接要求。

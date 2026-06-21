@@ -1,4 +1,4 @@
 interface:
-  display_name: "项目研发评审 v3"
-  short_description: "按影响范围生成研发评审报告"
-  default_prompt: "使用 $project-development-review-v3 将当前范围的 REV-* 聚合到 review-report.md，定位责任文档和内部 ID，并只重审真实受影响范围。"
+  display_name: "项目研发审查 v3"
+  short_description: "独立审查五阶段入口和真实证据，报告阻塞问题与复审结论"
+  default_prompt: "使用 $project-development-review-v3 独立审查当前阶段入口文档和真实证据。"

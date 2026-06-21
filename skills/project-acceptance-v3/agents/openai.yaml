@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目验收 v3"
+  short_description: "基于已确认任务执行记录验证功能、用户路径、回归和交付证据"
+  default_prompt: "使用 $project-acceptance-v3 读取执行状态已确认的任务清单，进行最终真实验收。"

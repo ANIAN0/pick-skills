@@ -1,180 +1,183 @@
-# 项目知识库结构模板
+# 项目知识模板
 
-本模板用于第 3 层 `project-kb/`。知识库结构以代码文件镜像为核心，不再按项目类型预设大量分类。
+只在初始化、迁移或创建新类型概念时读取。所有链接使用普通 Markdown 链接。
 
-## 标准结构
+## 最小 bundle
 
-```
+```text
 project-kb/
-├── README.md
-├── code/
-│   ├── README.md
-│   ├── src/
-│   │   └── app.ts.md
-│   └── scripts/
-│       └── build.py.md
-├── decisions/
-│   └── 0001-example.md
-├── workflows/
-│   └── example-flow.md
-└── changelog.md
+├── index.md
+├── log.md
+└── code/
+    └── index.md
 ```
 
-## 与三层结构的关系
-
-```
-AGENTS.md / CLAUDE.md
-└── PROJECT_RULES.md
-    └── project-kb/
-        ├── code/
-        ├── decisions/
-        └── workflows/
-```
-
-`PROJECT_RULES.md` 应链接到：
-- `[[project-kb/README]]`
-- `[[project-kb/code/README]]`
-- 当前项目最重要的代码说明或流程说明
-
-## code 目录
-
-`code/` 必须按源码相对路径镜像。
-
-| 源码路径 | 文档路径 |
-|---|---|
-| `src/index.ts` | `project-kb/code/src/index.ts.md` |
-| `src/lib/db/client.ts` | `project-kb/code/src/lib/db/client.ts.md` |
-| `sandbox-service/src/main.py` | `project-kb/code/sandbox-service/src/main.py.md` |
-
-### 单文件模板
+根 `index.md`：
 
 ```markdown
+---
+okf_version: "0.1"
+---
+
+# 项目知识库
+
+本知识库保存当前项目长期有效、经过验证的知识。
+
+## 入口
+
+- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。
+```
+
+`log.md`：
+
+```markdown
+# 项目知识库更新记录
+
+## YYYY-MM-DD
+
+- **Creation**: 初始化项目级 OKF 知识库。
+```
+
+`code/index.md`：
+
+```markdown
+# 代码知识
+
+按源码相对路径镜像项目代码知识。
+
+## 条目
+
+- [src/example.ts](src/example.ts.md) - 示例文件承担的项目能力。
+```
+
+## 概念类型
+
+推荐使用以下自解释类型；必要时可以增加新类型：
+
+| 目录 | 推荐 `type` | 内容 |
+|---|---|---|
+| `domain/` | `Project Domain` | 术语、业务规则、核心对象、功能能力 |
+| `architecture/` | `Project Architecture` | 系统边界、模块职责、模型和接口契约 |
+| `code/` | `Project Code` | 源码职责、逻辑、关联和测试映射 |
+| `decisions/` | `Project Decision` | 决策、取舍、影响和失效条件 |
+| `workflows/` | `Project Workflow` | 跨文件流程、分支、失败和验证 |
+
+## 通用概念
+
+```markdown
+---
+type: Project Domain
+title: 概念标题
+description: 一句话说明该知识是什么以及有什么作用。
+tags: []
+timestamp: YYYY-MM-DDTHH:MM:SS+08:00
+---
+
+# 概念标题
+
+写入经过验证、长期有效的结论。
+
+## 适用边界
+
+说明适用和不适用条件。
+
+## 关联知识
+
+- [相关概念](../workflows/example.md) - 说明关系。
+
+# Citations
+
+- [项目证据](../../workplace/path/to/evidence.md)
+```
+
+## 代码概念
+
+`src/example.ts` 对应 `project-kb/code/src/example.ts.md`：
+
+```markdown
+---
+type: Project Code
+title: src/example.ts
+description: 一句话说明该文件承担的项目能力。
+source_path: src/example.ts
+tags: []
+timestamp: YYYY-MM-DDTHH:MM:SS+08:00
+---
+
 # src/example.ts
 
-## 功能点
+## 功能与职责
 
-- 
+## 关键逻辑与边界
 
-## 相关文件
+## 关联知识
 
-- [[project-kb/code/src/related.ts]]：
+- [相关文件](related.ts.md) - 说明强关联原因。
 
-## 重要逻辑
-
-- 
-
-## 测试文件
-
-- `src/example.test.ts`：
+## 测试与验证
 
 ## 修改注意事项
 
-- 
+# Citations
 
-## 最近更新
-
-- YYYY-MM-DD：
+- [源码](../../../src/example.ts)
 ```
 
-## decisions 目录
-
-用于记录跨多个文件的重要设计决策。只有当信息无法自然归入单个代码文件时才创建。
-
-模板：
+## 决策概念
 
 ```markdown
+---
+type: Project Decision
+title: 决策标题
+description: 一句话说明作出的选择。
+tags: []
+timestamp: YYYY-MM-DDTHH:MM:SS+08:00
+---
+
 # 决策标题
 
 ## 背景
 
 ## 决策
 
-## 影响文件
+## 替代方案与取舍
 
-- [[project-kb/code/path/to/file.ext]]
+## 影响与失效条件
 
-## 取舍
+## 关联知识
 
-## 最近更新
-
-- YYYY-MM-DD：
+# Citations
 ```
 
-## workflows 目录
-
-用于记录跨文件业务流程、启动流程、数据流、构建流程或测试流程。
-
-模板：
+## 工作流概念
 
 ```markdown
+---
+type: Project Workflow
+title: 流程标题
+description: 一句话说明流程的入口和结果。
+tags: []
+timestamp: YYYY-MM-DDTHH:MM:SS+08:00
+---
+
 # 流程标题
 
-## 流程目标
+## 目标与边界
 
-## 参与文件
-
-- [[project-kb/code/path/to/file.ext]]
+## 参与概念
 
 ## 执行顺序
 
-1. 
+## 关键分支与失败行为
 
-## 关键分支
+## 测试与验证
 
-- 
-
-## 相关测试
-
-- 
+# Citations
 ```
 
-## README 模板
+## 命名与索引
 
-`project-kb/README.md`：
-
-```markdown
-# 项目知识库
-
-本知识库用于代码修改前的影响分析、原有功能对比和定向测试选择。
-
-## 入口
-
-- 代码文件说明：[[code/README]]
-- 重要设计决策：[[decisions/README]]
-- 跨文件流程：[[workflows/README]]
-
-## 维护规则
-
-- 每个代码文件对应 `code/` 下同路径说明文档。
-- 相关文件使用 Obsidian 双向链接。
-- 修改代码后同步更新对应说明文档。
-```
-
-`project-kb/code/README.md`：
-
-```markdown
-# 代码文件说明
-
-本目录按源码相对路径镜像项目代码结构。
-
-## 覆盖状态
-
-| 源码路径 | 说明文档 | 状态 |
-|---|---|---|
-| `src/example.ts` | [[src/example.ts]] | 待完善 |
-```
-
-## 初始化策略
-
-不要一次性为空文件创建大量空文档。优先顺序：
-
-1. 当前任务会修改的文件。
-2. `PROJECT_RULES.md` 标记的重要文件。
-3. 项目入口文件和核心配置。
-4. 与当前修改相关的测试文件。
-
-## 命名规则
-
-- 文档文件名保留源码文件完整文件名，并追加 `.md`。
-- 例如 `client.ts` 对应 `client.ts.md`，不要写成 `client.md`。
-- Obsidian 链接可省略 `.md` 后缀，但路径必须能唯一定位。
+- 概念使用稳定、简短、能表达主题的英文文件名；代码概念保留完整源码文件名并追加 `.md`。
+- 新增概念后，在最近目录 `index.md` 添加标题、相对链接和一句话描述。
+- 根 `index.md` 只导航到已有分类，不预建空目录。
+- 从阶段文档沉淀知识时链接原文，不复制整份文档；能修改原文时补回知识概念链接。

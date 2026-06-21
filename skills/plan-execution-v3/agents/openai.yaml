@@ -1,4 +1,4 @@
 interface:
   display_name: "计划执行 v3"
-  short_description: "执行任务清单并回写真实证据与根因"
-  default_prompt: "使用 $plan-execution-v3 执行已通过 G-PLAN 且具备 Test Plan 的 task-list.md 内部 T-*，运行真实命令，并把状态、证据和失败根因回写闭环文档。"
+  short_description: "复用任务清单按测试先行实施，并回写任务状态和执行证据"
+  default_prompt: "使用 $plan-execution-v3 直接复用已确认任务清单，逐项执行并回写状态与证据。"

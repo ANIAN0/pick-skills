@@ -1,18 +1,43 @@
 ---
-type: project-development/document-node
-id: DOC-TECH-001
-document_type: tech-design
-title: 替换为范围化技术方案标题
-status: draft
-revision: 1
-parent: DOC-REQ-US-001
-scope_ref: {document: DOC-REQ-US-001, item: null}
-relations: [{type: derives-from, target: DOC-REQ-US-001, scope: project}]
+type: Project Tech Design
+title: <方案标题>
+description: <一句话说明本方案实现什么需求>
+tags: [tech-design]
+timestamp: <ISO 8601 时间>
+status: discussing
+requirements: <已确认需求入口相对路径>
+review: <pending 或审查报告相对路径>
 ---
-# 技术方案
 
-## D-001 决策
+# <方案标题>
 
-## C-001 变更契约
+需求入口：[已确认需求](<已确认需求入口相对路径>)
 
-## V-001 验证契约
+## 方案摘要
+
+<用简洁语言说明核心实现机制、关键边界和最终结果。>
+
+## 技术决策
+
+### D-001 <决策名称>
+
+<选择、主要替代方案、理由和影响。>
+
+## 变更清单
+
+### C-001 <变更名称>
+
+- 关联功能：F-001
+- 分类与类型：<后端/前端/数据/配置/迁移/测试支撑/运行链路；新增/修改/删除/重构>
+- 位置：<真实文件、模块、路由、表或新增路径>
+- 当前状态：<项目证据>
+- 目标修改：<具体到函数、字段、接口、状态、事件或交互>
+- 关联验证：V-001
+
+## 验证方案
+
+### V-001 <验证名称>
+
+- 证明：<关联功能或验收要求>
+- 方法：<真实可运行测试、命令或操作>
+- 证据：<预期可观察结果>

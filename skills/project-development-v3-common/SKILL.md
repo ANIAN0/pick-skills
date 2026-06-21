@@ -1,38 +1,95 @@
 ---
 name: project-development-v3-common
-description: 提供项目研发 v3 Skill 套件共享的完整文档节点、范围、关系、阶段确认、证据、局部影响和派生索引协议。维护或消费 v3 项目图谱、批量上下文或统一阶段契约时使用。
+description: 维护项目研发 v3 套件的跨阶段稳定契约。用于设计、修改或审查 requirements-workshop-v3、tech-design-v3、implementation-planning-v3、plan-execution-v3、project-acceptance-v3、project-research-v3 和 project-development-review-v3 时，统一入口文档、支撑材料、真实路径、追踪、提问、审查、确认和禁止模拟完成规则；不承担具体研发阶段工作。
 ---
 
 # 项目研发 v3 公共协议
 
-本 Skill 是 v3 套件的共享契约层，不承担需求、设计、计划或实施阶段的业务决策。
+本 skill 只在维护或审查 V3 skill 套件时使用。正常执行某个研发阶段时，不要求额外读取本 skill；各阶段 SKILL.md 必须直接包含运行所需规则，避免增加调用和 token 成本。
 
-## 按需读取
+## 稳定流程
 
-- 创建或解析节点：读取 [节点 Schema](references/node-schema.md)。
-- 创建关系：读取 [关系注册表](references/relation-registry.md)。
-- 修改状态：读取 [生命周期](references/lifecycle.md)。
-- 复用确认：读取 [确认协议](references/confirmation.md)。
-- 写入或消费证据：读取 [证据策略](references/evidence-policy.md)。
+标准研发流程只有五个阶段：
 
-## 确定性工具
+```text
+需求 -> 方案 -> 任务 -> 执行 -> 验收
+```
 
-- `scripts/validate_graph.py`：校验节点、关系、状态和证据完整性。
-- `scripts/compute_impact.py`：从变更节点计算局部影响及原因路径。
-- `scripts/build_graph_index.py`：从 Markdown 事实源构建可删除重建的派生索引。
-- `scripts/build_graph_view.py`：把派生索引构建为无服务、无外部依赖的只读页面。
+需求、方案、任务和验收阶段各创建一份入口文档；执行阶段不创建新入口，直接复用已确认任务入口和 `T-*` 文档。当前阶段可以经过多轮讨论、调查、修改和复审；独立审查通过且用户明确确认后，才能进入下一阶段。
 
-首次运行脚本前安装其唯一第三方依赖：`python -m pip install -r skills/project-development-v3-common/scripts/requirements.txt`。`requirements.txt` 必须保留，因为 `graph_core.py` 直接使用 `PyYAML` 解析 Frontmatter；Python 标准库不提供 YAML 解析器。
+跨阶段支撑能力：
 
-## 硬规则
+- `project-research-v3`：执行阶段入口或复用任务入口中已审核的 `RT-*`。
+- `project-development-review-v3`：独立审查当前阶段入口和真实证据。
+- `personal-kb`：按明确请求维护当前项目的 `project-kb`，不自动触发。
 
-- 完整 Markdown 文档节点是事实源；普通 R/A/F/D/C/T/V/REV 是文档内部条目，不进入图。
-- 新文档按 Story→可选 Module→可选 Feature 层级就近存放；稳定 ID 不依赖路径。
-- 只使用关系注册表中的方向和语义，不维护手工反向链接。
-- 节点内容变化后重新计算确认哈希，并仅传播到实际受影响子图。
-- 未通过真实验证、证据门禁和 `G-REQ/G-DESIGN/G-PLAN/G-ACCEPT` 对应人工确认时，不得推进下游或标记完成。
-- 保留未知字段和用户已有内容；确定性脚本不得擅自改写业务结论。
+## 入口文档契约
 
-## 输出
+- 用户给出路径时使用该文件；当前事项已有对应阶段入口时继续更新原文件；两者都没有时询问保存位置，不猜版本目录。
+- 持久化文档不得包含 `<version>`、`1.X` 等占位路径。
+- 入口只保留用户判断本阶段是否完成所需的结论，不保存完整调查、讨论、日志或审查正文。
+- 阶段结论使用稳定编号保持追踪：功能 `F-*`、技术决策 `D-*`、变更 `C-*`、任务 `T-*`、验证 `V-*`、调研 `RT-*`、审查 `REV-*`、缺陷 `DEF-*`。
+- 不为单个编号创建入口文档；编号是入口正文或支撑报告中的条目。
+- 任务入口同时承载规划摘要和执行状态；详细 `T-*` 的规划契约与执行记录分区保存，执行不得改写规划分区。
 
-返回校验问题、影响节点及路径、派生索引位置或协议判断；不要生成阶段级长文档。
+## 支撑材料契约
+
+支撑材料放在入口文档旁的同名目录，按需创建，不预建空目录。例如：
+
+```text
+workplace/3/tech-design/2026-06-21-order-import.md
+workplace/3/tech-design/2026-06-21-order-import/research/RT-001-duplicate-handling.md
+workplace/3/tech-design/2026-06-21-order-import/evidence/EVD-001-current-flow.md
+workplace/3/tech-design/2026-06-21-order-import/review/REV-001-tech-design-review.md
+```
+
+- 新建材料使用“类型编号 + 简短英文 slug”。
+- 入口在受影响条目链接支撑材料；Markdown 支撑材料链接回入口对应条目。
+- 能直接链接真实代码、已有文档或既有报告时不复制内容。
+- 完整复用已有材料时保留原路径并增加双向链接；增量更新时在原路径修改；范围实质不同时才新建。
+
+## 调研契约
+
+事实不明确且会阻止当前结论时，在入口受影响条目下登记 `RT-*`，至少写清问题、范围、不调查内容、证据类型、完成条件和受影响条目。用户审核后才能调用 `project-research-v3`。
+
+调研 skill 只回写材料链接和 `completed`/`blocked` 执行结果。当前阶段负责读取报告、更新结论并关闭任务。
+
+## 审查与确认契约
+
+- 当前阶段先自检并修正，再调用 `project-development-review-v3`。任务入口分别使用 `plan_review` 和 `execution_review` 保存两次审查。
+- 审查报告使用入口同名目录下的 `review/REV-*`，并与入口双向链接。
+- 审查只报告问题和复审结果，不替责任阶段重写结论或替用户确认。
+- 阻塞问题未修复时保持阶段进行中；审查通过不等于用户确认。
+- 用户确认只表示当前入口内容可以交给下一阶段，不能由 Agent 推断或自动记录。
+
+## 状态契约
+
+阶段入口和复用状态保持最小：
+
+- 需求、方案、任务：`discussing` / `confirmed`。
+- 执行复用任务入口的 `execution_status`：`pending` / `executing` / `confirmed`。
+- 验收：`accepting` / `confirmed`。
+
+调研、审查、任务和缺陷可以使用自身必要状态，但不得扩展阶段入口状态机。
+
+## 提问契约
+
+只有答案无法从项目、文档、对话或可靠来源获得，且错误假设会实质改变范围、方案、任务、实现或验收时才提问。能调查就调查；能安全假设时写明依据和影响。
+
+必须提问时，一次只问当前最有决策价值的问题，给出推荐方案和不同选择的影响。问题必须是回复最后的 `## 需要你确认` 区块，后面不追加其他内容。
+
+## 证据与完成契约
+
+- 事实结论必须能追溯到项目文件、运行结果或可靠来源。
+- 不伪造命令输出、测试结果、截图、API 响应或用户确认。
+- 不用 mock、stub、fallback、固定返回、样例数据或未验证实现冒充完成。
+- build、lint、typecheck 只能证明其实际覆盖的质量，不能代替功能、失败路径、持久化、集成或 UI 验证。
+- `done` 只用于真实实现且相关验证通过；不能验证时使用 `not_verified`，无法继续时使用 `blocked`。
+- 报告完成前逐项自检；发现问题先修复并重新检查，不把基础缺陷留给用户。
+
+## 维护规则
+
+- 稳定接口是五阶段顺序、需求/方案/任务/验收单入口、执行复用任务清单、支撑材料双链、调研窄写回、独立审查和用户确认。
+- 后续迭代优先替换各 SKILL.md 的方法分区或入口模板内容，不重构目录和交接契约。
+- 每次修改公共契约后，检查所有阶段 skill 的路径、编号、状态、写回边界和交接名称是否一致。
+- 不把未来工具、尚不可用模式或已淘汰机制写入运行正文。

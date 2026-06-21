@@ -1,4 +1,4 @@
 interface:
   display_name: "项目调研 v3"
-  short_description: "按研发文档范围调研并复用全局知识报告"
-  default_prompt: "使用 $project-research-v3 为当前研发文档范围创建调研任务，将完整报告写入全局 personal-kb，并在项目中只保留摘要和引用。"
+  short_description: "优先通过浏览器检索并复用项目知识，生成可追溯调研报告"
+  default_prompt: "使用 $project-research-v3 先检索项目已有知识，再通过 Playwright CLI 浏览器和 Google 调查当前 RT 任务。"

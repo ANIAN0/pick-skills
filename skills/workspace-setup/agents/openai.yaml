@@ -1,0 +1,4 @@
+interface:
+  display_name: "工作区初始化"
+  short_description: "初始化四阶段目录、项目规则和 OKF 项目知识库"
+  default_prompt: "使用 $workspace-setup 在当前项目中初始化真实版本的四阶段目录、项目规则和项目知识库。"

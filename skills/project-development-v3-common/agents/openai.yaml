@@ -1,4 +1,4 @@
 interface:
   display_name: "项目研发 v3 公共协议"
-  short_description: "管理完整研发文档、层级图谱与批量上下文协议"
-  default_prompt: "使用 $project-development-v3-common 校验 graph/stories 下的完整文档节点、层级关系、确认状态和派生索引，或批量读取相关文档正文。"
+  short_description: "维护五阶段单入口、支撑材料、审查确认和真实证据公共契约"
+  default_prompt: "使用 $project-development-v3-common 检查或维护项目研发 v3 skill 套件的跨阶段契约。"
