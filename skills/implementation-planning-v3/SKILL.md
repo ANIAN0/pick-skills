@@ -141,6 +141,8 @@ workplace/3/implementation-planning/2026-06-21-order-import.md
 
 ## 审查与确认
 
+执行或验收回退并证明规划契约需要修改时，先把原入口 `status` 改回 `discussing`，把 `plan_review`、`execution_status` 和 `execution_review` 重置为 `pending`，并将受影响任务恢复为 `pending`。修订后必须重新完成计划审查和用户确认；不得保留原计划确认或直接继续执行。
+
 先自检并修正：入口是否简洁且覆盖完整；所有 `D/C/V` 是否进入任务；任务是否自含；接口、特别关注点和不做范围是否保留；测试场景和内容是否具体；RED/GREEN 顺序是否成立；测试资产和执行断言是否精确；依赖无环；最终闭环和交接是否完整。
 
 然后调用 `project-development-review-v3`，要求审查入口、全部 `T-*`、技术方案和真实项目路径，并把报告写入入口的 `plan_review`。发现问题时修改原入口和任务文件并复审。审查通过后，请用户确认入口中的覆盖摘要、测试策略、任务顺序、依赖、最终闭环和风险；用户无需逐项阅读实现细节。

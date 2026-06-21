@@ -39,7 +39,10 @@ def _ensure_directory(path: Path, result: dict[str, Any]) -> None:
 
 def _write_if_missing(path: Path, content: str, result: dict[str, Any]) -> None:
     if path.exists():
-        result["preserved"].append(str(path))
+        if path.is_file():
+            result["preserved"].append(str(path))
+        else:
+            result["errors"].append(f"预期文件但发现其他路径类型: {path}")
         return
     path.write_text(content, encoding="utf-8", newline="\n")
     result["created"].append(str(path))
@@ -93,13 +96,38 @@ def initialize_workspace(project_root: Path, version: str) -> dict[str, Any]:
 """,
         result,
     )
+    if result["errors"]:
+        return result
+
+    agents_text = (root / "AGENTS.md").read_text(encoding="utf-8")
+    if "PROJECT_RULES.md" not in agents_text:
+        result["errors"].append("AGENTS.md 未要求 Agent 读取 PROJECT_RULES.md")
+
+    expected_stage_names = set(STAGE_DIRS)
+    unexpected = sorted(
+        child.name
+        for child in version_root.iterdir()
+        if child.name not in expected_stage_names
+    )
+    if unexpected:
+        result["errors"].append(
+            f"版本目录包含契约外顶层内容: {', '.join(unexpected)}"
+        )
+    if result["errors"]:
+        return result
 
     kb_result = init_project(root)
     result["personal_kb"] = kb_result
     result["created"].extend(kb_result.get("created", []))
     result["warnings"].extend(kb_result.get("warnings", []))
+    if kb_result.get("missing_rule_links"):
+        result["errors"].append(
+            "PROJECT_RULES.md 缺少指向 project-kb/index.md 的标准 Markdown 链接"
+        )
     if kb_result.get("error"):
         result["errors"].append(kb_result["error"])
+        return result
+    if result["errors"]:
         return result
 
     validation = validate_project(root)

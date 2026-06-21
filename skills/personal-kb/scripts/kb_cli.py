@@ -11,13 +11,32 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover - 由运行环境错误路径覆盖
+    yaml = None
+
 
 FRONTMATTER = re.compile(r"\A---\s*\n(.*?)\n---\s*(?:\n|\Z)", re.DOTALL)
-TYPE_FIELD = re.compile(r"(?m)^type:\s*([^#\n]+?)\s*$")
-OKF_VERSION = re.compile(r'(?m)^okf_version:\s*["\']?0\.1["\']?\s*$')
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
 WIKI_LINK = re.compile(r"\[\[[^\]]+\]\]")
 DATE_HEADING = re.compile(r"(?m)^##\s+\d{4}-\d{2}-\d{2}\s*$")
+
+
+def _parse_frontmatter(
+    match: re.Match[str] | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    if match is None:
+        return None, "缺少 YAML frontmatter"
+    if yaml is None:
+        return None, "无法解析 YAML frontmatter：缺少 PyYAML"
+    try:
+        data = yaml.safe_load(match.group(1))
+    except yaml.YAMLError as error:
+        return None, f"YAML frontmatter 无法解析: {error}"
+    if not isinstance(data, dict):
+        return None, "YAML frontmatter 必须是映射"
+    return data, None
 
 
 def _minimal_files(project_rules_file: str) -> dict[str, str]:
@@ -152,11 +171,14 @@ def validate_project(
         if WIKI_LINK.search(text):
             errors.append({"path": relative, "message": "包含不可移植的 wiki link"})
 
+        match = FRONTMATTER.match(text)
         if path.name == "index.md":
-            if path == kb_root / "index.md" and not (
-                (match := FRONTMATTER.match(text)) and OKF_VERSION.search(match.group(1))
-            ):
-                errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
+            if path == kb_root / "index.md":
+                metadata, parse_error = _parse_frontmatter(match)
+                if parse_error:
+                    errors.append({"path": relative, "message": parse_error})
+                elif str(metadata.get("okf_version")) != "0.1":
+                    errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
             if path != kb_root / "index.md" and FRONTMATTER.match(text):
                 errors.append({"path": relative, "message": "子目录 index.md 不应包含 frontmatter"})
         elif path.name == "log.md":
@@ -165,13 +187,11 @@ def validate_project(
             if "## " in text and not DATE_HEADING.search(text):
                 errors.append({"path": relative, "message": "log.md 日期标题必须使用 YYYY-MM-DD"})
         else:
-            match = FRONTMATTER.match(text)
-            if not match:
-                errors.append({"path": relative, "message": "概念文档缺少 YAML frontmatter"})
-            else:
-                type_match = TYPE_FIELD.search(match.group(1))
-                if not type_match or not type_match.group(1).strip(' "\''):
-                    errors.append({"path": relative, "message": "概念文档缺少非空 type"})
+            metadata, parse_error = _parse_frontmatter(match)
+            if parse_error:
+                errors.append({"path": relative, "message": parse_error})
+            elif not isinstance(metadata.get("type"), str) or not metadata["type"].strip():
+                errors.append({"path": relative, "message": "概念文档缺少非空 type"})
 
         for raw_link in MARKDOWN_LINK.findall(text):
             target = _resolve_local_link(path, raw_link, kb_root)

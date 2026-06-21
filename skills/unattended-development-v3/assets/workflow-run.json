@@ -1,12 +1,13 @@
 {
   "type": "project-development/workflow-run",
   "id": "RUN-001",
+  "version": "3",
   "mode": "full",
-  "scope_ref": {"document": "DOC-REQ-US-001", "item": null},
-  "gate_packages": {},
-  "gate_status": {},
+  "scope_ref": "workplace/3/requirements/example.md",
+  "stage_packages": {},
+  "stage_status": {},
   "status": "in_progress",
-  "current_gate": "G-REQ",
-  "resume_gate": null,
+  "current_stage": "requirements",
+  "resume_stage": null,
   "pause_reason": null
 }

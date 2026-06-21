@@ -37,6 +37,8 @@ python skills/personal-kb/scripts/kb_cli.py validate-project --project-root <真
 
 脚本只创建最小 bundle 和校验确定性格式，不生成、改写或判断知识结论。不要在用户未明确要求初始化时创建知识库。
 
+校验器需要 PyYAML；缺少依赖时必须报告错误，不能用正则近似解析后返回有效。依赖声明位于 `scripts/requirements.txt`。
+
 ## OKF 文件契约
 
 每个非 `index.md`、非 `log.md` 的 Markdown 概念文档必须以 YAML frontmatter 开头，并包含非空 `type`：

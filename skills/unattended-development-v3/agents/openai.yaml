@@ -1,4 +1,4 @@
 interface:
   display_name: "无人值守研发 v3"
-  short_description: "编排四类研发入口与四个人工确认门禁"
-  default_prompt: "使用 $unattended-development-v3 编排 full、extension、task 或 bug 文档子图，持久化 Workflow Run，并在 G-REQ、G-DESIGN、G-PLAN、G-ACCEPT 缺失或失效时暂停和可恢复。"
+  short_description: "五阶段、保留人工确认的可恢复研发编排"
+  default_prompt: "使用 $unattended-development-v3 编排 full、extension、task 或 bug 五阶段流程，复用真实阶段入口，并在审查或用户确认缺失、失效时暂停。"
