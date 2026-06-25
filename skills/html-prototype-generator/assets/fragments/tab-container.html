@@ -1,0 +1,18 @@
+<!-- FRAGMENT: tab-container
+     用途：Tab 切换容器，tab 内可嵌套 filter-bar + table
+     替换：SLOT:tab_items（标签头）/ SLOT:tab_panels（各 panel 内容）
+-->
+<div style="background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.04);">
+  <div class="ant-tabs ant-tabs-top">
+    <div class="ant-tabs-nav" style="margin: 0; padding: 0 24px;">
+      <div class="ant-tabs-nav-wrap">
+        <div class="ant-tabs-nav-list">
+          <!--SLOT:tab_items-->
+        </div>
+      </div>
+    </div>
+    <div class="ant-tabs-content-holder" style="padding: 16px 24px;">
+      <!--SLOT:tab_panels-->
+    </div>
+  </div>
+</div>

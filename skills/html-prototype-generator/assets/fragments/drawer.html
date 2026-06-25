@@ -1,0 +1,24 @@
+<!-- FRAGMENT: drawer
+     用途：右侧抽屉，放在 body 末尾（骨架 SLOT:drawer 位置）
+     替换：SLOT:drawer_width / SLOT:drawer_form_fields
+-->
+<div id="drawer" style="display: none;">
+  <div style="position: fixed; top: 0; right: 0; bottom: 0; z-index: 1000;">
+    <div onclick="closeDrawer()" style="background: rgba(0,0,0,.45); position: fixed; inset: 0;"></div>
+    <div style="width: <!--SLOT:drawer_width-->; position: fixed; top: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,.1);">
+      <div style="padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+        <span id="drawerTitle" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85);"></span>
+        <button onclick="closeDrawer()" style="border: none; background: none; font-size: 16px; cursor: pointer; color: rgba(0,0,0,.45); line-height: 1;">&#x2715;</button>
+      </div>
+      <div style="flex: 1; overflow: auto; padding: 24px;">
+        <form class="ant-form ant-form-vertical" onsubmit="return false;">
+          <!--SLOT:drawer_form_fields-->
+        </form>
+      </div>
+      <div id="drawerFooter" style="border-top: 1px solid #f0f0f0; padding: 12px 24px; text-align: right; flex-shrink: 0;">
+        <button class="ant-btn" style="margin-right: 8px;" onclick="closeDrawer()">取消</button>
+        <button class="ant-btn ant-btn-primary" onclick="mockAction('save')">保存</button>
+      </div>
+    </div>
+  </div>
+</div>

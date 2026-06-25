@@ -1,0 +1,32 @@
+<!-- FRAGMENT: table
+     用途：表格 + 分页，通常跟在 filter-bar 后面
+     替换：SLOT:table_thead / SLOT:table_tbody / SLOT:total_count
+-->
+<div style="background: #fff; padding: 24px; padding-top: 16px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.04);">
+  <div class="ant-table-wrapper">
+    <div class="ant-table">
+      <div class="ant-table-container">
+        <div class="ant-table-content">
+          <table style="table-layout: auto; width: 100%;">
+            <thead class="ant-table-thead">
+              <tr>
+                <!--SLOT:table_thead-->
+              </tr>
+            </thead>
+            <tbody class="ant-table-tbody">
+              <!--SLOT:table_tbody-->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="padding: 16px 0 0; display: flex; justify-content: flex-end;">
+    <ul class="ant-pagination">
+      <li class="ant-pagination-total-text">共 <!--SLOT:total_count--> 条</li>
+      <li class="ant-pagination-prev ant-pagination-disabled"><button class="ant-pagination-item-link" disabled>&lt;</button></li>
+      <li class="ant-pagination-item ant-pagination-item-active"><a>1</a></li>
+      <li class="ant-pagination-next"><button class="ant-pagination-item-link">&gt;</button></li>
+    </ul>
+  </div>
+</div>

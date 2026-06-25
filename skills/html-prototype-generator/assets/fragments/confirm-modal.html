@@ -1,0 +1,17 @@
+<!-- FRAGMENT: confirm-modal
+     用途：删除确认弹窗，放在 body 末尾（骨架 SLOT:confirm_modal 位置）
+     固定内容，不需要替换任何 SLOT
+-->
+<div id="confirmModal" style="display: none;">
+  <div style="background: rgba(0,0,0,.45); position: fixed; inset: 0; z-index: 1001;"></div>
+  <div style="position: fixed; inset: 0; z-index: 1002; display: flex; align-items: center; justify-content: center;">
+    <div style="width: 420px; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.15);">
+      <div style="padding: 16px 24px; border-bottom: 1px solid #f0f0f0; font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85);">确认删除</div>
+      <div style="padding: 24px;"><p style="margin: 0; color: rgba(0,0,0,.65);">确定要删除此记录吗？此操作不可撤销。</p></div>
+      <div style="padding: 12px 24px; text-align: right; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="ant-btn" onclick="closeConfirmModal()">取消</button>
+        <button class="ant-btn ant-btn-primary" style="background: #ff4d4f; border-color: #ff4d4f;" onclick="mockAction('delete'); closeConfirmModal();">确认删除</button>
+      </div>
+    </div>
+  </div>
+</div>

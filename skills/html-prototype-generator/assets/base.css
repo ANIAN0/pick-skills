@@ -1,0 +1,152 @@
+/* base.css v1.1 — 原样内联到 <style>，不得修改任何一行
+ *
+ * 分层说明：
+ *   Layer 1 - CSS 变量：所有色值来源
+ *   Layer 2 - Ant Design 覆盖：仅覆盖主色，不改变组件结构
+ *   Layer 3 - kt-status：项目状态标签（带圆点 + 背景色）
+ *   Layer 4 - 布局辅助：action-group / action-divider
+ *   Layer 5 - kt 扩展组件：统计卡片、描述列表、卡片、空状态、代码块
+ */
+
+/* ── Layer 1: CSS 变量 ────────────────────────────────── */
+:root {
+  --kt-primary:     #3e8dff;
+  --kt-primary-bg:  #d6e7ff;
+  --kt-success:     #00e5c7;
+  --kt-success-bg:  #effffb;
+  --kt-danger:      #ff8b78;
+  --kt-danger-bg:   #fff5f3;
+  --kt-warning:     #ffb71d;
+  --kt-warning-bg:  #fff2d6;
+  --kt-default:     #bfc6d1;
+  --kt-default-bg:  #f5f6f9;
+  --kt-text-primary:   rgba(0, 0, 0, 0.85);
+  --kt-text-secondary: rgba(0, 0, 0, 0.65);
+  --kt-text-hint:      rgba(0, 0, 0, 0.45);
+  --kt-border:      #f0f0f0;
+  --kt-divider:     #e8e8e8;
+}
+
+/* ── Layer 2: Ant Design 主色覆盖 ────────────────────── */
+.ant-btn-primary { background-color: #3e8dff; border-color: #3e8dff; }
+.ant-btn-primary:hover { background-color: #5ea3ff; border-color: #5ea3ff; }
+.ant-btn-primary:active { background-color: #2a75d4; border-color: #2a75d4; }
+a, .ant-btn-link { color: #3e8dff; }
+a:hover, .ant-btn-link:hover { color: #5ea3ff; }
+
+/* ── Layer 3: kt-status 状态标签 ─────────────────────── */
+.kt-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 8px; height: 24px; border-radius: 4px;
+  font-size: 12px; line-height: 24px; white-space: nowrap;
+}
+.kt-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.kt-status-primary  { background: #d6e7ff; color: #3e8dff; }
+.kt-status-primary  .kt-status-dot { background: #3e8dff; }
+.kt-status-success  { background: #effffb; color: #00a89a; }
+.kt-status-success  .kt-status-dot { background: #00e5c7; }
+.kt-status-danger   { background: #fff5f3; color: #d4634f; }
+.kt-status-danger   .kt-status-dot { background: #ff8b78; }
+.kt-status-warning  { background: #fff2d6; color: #c99200; }
+.kt-status-warning  .kt-status-dot { background: #ffb71d; }
+.kt-status-default  { background: #f5f6f9; color: #8c95a6; }
+.kt-status-default  .kt-status-dot { background: #bfc6d1; }
+
+/* ── Layer 4: 操作按钮组 ─────────────────────────────── */
+.action-group { display: inline-flex; align-items: center; }
+.action-group .ant-btn-link { padding: 0 4px; height: auto; }
+.action-divider {
+  width: 1px; height: 14px; background: #e8e8e8;
+  margin: 0 4px; display: inline-block; vertical-align: middle;
+}
+
+/* ── Layer 5: kt 扩展组件 ────────────────────────────── */
+
+/* 5a. 统计卡片 (dashboard 页) ──────────────────────── */
+.kt-stat-card {
+  background: #fff; border-radius: 8px; padding: 20px 24px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.kt-stat-card-label {
+  font-size: 14px; color: rgba(0,0,0,.65); margin-bottom: 8px;
+}
+.kt-stat-card-value {
+  font-size: 28px; font-weight: 600; color: rgba(0,0,0,.85); line-height: 1.2;
+}
+.kt-stat-card-value.is-primary { color: #3e8dff; }
+.kt-stat-card-value.is-success { color: #00a89a; }
+.kt-stat-card-value.is-danger  { color: #d4634f; }
+.kt-stat-card-value.is-warning { color: #c99200; }
+.kt-stat-card-footer {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px; color: rgba(0,0,0,.45);
+}
+
+/* 5b. 描述列表 (detail 页) ──────────────────────────── */
+.kt-desc-list {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 0; border: 1px solid #f0f0f0; border-radius: 4px; overflow: hidden;
+}
+.kt-desc-list.cols-1 { grid-template-columns: 1fr; }
+.kt-desc-list.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.kt-desc-item {
+  display: flex; border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0; min-height: 44px;
+}
+.kt-desc-item:nth-child(2n) { border-right: none; }
+.kt-desc-list.cols-3 .kt-desc-item:nth-child(3n) { border-right: none; }
+.kt-desc-item:last-child,
+.kt-desc-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+.kt-desc-label {
+  flex-shrink: 0; width: 120px; padding: 10px 16px;
+  background: #fafafa; font-size: 14px; color: rgba(0,0,0,.65);
+  border-right: 1px solid #f0f0f0; display: flex; align-items: center;
+}
+.kt-desc-value {
+  flex: 1; padding: 10px 16px;
+  font-size: 14px; color: rgba(0,0,0,.85); display: flex; align-items: center;
+}
+/* 跨列（在 detail 页中某行需要占满整行时加 .full-width） */
+.kt-desc-item.full-width {
+  grid-column: 1 / -1; border-right: none; border-bottom: 1px solid #f0f0f0;
+}
+.kt-desc-item.full-width:last-child { border-bottom: none; }
+
+/* 5c. 通用卡片容器 ─────────────────────────────────── */
+.kt-card {
+  background: #fff; border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+}
+.kt-card-header {
+  padding: 14px 24px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.kt-card-title {
+  font-size: 15px; font-weight: 600; color: rgba(0,0,0,.85);
+}
+.kt-card-body { padding: 16px 24px; }
+.kt-card-footer {
+  padding: 12px 24px; border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* 5d. 空状态 ────────────────────────────────────────── */
+.kt-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 48px 24px; color: rgba(0,0,0,.45);
+}
+.kt-empty-icon {
+  width: 64px; height: 64px; margin-bottom: 16px; opacity: .35;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='16' width='48' height='36' rx='3' fill='none' stroke='%23bfc6d1' stroke-width='2'/%3E%3Cline x1='8' y1='26' x2='56' y2='26' stroke='%23bfc6d1' stroke-width='2'/%3E%3Cline x1='18' y1='36' x2='30' y2='36' stroke='%23bfc6d1' stroke-width='1.5'/%3E%3Cline x1='18' y1='42' x2='46' y2='42' stroke='%23bfc6d1' stroke-width='1.5'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.kt-empty-text { font-size: 14px; color: rgba(0,0,0,.45); }
+.kt-empty-sub  { font-size: 12px; color: rgba(0,0,0,.25); margin-top: 4px; }
+
+/* 5e. 代码 / JSON 展示块 ───────────────────────────── */
+.kt-code-block {
+  background: #f6f8fa; border: 1px solid #e8e8e8; border-radius: 6px;
+  padding: 12px 16px; font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px; line-height: 1.6; color: rgba(0,0,0,.75);
+  overflow: auto; max-height: 320px; white-space: pre;
+}

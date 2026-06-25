@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>原型 - 冒烟测试页</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.15/antd.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://at.alicdn.com/t/c/font_3649831_vn4l2gpuij.js"></script>
+  <style>
+    /* base.css v1.0 — 原样内联到 <style>，不得修改任何一行 */
+:root {
+  --kt-primary: #3e8dff;
+  --kt-primary-bg: #d6e7ff;
+  --kt-success: #00e5c7;
+  --kt-success-bg: #effffb;
+  --kt-danger: #ff8b78;
+  --kt-danger-bg: #fff5f3;
+  --kt-warning: #ffb71d;
+  --kt-warning-bg: #fff2d6;
+  --kt-default: #bfc6d1;
+  --kt-default-bg: #f5f6f9;
+}
+.ant-btn-primary { background-color: #3e8dff; border-color: #3e8dff; }
+.ant-btn-primary:hover { background-color: #5ea3ff; border-color: #5ea3ff; }
+.ant-btn-primary:active { background-color: #2a75d4; border-color: #2a75d4; }
+a, .ant-btn-link { color: #3e8dff; }
+a:hover, .ant-btn-link:hover { color: #5ea3ff; }
+.kt-status { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; height: 24px; border-radius: 4px; font-size: 12px; line-height: 24px; }
+.kt-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.kt-status-primary { background: #d6e7ff; color: #3e8dff; }
+.kt-status-primary .kt-status-dot { background: #3e8dff; }
+.kt-status-success { background: #effffb; color: #00a89a; }
+.kt-status-success .kt-status-dot { background: #00e5c7; }
+.kt-status-danger { background: #fff5f3; color: #d4634f; }
+.kt-status-danger .kt-status-dot { background: #ff8b78; }
+.kt-status-warning { background: #fff2d6; color: #c99200; }
+.kt-status-warning .kt-status-dot { background: #ffb71d; }
+.kt-status-default { background: #f5f6f9; color: #8c95a6; }
+.kt-status-default .kt-status-dot { background: #bfc6d1; }
+.action-group { display: inline-flex; align-items: center; }
+.action-group .ant-btn-link { padding: 0 4px; height: auto; }
+.action-divider { width: 1px; height: 14px; background: #e8e8e8; margin: 0 4px; display: inline-block; vertical-align: middle; }
+
+  </style>
+</head>
+<body>
+<div class="ant-layout" style="min-height: 100vh; display: flex;">
+
+  <!-- ① 侧边栏：只修改 SLOT:sidebar_items，外层结构不变 -->
+  <aside style="background: #1e202a; width: 220px; flex-shrink: 0; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;">
+    <div style="height: 56px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,.08);">
+      <span style="color: #fff; font-size: 16px; font-weight: 600;">KT Agent</span>
+    </div>
+    <ul style="list-style: none; padding: 8px 0; margin: 0;">
+      <li style="padding: 10px 20px; color: rgba(255,255,255,.65); cursor: pointer; font-size: 14px; display: flex; align-items: center;"><span class="anticon anticon-home" style="margin-right: 10px; font-size: 14px;"></span>首页</li><li style="padding: 10px 16px; background: #3e8dff; color: #fff; cursor: pointer; font-size: 14px; border-radius: 4px; margin: 0 8px; display: flex; align-items: center;"><span class="anticon anticon-file-text" style="margin-right: 10px; font-size: 14px;"></span>冒烟测试页</li>
+    </ul>
+  </aside>
+
+  <!-- ② 右侧主区域 -->
+  <div style="margin-left: 220px; flex: 1; display: flex; flex-direction: column;">
+
+    <!-- 顶栏：只修改 SLOT:page_title -->
+    <header style="height: 56px; background: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,21,41,.08); position: sticky; top: 0; z-index: 99;">
+      <span style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85);">冒烟测试</span>
+      <span style="color: rgba(0,0,0,.65); font-size: 14px;">管理员</span>
+    </header>
+
+    <main style="flex: 1; padding: 16px; background: #f0f2f5; overflow: auto;">
+
+      <!-- ③ 筛选区：只修改 SLOT:filter_fields 和 SLOT:filter_buttons -->
+      <div style="background: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 16px;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+          
+          <button class="ant-btn ant-btn-primary" onclick="mockAction('查询')">查询</button><button class="ant-btn" onclick="mockAction('重置')">重置</button>
+        </div>
+      </div>
+
+      <!-- ④ 表格区：只修改 SLOT:table_thead / SLOT:table_tbody / SLOT:total_count -->
+      <div style="background: #fff; padding: 24px; padding-top: 16px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.04);">
+        <div class="ant-table-wrapper">
+          <div class="ant-table">
+            <div class="ant-table-container">
+              <div class="ant-table-content">
+                <table style="table-layout: auto; width: 100%;">
+                  <thead class="ant-table-thead">
+                    <tr>
+                      <th class="ant-table-cell" style="text-align: center; width: 60px;">序号</th><th class="ant-table-cell">名称</th><th class="ant-table-cell" style="width: 120px;">状态</th><th class="ant-table-cell" style="text-align: center; width: 180px;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody class="ant-table-tbody">
+                    <tr class="ant-table-row"><td class="ant-table-cell" style="text-align: center;">1</td><td class="ant-table-cell">示例数据 1</td><td class="ant-table-cell"><span class="kt-status kt-status-success"><span class="kt-status-dot"></span>启用</span></td><td class="ant-table-cell" style="text-align: center;"><div class="action-group"><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('详情', 'detail')">详情</a><span class="action-divider"></span><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('编辑', 'edit')">编辑</a><span class="action-divider"></span><a style="color: #ff4d4f; cursor: pointer;" onclick="openConfirmModal()">删除</a></div></td></tr>
+<tr class="ant-table-row"><td class="ant-table-cell" style="text-align: center;">2</td><td class="ant-table-cell">示例数据 2</td><td class="ant-table-cell"><span class="kt-status kt-status-success"><span class="kt-status-dot"></span>启用</span></td><td class="ant-table-cell" style="text-align: center;"><div class="action-group"><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('详情', 'detail')">详情</a><span class="action-divider"></span><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('编辑', 'edit')">编辑</a><span class="action-divider"></span><a style="color: #ff4d4f; cursor: pointer;" onclick="openConfirmModal()">删除</a></div></td></tr>
+<tr class="ant-table-row"><td class="ant-table-cell" style="text-align: center;">3</td><td class="ant-table-cell">示例数据 3</td><td class="ant-table-cell"><span class="kt-status kt-status-success"><span class="kt-status-dot"></span>启用</span></td><td class="ant-table-cell" style="text-align: center;"><div class="action-group"><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('详情', 'detail')">详情</a><span class="action-divider"></span><a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('编辑', 'edit')">编辑</a><span class="action-divider"></span><a style="color: #ff4d4f; cursor: pointer;" onclick="openConfirmModal()">删除</a></div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 分页：只修改 SLOT:total_count -->
+        <div style="padding: 16px 0 0; display: flex; justify-content: flex-end;">
+          <ul class="ant-pagination">
+            <li class="ant-pagination-total-text">共 42 条</li>
+            <li class="ant-pagination-prev ant-pagination-disabled">
+              <button class="ant-pagination-item-link" disabled>&lt;</button>
+            </li>
+            <li class="ant-pagination-item ant-pagination-item-active"><a>1</a></li>
+            <li class="ant-pagination-next">
+              <button class="ant-pagination-item-link">&gt;</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ⑤ 抽屉：只修改 SLOT:drawer_width 和 SLOT:drawer_form_fields -->
+<div id="drawer" style="display: none;">
+  <div style="position: fixed; top: 0; right: 0; bottom: 0; z-index: 1000;">
+    <div onclick="closeDrawer()" style="background: rgba(0,0,0,.45); position: fixed; inset: 0;"></div>
+    <div style="width: 640px; position: fixed; top: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,.1);">
+      <div style="padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+        <span id="drawerTitle" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85);"></span>
+        <button onclick="closeDrawer()" style="border: none; background: none; font-size: 16px; cursor: pointer; color: rgba(0,0,0,.45); line-height: 1;">✕</button>
+      </div>
+      <div style="flex: 1; overflow: auto; padding: 24px;">
+        <form class="ant-form ant-form-vertical" onsubmit="return false;">
+          
+        </form>
+      </div>
+      <div id="drawerFooter" style="border-top: 1px solid #f0f0f0; padding: 12px 24px; text-align: right; flex-shrink: 0;">
+        <button class="ant-btn" style="margin-right: 8px;" onclick="closeDrawer()">取消</button>
+        <button class="ant-btn ant-btn-primary" onclick="mockAction('save')">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 确认弹窗：固定，不得修改 -->
+<div id="confirmModal" style="display: none;">
+  <div style="background: rgba(0,0,0,.45); position: fixed; inset: 0; z-index: 1001;"></div>
+  <div style="position: fixed; inset: 0; z-index: 1002; display: flex; align-items: center; justify-content: center;">
+    <div style="width: 420px; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.15);">
+      <div style="padding: 16px 24px; border-bottom: 1px solid #f0f0f0; font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85);">确认删除</div>
+      <div style="padding: 24px;"><p style="margin: 0; color: rgba(0,0,0,.65);">确定要删除此记录吗？此操作不可撤销。</p></div>
+      <div style="padding: 12px 24px; text-align: right; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="ant-btn" onclick="closeConfirmModal()">取消</button>
+        <button class="ant-btn ant-btn-primary" style="background: #ff4d4f; border-color: #ff4d4f;" onclick="mockAction('delete'); closeConfirmModal();">确认删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ 文档面板：只修改 SLOT:doc_content -->
+<button onclick="toggleDoc()" style="position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 1001; background: #3e8dff; color: #fff; border: none; padding: 12px 4px; border-radius: 4px 0 0 4px; cursor: pointer; writing-mode: vertical-rl; font-size: 13px; letter-spacing: 2px;">交互说明</button>
+<div id="docPanel" style="position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: #fafafa; border-left: 1px solid #e8e8e8; padding: 24px; overflow-y: auto; z-index: 1000; transition: right .3s;">
+  <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px;"><div style="font-size: 15px; font-weight: 600; color: rgba(0,0,0,.85); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">页面说明</div><p style="color: rgba(0,0,0,.65); font-size: 14px; margin: 0;">冒烟测试页，支持数据的查询、新增、编辑和删除。</p></div><div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px;"><div style="font-size: 15px; font-weight: 600; color: rgba(0,0,0,.85); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">交互逻辑</div><div style="font-size: 14px; color: rgba(0,0,0,.65); line-height: 2;"><div><b>查询：</b>填写筛选条件后点击查询</div><div><b>新增：</b>点击新增按钮打开右侧抽屉</div><div><b>编辑：</b>点击编辑打开抽屉并回填数据</div><div><b>删除：</b>弹出确认弹窗，确认后删除</div></div></div>
+</div>
+
+<!-- ⑧ 引导层数据：只修改 window.GUIDE_STEPS 数组，无改动时为空数组 [] -->
+<script>
+window.GUIDE_STEPS = [
+  
+];
+</script>
+
+<!-- ⑨ 固定交互脚本：不得修改 -->
+<script>
+function openDrawer(t, m) {
+  document.getElementById('drawer').style.display = 'block';
+  document.getElementById('drawerTitle').textContent = t;
+  var f = document.getElementById('drawerFooter');
+  if (m === 'detail') {
+    f.innerHTML = '<button class="ant-btn" onclick="closeDrawer()">返回</button>';
+  } else {
+    f.innerHTML = '<button class="ant-btn" style="margin-right:8px" onclick="closeDrawer()">取消</button>' +
+                  '<button class="ant-btn ant-btn-primary" onclick="mockAction(\'save\')">保存</button>';
+  }
+}
+function closeDrawer() { document.getElementById('drawer').style.display = 'none'; }
+function openConfirmModal() { document.getElementById('confirmModal').style.display = 'block'; }
+function closeConfirmModal() { document.getElementById('confirmModal').style.display = 'none'; }
+function toggleDoc() {
+  var p = document.getElementById('docPanel');
+  p.style.right = (p.style.right === '0px' || p.style.right === '0') ? '-400px' : '0px';
+}
+function mockAction(a, d) { console.log('[Mock]', a, d || ''); }
+</script>
+
+<!-- ⑩ guide-layer.js 原样内联，不得修改 -->
+<script>
+/* guide-layer.js v1.0
+ * 固定文件 — 原样内联到每个原型 HTML，不得修改任何一行。
+ * LLM 只允许在原型文件中修改 window.GUIDE_STEPS 数组。
+ */
+(function () {
+  var COLORS = {
+    new:      { border: '#3e8dff', bg: '#3e8dff', label: '新增' },
+    modified: { border: '#ffb71d', bg: '#ffb71d', label: '修改' },
+    removed:  { border: '#ff8b78', bg: '#ff8b78', label: '移除' }
+  };
+
+  var active = true;
+  var cleanups = [];
+
+  function init() {
+    if (!window.GUIDE_STEPS || !window.GUIDE_STEPS.length) return;
+    injectStyles();
+    buildChrome();
+    render();
+  }
+
+  function injectStyles() {
+    if (document.getElementById('guide-layer-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'guide-layer-styles';
+    s.textContent = [
+      '.guide-hl-new     { outline: 3px solid #3e8dff !important; outline-offset: 2px; border-radius: 4px; position: relative; z-index: 100; }',
+      '.guide-hl-modified{ outline: 3px solid #ffb71d !important; outline-offset: 2px; border-radius: 4px; position: relative; z-index: 100; }',
+      '.guide-hl-removed { outline: 3px dashed #ff8b78 !important; outline-offset: 2px; border-radius: 4px; position: relative; z-index: 100; }',
+      '#guide-toggle-bar { position: fixed; top: 14px; right: 16px; z-index: 9999; display: flex; align-items: center; gap: 8px; pointer-events: all; }',
+      '#guide-toggle-label { background: rgba(0,0,0,.6); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 12px; letter-spacing: .5px; }',
+      '#guide-toggle-btn { background: #3e8dff; color: #fff; border: none; padding: 5px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(62,141,255,.4); transition: background .2s; }',
+      '#guide-badge-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9997; }',
+      '.guide-badge { position: absolute; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; pointer-events: none; }',
+      '#guide-panel { position: fixed; bottom: 24px; left: 240px; z-index: 9998; display: flex; flex-direction: column; gap: 8px; max-width: 360px; pointer-events: all; }',
+      '.guide-card { background: #fff; border-radius: 8px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14); display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.6; cursor: pointer; transition: box-shadow .15s; }',
+      '.guide-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.2); }',
+      '.guide-card-label { padding: 1px 7px; border-radius: 3px; color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }',
+      '.guide-card-title { font-weight: 600; color: rgba(0,0,0,.85); }',
+      '.guide-card-desc { color: rgba(0,0,0,.55); margin-top: 2px; font-size: 12px; }'
+    ].join('
+');
+    document.head.appendChild(s);
+  }
+
+  function buildChrome() {
+    if (document.getElementById('guide-toggle-bar')) return;
+
+    var bar = document.createElement('div');
+    bar.id = 'guide-toggle-bar';
+    bar.innerHTML =
+      '<div id="guide-toggle-label">需求改动预览</div>' +
+      '<button id="guide-toggle-btn">关闭引导</button>';
+    document.body.appendChild(bar);
+
+    document.getElementById('guide-toggle-btn').addEventListener('click', toggleGuide);
+
+    var badgeLayer = document.createElement('div');
+    badgeLayer.id = 'guide-badge-layer';
+    document.body.appendChild(badgeLayer);
+
+    var panel = document.createElement('div');
+    panel.id = 'guide-panel';
+    document.body.appendChild(panel);
+  }
+
+  function clearHighlights() {
+    cleanups.forEach(function (fn) { fn(); });
+    cleanups = [];
+    var bl = document.getElementById('guide-badge-layer');
+    if (bl) bl.innerHTML = '';
+    var gp = document.getElementById('guide-panel');
+    if (gp) gp.innerHTML = '';
+  }
+
+  function render() {
+    clearHighlights();
+    if (!active) return;
+
+    (window.GUIDE_STEPS || []).forEach(function (step) {
+      var el = document.querySelector(step.selector);
+      if (!el) return;
+      var color = COLORS[step.type] || COLORS.new;
+
+      // 高亮
+      var cls = 'guide-hl-' + step.type;
+      el.classList.add(cls);
+      cleanups.push(function () { el.classList.remove(cls); });
+
+      // 徽标（绝对定位，跟随滚动位置）
+      var rect = el.getBoundingClientRect();
+      var badge = document.createElement('div');
+      badge.className = 'guide-badge';
+      badge.style.cssText =
+        'background:' + color.bg + ';' +
+        'top:' + (window.scrollY + rect.top - 10) + 'px;' +
+        'left:' + (window.scrollX + rect.right - 10) + 'px;';
+      badge.textContent = step.id;
+      document.getElementById('guide-badge-layer').appendChild(badge);
+
+      // 说明卡片
+      var card = document.createElement('div');
+      card.className = 'guide-card';
+      card.innerHTML =
+        '<span class="guide-card-label" style="background:' + color.bg + '">' + color.label + '</span>' +
+        '<div>' +
+          '<div class="guide-card-title">' + step.id + '. ' + escHtml(step.title) + '</div>' +
+          '<div class="guide-card-desc">' + escHtml(step.desc) + '</div>' +
+        '</div>';
+      card.addEventListener('click', (function (target) {
+        return function () { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+      }(el)));
+      document.getElementById('guide-panel').appendChild(card);
+    });
+  }
+
+  function toggleGuide() {
+    active = !active;
+    var btn = document.getElementById('guide-toggle-btn');
+    btn.textContent = active ? '关闭引导' : '开启引导';
+    btn.style.background = active ? '#3e8dff' : '#8c8c8c';
+    render();
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function onResize() { if (active) render(); }
+
+  window.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('resize', onResize);
+  window.addEventListener('scroll', onResize, true);
+}());
+
+</script>
+
+</body>
+</html>

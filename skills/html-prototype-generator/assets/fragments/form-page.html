@@ -1,0 +1,11 @@
+<!-- FRAGMENT: form-page
+     用途：独立表单页（无表格），整个 main_content
+     替换：SLOT:form_sections（每个 section 为一个分组卡片）
+-->
+<div style="max-width: 800px; margin: 0 auto;">
+  <!--SLOT:form_sections-->
+  <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #f0f0f0; display: flex; gap: 12px;">
+    <button class="ant-btn ant-btn-primary" onclick="mockAction('submit')">提交</button>
+    <button class="ant-btn" onclick="history.back()">取消</button>
+  </div>
+</div>

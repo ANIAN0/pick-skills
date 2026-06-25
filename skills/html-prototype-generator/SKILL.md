@@ -10,297 +10,603 @@ description: |
 
 # HTML Prototype Generator
 
-## 目标
+## 设计原则（唯一真理）
 
-生成与 kt-agent-framework 管理后台风格一致的独立HTML原型页面。产物为单个HTML文件，可直接在浏览器打开，方便分享。
+**LLM 只负责填写数据，不负责生成结构。**
 
-三种工作模式：
-- **复刻模式**：读取已有 .vue 页面，**1:1 还原**后再叠加需求改动
-- **需求模式**：根据需求文档生成全新原型页面
-- **对话模式**：读取已有原型HTML，讨论并调整
+- 外壳骨架来自 `assets/page-skeleton.html`，机械复制，不得重新生成
+- 主内容区来自 `assets/fragments/`，按页面类型组合，不得自由生成
+- 样式来自 `assets/base.css`，原样内联，不得修改或重写
+- 引导层逻辑来自 `assets/guide-layer.js`，原样内联，不得修改
+- LLM 的任务：识别页面类型 → 选取 fragments 组合 → 填入各 SLOT 的数据
 
 ---
 
-## 设计核心
+## 铁律
 
-原型的核心价值是「与真实页面尽可能一致」。以下是必须遵守的设计规范：
-
-### 样式原则
-
-1. **Ant Design 组件结构优先**：组件 HTML 结构和类名必须遵循 Ant Design 4.x 规范（如 `ant-btn`、`ant-table`、`ant-form` 等），项目配色覆盖主色但不改变组件结构
-2. **禁止使用 Emoji**：侧边栏图标、按钮图标、状态标识等一律使用 CSS/SVG 实现或 Ant Design 图标类名（如 `anticon anticon-home`），绝不使用 emoji 字符（🏠🤖📋 等）
-3. **状态标签**：简单状态优先使用 `ant-tag` 系列，需要带圆点和背景色时才用自定义 `.kt-status`
-
-### 配色（来自项目 const.less）
-
-| 用途 | 色值 | 背景色 |
-|-----|------|-------|
-| Primary | #3e8dff | #d6e7ff |
-| Success | #00e5c7 | #effffb |
-| Danger | #ff8b78 | #fff5f3 |
-| Warning | #ffb71d | #fff2d6 |
-| Default | #bfc6d1 | #f5f6f9 |
-| Ant Blue | #1890ff | - |
-
-### 布局参数
-
-- 侧边栏：#1e202a，220px宽
-- 顶栏：#fff，56px高
-- 内容区背景：#f0f2f5
-- 卡片：白色，8px圆角，shadow-sm
-- 表格：bordered + small 模式
-
-详细组件规范见 `docs/design-guide.md`。
+| 规则 | 违反示例 | 正确做法 |
+|------|---------|---------|
+| 骨架不变 | 自己写 `<aside>` 结构 | 从 `page-skeleton.html` 复制，只填 SLOT |
+| 内容区用片段 | 在 `main_content` 里自由写 HTML | 从 `assets/fragments/` 选取片段组合 |
+| 样式不改 | 重写 `.kt-status` CSS | 从 `base.css` 原样复制进 `<style>` |
+| 引导层不改 | 重新实现 badge/card JS | `guide-layer.js` 原样复制，只改 `GUIDE_STEPS` |
+| 配色固定 | 使用 `#1890ff` 作为主色 | 主色只用 `#3e8dff` |
+| 禁止 emoji | 侧边栏用 🏠🤖 | 用 `anticon anticon-home` 或首字母色块 |
+| 复刻两阶段 | 直接按需求重写页面 | 先 1:1 还原 → 等用户确认 → 再叠加改动 |
+| 改动必引导 | 只在文档面板描述改动 | 每处改动写入 `GUIDE_STEPS` |
 
 ---
 
 ## 工作流程
 
-### Phase 1: 确定工作模式
+### 第一步：判断模式
 
-| 用户意图 | 模式 | 第一步 |
-|---------|------|-------|
-| 提到已有页面路径、复制页面、在现有页面上加功能 | 复刻模式 | 读取 .vue 源文件 |
-| 提到需求文档、新建页面 | 需求模式 | 读取需求文档 |
-| 提到调整已有原型 | 对话模式 | 读取原型HTML |
+| 用户描述 | 模式 |
+|---------|------|
+| 提到 `.vue` 路径 / 复刻 / 在现有页面上改 | **复刻模式** |
+| 提到需求文档 / 全新页面 | **需求模式** |
+| 提到调整已有原型 HTML | **对话模式** |
 
 ---
 
-### Phase 2A: 复刻模式（⚠️ 必须严格遵守两阶段原则）
+### 复刻模式（严格两阶段）
 
-**核心原则：先 1:1 完整还原，再叠加需求改动。** 绝不能跳过还原阶段直接按需求重写。
+#### 阶段一：1:1 还原（不做任何改动）
 
-#### 阶段一：1:1 还原源页面（不做任何改动）
+1. 读取 `.vue` 主文件 + 同目录 `data.ts` + `components/` 子组件
+2. 逐一提取，输出确认表，**然后停止等待用户确认**：
 
-1. 读取 .vue 主文件及其关联的 `data.ts`、子组件（路径在 `D:\workspace\Document\input\kt-agent-framework\admin_frontend\src\pages\`）
-2. **逐一还原以下所有元素**（缺一不可）：
-   - 侧边栏菜单项（完全按源页面菜单结构）
-   - 筛选区所有字段（来自 `searchSchema`，字段顺序、label、组件类型必须一致）
-   - 操作按钮（来自 `tl-filter-left` 区域，按钮文案、顺序一致）
-   - 表格所有列（来自 `columns`，列顺序、title、宽度、对齐方式一致）
-   - 操作列按钮（来自 `action-group`，按钮文案、顺序一致；移除 `hasButtonPerm` 判断直接展示）
-   - 状态标签（来自 `yc-status`，还原为 `.kt-status` + 对应颜色）
-   - 抽屉/表单（来自子组件 EditForm，还原所有表单字段、required 标记）
-   - Mock 数据（≥3行，字段值与业务语义一致）
-3. 还原完成后，向用户展示分析结果表格：
+```
+✅ 还原分析
+───────────────────────────────────
+筛选字段（来自 searchSchema）：
+  · 字段1 [input]   · 字段2 [select]   · 字段3 [date]
 
-   ```
-   ✅ 已还原：[筛选字段 N 个] [表格列 N 个] [操作按钮 N 个] [表单字段 N 个]
-   📋 待叠加改动：[用户需求描述]
-   ```
+表格列（来自 columns）：
+  序号 | 字段1(120px) | 字段2 | 状态(center) | 操作(center,180px)
 
-   等待用户确认还原是否准确，如有偏差先修正再进入阶段二。
+操作按钮（来自 tl-filter-left）：
+  [新增XXX primary]  [导出 default]
+
+抽屉表单（来自 EditForm.vue）：
+  * 字段1 [input, 必填]   · 字段2 [select]   · 字段3 [textarea]
+
+待叠加改动：{用户描述的需求}
+───────────────────────────────────
+确认以上还原是否准确？有偏差请指出，确认后进入阶段二。
+```
+
+3. 用户确认准确后才进入阶段二；有偏差则修正后再次确认
 
 #### 阶段二：叠加需求改动
 
-在已还原的 HTML 基础上，按需求增删改元素。**改动必须通过需求引导层标注**（见 Phase 3 引导层规范）：
-- 新增的元素：加 `data-guide-new` 属性
-- 修改的元素：加 `data-guide-modified` 属性
-- 删除的位置：插入 `data-guide-removed` 占位注释
+- 在还原好的 HTML 基础上增删改元素
+- 每处改动必须写入 `GUIDE_STEPS`（见 SLOT:guide_steps 规范）
+- 给需要标注的新增/修改元素加 `id` 属性，如 `id="btn-export"`
+- 移除的元素插入零高度占位：`<div class="guide-removed-N" style="height:0;overflow:hidden;" aria-hidden="true"></div>`
 
-**.vue → HTML 映射规则：**
-- `<tl>` → 整个页面容器
-- `<tl-main>` → 主内容区（flex: 1, overflow auto）
-- `<tl-filter>` → 筛选区卡片
-- `<tl-filter-left>` → 筛选区内容（flex wrap）
-- `<yc-form v-bind="searchVBind" />` → 根据 searchSchema 生成筛选字段
-- `<tl-table>` → 表格卡片容器（白色背景 + 圆角 + shadow）
-- `<a-table>` → Ant Design 表格（HTML版）
-- `<tl-drawer>` → 右侧抽屉
-- `<action-group>` → 操作按钮组（a-space + link buttons）
-- `<yc-status>` → 状态标签（简单状态用 `ant-tag`，需要圆点背景色用 `.kt-status`）
-- `useDrawer` → JS 控制抽屉开关（openDrawer/closeDrawer）
-- `useTable` → 静态表格数据 + 分页
-- `hasButtonPerm()` → 移除权限判断，直接展示按钮
-- API 调用 → 硬编码 Mock 数据
+**.vue → HTML 映射：**
+
+| .vue 组件 | HTML 实现 |
+|-----------|----------|
+| `<yc-form v-bind="searchVBind">` | 按 searchSchema 生成筛选字段（见 SLOT:filter_fields） |
+| `<a-table :columns="columns">` | 按 columns 生成 `<thead>/<tbody>`（见 SLOT:table_thead/tbody） |
+| `<yc-status>` | `.kt-status.kt-status-{type}` |
+| `<action-group>` | `.action-group` + `<a>` + `.action-divider` |
+| `<tl-drawer>` | 抽屉骨架，只填 drawer_width + drawer_form_fields |
+| `hasButtonPerm()` | 移除判断，直接展示按钮 |
+| API 调用 | 硬编码 ≥3 行 Mock 数据 |
 
 ---
 
-### Phase 2B: 需求模式
+### 需求模式
 
-1. 读取需求文档，提取功能列表
-2. 输出页面清单表格，等待用户确认
+1. 读取需求文档，输出页面清单表格，等待确认：
 
-   | 序号 | 页面名称 | 页面类型 | 功能描述 | 优先级 |
-   |-----|---------|---------|---------|-------|
+| 序号 | 页面名称 | 类型 | 功能描述 |
+|-----|---------|------|---------|
 
-3. 分轮次澄清需求（每轮最多3问）
-4. 确认后生成HTML原型，**需求描述通过引导层展示**（见 Phase 3）
-
-**生成前检查现有页面：**
-- 扫描 `.dev/prototype/` 目录查找现有原型
-- 继承现有页面的配色和组件风格
+2. 确认后按 13 个 SLOT 逐一填写，生成 HTML
 
 ---
 
-### Phase 2C: 对话模式
+### 对话模式
 
-1. 读取已有原型HTML文件
-2. 与用户讨论需要调整的部分
-3. 修改对应的HTML并保存为新版本
+1. 读取已有原型 HTML
+2. 与用户确认修改点
+3. 定位对应 SLOT，只修改该位置，输出新版本文件
 
 ---
 
-### Phase 3: 需求引导层（⚠️ 新功能，所有含需求改动的原型必须包含）
+## SLOT 填写规范
 
-**什么是需求引导层？**
+### 第一层：骨架固定 SLOT（每个页面必填）
 
-类似新手引导的交互效果：原型页面上叠加一个半透明蒙版，对每一处需求改动（新增/修改/删除）显示高亮框 + 气泡说明，让查看者直观理解"这里改了什么、为什么改"。
+| SLOT | 内容 | 来源 |
+|------|------|------|
+| `SLOT:page_name` | 纯文本，如 `角色列表` | 手填 |
+| `SLOT:page_title` | 顶栏标题文字 | 手填 |
+| `SLOT:base_css` | base.css 全文 | **原样复制，不得修改** |
+| `SLOT:sidebar_items` | 侧边栏 `<li>` 列表 | 见下方规范 |
+| `SLOT:main_content` | 主内容区 HTML | **从 fragments/ 组合，见第二层** |
+| `SLOT:drawer` | 抽屉 HTML | 复制 `fragments/drawer.html`，无抽屉时留空 |
+| `SLOT:confirm_modal` | 确认弹窗 HTML | 复制 `fragments/confirm-modal.html`，无删除操作时留空 |
+| `SLOT:doc_content` | 文档面板内容 | 见下方规范 |
+| `SLOT:guide_steps` | 引导层数据数组 | 见下方规范 |
+| `SLOT:guide_layer_js` | guide-layer.js 全文 | **原样复制，不得修改** |
 
-**实现规则：**
+---
 
-1. 默认显示引导层（首次打开即展示）
-2. 右上角提供「关闭引导」/「开启引导」切换按钮
-3. 引导项按序号排列，可点击序号跳转到对应元素
-4. 高亮框自动定位到目标元素（使用 `getBoundingClientRect()`）
-5. 气泡显示在元素旁边，避免遮挡关键内容
+### 第二层：main_content 片段组合
 
-**引导项数据结构（在 `<script>` 中定义）：**
+**核心规则：`SLOT:main_content` 的内容必须从 `assets/fragments/` 选取片段拼合，不得自由生成 HTML 结构。**
 
+#### 第一步：识别源页面类型
+
+| 源页面特征 | 页面类型 | 使用片段 |
+|-----------|---------|---------|
+| 有筛选区 + 表格 | **list** | `filter-bar` + `table` |
+| 有 Tab，每个 Tab 内含表格 | **tabbed-list** | `tab-container`（内嵌 `filter-bar` + `table`）|
+| 无表格，只展示字段 | **detail** | 多个 `desc-list`（按分组）|
+| 统计卡片 + 图表/表格 | **dashboard** | `stat-cards` + `table` 或图表占位 |
+| 无表格，主要是表单输入 | **form** | `form-page` |
+| 以上组合 | **hybrid** | 按实际顺序拼合多个片段 |
+
+#### 第二步：按类型拼合片段
+
+**list 页（最常见）：**
+```
+main_content =
+  filter-bar（填 filter_fields + filter_buttons）
+  + table（填 table_thead + table_tbody + total_count）
+```
+
+**detail 页：**
+```
+main_content =
+  desc-list（基本信息，填 desc_section_title + desc_items）
+  + desc-list（其他分组，如有）
+  + table（关联记录，如有）
+```
+
+**dashboard 页：**
+```
+main_content =
+  stat-cards（填 stat_cards_items）
+  + table 或图表占位（如有）
+```
+
+**tabbed-list 页：**
+```
+main_content =
+  tab-container（填 tab_items + tab_panels）
+  tab_panels 内每个 panel = filter-bar + table
+```
+
+**form 页：**
+```
+main_content =
+  form-page（填 form_sections，每个 section 是一个 kt-card）
+```
+
+---
+
+### 骨架固定 SLOT 详细规范
+
+#### SLOT:sidebar_items
+
+**激活项（当前页面）：**
+```html
+<li style="padding: 10px 16px; background: #3e8dff; color: #fff; cursor: pointer; font-size: 14px; border-radius: 4px; margin: 0 8px; display: flex; align-items: center;">
+  <span class="anticon anticon-team" style="margin-right: 10px; font-size: 14px;"></span>角色管理
+</li>
+```
+
+**非激活项：**
+```html
+<li style="padding: 10px 20px; color: rgba(255,255,255,.65); cursor: pointer; font-size: 14px; display: flex; align-items: center;">
+  <span class="anticon anticon-home" style="margin-right: 10px; font-size: 14px;"></span>首页
+</li>
+```
+
+**无对应 anticon 时用首字母色块（禁止 emoji）：**
+```html
+<span style="display: inline-flex; width: 18px; height: 18px; border-radius: 3px; background: #3e8dff; color: #fff; font-size: 11px; align-items: center; justify-content: center; margin-right: 10px;">角</span>
+```
+
+常用 anticon 映射：
+
+| 菜单名 | anticon 类名 |
+|--------|-------------|
+| 首页 | `anticon-home` |
+| 用户管理 | `anticon-user` |
+| 角色管理 | `anticon-team` |
+| 系统设置 | `anticon-setting` |
+| 日志 | `anticon-file-text` |
+| 监控/仪表盘 | `anticon-dashboard` |
+| 任务 | `anticon-thunderbolt` |
+
+---
+
+#### SLOT:drawer（复制 fragments/drawer.html 后填入子 SLOT）
+
+子 SLOT 说明：
+
+- `SLOT:drawer_width`：宽度，如 `980px`（大表单）或 `640px`（简单表单）
+- `SLOT:drawer_form_fields`：表单字段，见下方表单字段规范
+
+**表单字段规范：**
+
+必填字段：
+```html
+<div class="ant-form-item">
+  <div class="ant-form-item-label">
+    <label><span style="color: #ff4d4f; margin-right: 4px;">*</span>字段名称</label>
+  </div>
+  <div class="ant-form-item-control"><div class="ant-form-item-control-input">
+    <input class="ant-input" placeholder="请输入字段名称" style="max-width: 400px;">
+  </div></div>
+</div>
+```
+
+选填输入框：去掉 `<span style="color: #ff4d4f...">*</span>` 即可。
+
+下拉选择：
+```html
+<div class="ant-form-item">
+  <div class="ant-form-item-label"><label>字段名称</label></div>
+  <div class="ant-form-item-control"><div class="ant-form-item-control-input">
+    <div class="ant-select ant-select-single" style="width: 200px;">
+      <div class="ant-select-selector"><span class="ant-select-selection-item">请选择</span></div>
+    </div>
+  </div></div>
+</div>
+```
+
+多行文本：
+```html
+<div class="ant-form-item">
+  <div class="ant-form-item-label"><label>描述</label></div>
+  <div class="ant-form-item-control"><div class="ant-form-item-control-input">
+    <textarea class="ant-input" rows="3" placeholder="请输入描述" style="max-width: 400px; resize: vertical;"></textarea>
+  </div></div>
+</div>
+```
+
+详情模式（disabled）：所有 input/textarea/select 加 `disabled` 属性，背景色 `#f5f5f5`。
+
+---
+
+#### 片段子 SLOT 规范
+
+**filter_fields**（每个字段三选一）：
+```html
+<!-- 输入框 -->
+<input class="ant-input" placeholder="请输入XXX" style="width: 200px;">
+
+<!-- 下拉 -->
+<div class="ant-select ant-select-single" style="width: 160px;">
+  <div class="ant-select-selector"><span class="ant-select-selection-item">全部状态</span></div>
+</div>
+
+<!-- 日期区间 -->
+<span class="ant-picker" style="width: 220px;">
+  <span class="ant-picker-input">
+    <input readonly placeholder="开始 ~ 结束" style="border: none; outline: none; width: 100%; background: transparent; cursor: pointer;">
+  </span>
+</span>
+```
+
+**filter_buttons**：
+```html
+<button class="ant-btn ant-btn-primary" onclick="mockAction('查询')">查询</button>
+<button class="ant-btn" onclick="mockAction('重置')">重置</button>
+<!-- 新增按钮（加 id 供引导层定位）-->
+<button class="ant-btn ant-btn-primary" id="btn-add" onclick="openDrawer('新增XXX', 'add')">新增XXX</button>
+```
+
+**table_thead**：
+```html
+<th class="ant-table-cell" style="text-align: center; width: 60px;">序号</th>
+<th class="ant-table-cell">名称</th>
+<th class="ant-table-cell" style="width: 120px;">状态</th>
+<th class="ant-table-cell" style="text-align: center; width: 180px;">操作</th>
+```
+
+**table_tbody**（≥3 行，字段值符合业务语义）：
+```html
+<tr class="ant-table-row">
+  <td class="ant-table-cell" style="text-align: center;">1</td>
+  <td class="ant-table-cell">示例名称</td>
+  <td class="ant-table-cell">
+    <span class="kt-status kt-status-success"><span class="kt-status-dot"></span>启用</span>
+  </td>
+  <td class="ant-table-cell" style="text-align: center;">
+    <div class="action-group">
+      <a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('详情', 'detail')">详情</a>
+      <span class="action-divider"></span>
+      <a style="color: #3e8dff; cursor: pointer;" onclick="openDrawer('编辑', 'edit')">编辑</a>
+      <span class="action-divider"></span>
+      <a style="color: #ff4d4f; cursor: pointer;" onclick="openConfirmModal()">删除</a>
+    </div>
+  </td>
+</tr>
+```
+
+状态标签固定映射：
+
+| 语义 | 类名 |
+|------|------|
+| 启用 / 在线 / 成功 | `kt-status-success` |
+| 禁用 / 离线 / 错误 | `kt-status-danger` |
+| 待审核 / 处理中 | `kt-status-warning` |
+| 运行中 / 主要状态 | `kt-status-primary` |
+| 未知 / 默认 | `kt-status-default` |
+
+**desc_items**（detail 页描述列表行）：
+```html
+<div class="kt-desc-item">
+  <div class="kt-desc-label">字段名</div>
+  <div class="kt-desc-value">字段值</div>
+</div>
+<!-- 跨整行的长内容 -->
+<div class="kt-desc-item full-width">
+  <div class="kt-desc-label">描述</div>
+  <div class="kt-desc-value">较长的描述内容</div>
+</div>
+```
+
+**stat_cards_items**（dashboard 统计卡片）：
+```html
+<div class="kt-stat-card">
+  <div class="kt-stat-card-label">今日请求量</div>
+  <div class="kt-stat-card-value is-primary">12,847</div>
+  <div class="kt-stat-card-footer">较昨日 +8.3%</div>
+</div>
+```
+
+**tab_items**（Tab 标签头）：
+```html
+<div class="ant-tabs-tab ant-tabs-tab-active" style="padding: 12px 0; margin-right: 32px; cursor: pointer; font-size: 14px; color: #3e8dff; border-bottom: 2px solid #3e8dff;">Tab 一</div>
+<div class="ant-tabs-tab" style="padding: 12px 0; margin-right: 32px; cursor: pointer; font-size: 14px; color: rgba(0,0,0,.65);">Tab 二</div>
+```
+
+**tab_panels**（Tab 内容区，只显示激活项）：
+```html
+<!-- 激活 panel -->
+<div class="ant-tabs-tabpane ant-tabs-tabpane-active">
+  <!-- 此处放 filter-bar + table 片段内容 -->
+</div>
+<!-- 非激活 panel（隐藏）-->
+<div class="ant-tabs-tabpane" style="display: none;">
+  <!-- 此处放 filter-bar + table 片段内容 -->
+</div>
+```
+
+**form_sections**（form 页分组卡片）：
+```html
+<div class="kt-card" style="margin-bottom: 16px;">
+  <div class="kt-card-header">
+    <div class="kt-card-title">基本信息</div>
+  </div>
+  <div class="kt-card-body">
+    <form class="ant-form ant-form-vertical" onsubmit="return false;">
+      <!-- 表单字段，格式同 drawer_form_fields -->
+    </form>
+  </div>
+</div>
+```
+
+---
+
+#### SLOT:doc_content
+
+```html
+<div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+  <div style="font-size: 15px; font-weight: 600; color: rgba(0,0,0,.85); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">页面说明</div>
+  <p style="color: rgba(0,0,0,.65); font-size: 14px; margin: 0;">一句话描述页面用途。</p>
+</div>
+<div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+  <div style="font-size: 15px; font-weight: 600; color: rgba(0,0,0,.85); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">交互逻辑</div>
+  <div style="font-size: 14px; color: rgba(0,0,0,.65); line-height: 2;">
+    <div><b>查询：</b>填写筛选条件后点击查询</div>
+    <div><b>新增：</b>点击新增按钮打开右侧抽屉</div>
+    <div><b>编辑：</b>点击编辑打开抽屉并回填数据</div>
+    <div><b>删除：</b>弹出确认弹窗，确认后删除</div>
+  </div>
+</div>
+```
+
+---
+
+#### SLOT:guide_steps
+
+无改动时：空数组 `[]`。
+
+有改动时每项必须包含 5 个字段：
 ```javascript
-const guideSteps = [
-  {
-    id: 1,
-    selector: '#btn-export',       // 目标元素 CSS 选择器
-    type: 'new',                   // new | modified | removed
-    title: '新增：导出按钮',
-    desc: '支持将当前筛选结果导出为 Excel 文件，权限：运营角色及以上可见',
-  },
-  {
-    id: 2,
-    selector: 'th[data-col="status"]',
-    type: 'modified',
-    title: '修改：状态列',
-    desc: '原「启用/禁用」两态改为「启用/禁用/待审核」三态，新增黄色待审核样式',
-  },
-  {
-    id: 3,
-    selector: '.guide-removed-placeholder-1',
-    type: 'removed',
-    title: '移除：批量操作栏',
-    desc: '经产品确认，当前版本不需要批量操作，已移除，后续迭代再加',
-  },
-];
+{
+  id: 1,
+  selector: '#btn-export',       // 页面中真实存在的 CSS 选择器
+  type: 'new',                   // new | modified | removed
+  title: '新增：导出按钮',
+  desc: '支持将筛选结果导出为 Excel，运营角色及以上可见',
+},
 ```
 
-**视觉规范：**
-
-| 改动类型 | 高亮色 | 气泡标签色 |
-|---------|-------|----------|
-| new（新增）| #3e8dff（蓝色边框） | #3e8dff 背景，白字「新增」 |
-| modified（修改） | #ffb71d（橙色边框） | #ffb71d 背景，白字「修改」 |
-| removed（移除） | #ff8b78（红色边框） | #ff8b78 背景，白字「移除」|
-
-完整HTML实现示例见 `docs/design-guide.md` → 第8节「需求引导层」。
-
----
-
-### Phase 4: 生成原型
-
-**单页面生成**：直接调用脚本或手写 HTML。
-
-```bash
-python scripts/generate_page.py --input '{
-  "page_name": "角色列表",
-  "page_type": "list",
-  "scenario": "clone",
-  "source_vue": "src/pages/role/index.vue",
-  "output_path": ".dev/prototype",
-  "clarification": {
-    "layout": {},
-    "data": {},
-    "interactions": {},
-    "modifications": "新增启用/禁用开关列"
-  }
-}'
-```
-
-**多页面生成 — 使用 Subagent 隔离上下文**：
-
-当需要同时生成多个原型页面时，必须为每个页面启动独立的 Subagent，避免上下文污染。
-
-```python
-# 每个页面一个 subagent，并行生成
-# 使用 Agent 工具，subagent_type 为 "general-purpose"
-# 每个 subagent 独立读取 SKILL.md 和 docs/
-# 每个 subagent 独立完成一个页面的生成并写入文件
+移除元素时，在原位置插入占位符：
+```html
+<div class="guide-removed-1" style="height: 0; overflow: hidden;" aria-hidden="true"></div>
 ```
 
 ---
 
-### Phase 5: 文件输出
-
-**输出目录：** `.dev/prototype/`
-
-**命名规则：**
-- 新原型：`prototype-{YYYYMMDD}-{页面名称}.html`
-- 改造原型：`prototype-{YYYYMMDD}-{页面名称}-v{N}.html`
-
-**页面结构：**
-- 抽屉、弹窗等交互元素合并到主页面HTML中
-- 通过 CSS `display:none` / JavaScript 控制显示隐藏
-- 需求引导层默认展示，右上角可关闭
-- 文档面板（交互说明）默认隐藏，点击「交互说明」按钮展开
-- 保留旧文件（绝不覆盖）
-
-**目录页（index.html）：**
-- 多页面生成完成后，必须在 `.dev/prototype/` 下生成 `index.html` 目录页
-- 详细规范见 `docs/output-format.md`
+#### SLOT:guide_layer_js
+从 `assets/guide-layer.js` 原样复制全部内容，不修改任何一行。
 
 ---
 
-## 页面类型
+## 遇到未定义样式时怎么办
 
-| 类型 | 说明 | 典型组件 |
-|-----|------|---------|
-| list | 列表页 | 筛选区、表格、分页、操作按钮、抽屉 |
-| form | 表单页 | 表单字段、提交/取消 |
-| detail | 详情页 | 信息分组、描述列表 |
-| dashboard | 仪表盘 | 统计卡片、图表、快捷入口 |
+### 第一步：查表，确认组件归属
+
+遇到任何需要样式的组件，先按下表判断归属，再决定下一步：
+
+| 组件类型 | 归属 | 使用方式 |
+|---------|------|---------|
+| 按钮、输入框、下拉、日期、开关、单选、多选、表格、表单、弹窗、抽屉、标签页、步骤条、树形、上传、折叠、面包屑 | **Ant Design 自带** | 直接用 `ant-*` 类名，antd CSS 已覆盖，无需额外样式 |
+| 状态标签（带圆点背景色） | **`base.css` Layer 3** | `kt-status kt-status-{success\|danger\|warning\|primary\|default}` |
+| 操作列按钮组 | **`base.css` Layer 4** | `action-group` + `action-divider` |
+| 统计卡片 | **`base.css` Layer 5a** | `kt-stat-card` + `kt-stat-card-label` + `kt-stat-card-value` |
+| 详情页描述列表 | **`base.css` Layer 5b** | `kt-desc-list` + `kt-desc-item` + `kt-desc-label` + `kt-desc-value` |
+| 通用卡片容器 | **`base.css` Layer 5c** | `kt-card` + `kt-card-header` + `kt-card-title` + `kt-card-body` |
+| 空状态 | **`base.css` Layer 5d** | `kt-empty` + `kt-empty-icon` + `kt-empty-text` |
+| 代码/JSON展示 | **`base.css` Layer 5e** | `kt-code-block` |
+
+### 第二步：仍然找不到时，按优先级处理
+
+**优先级 1 — 用 Tailwind 工具类拼装（首选）**
+
+Tailwind 的布局和间距类（`flex`、`grid`、`gap-*`、`p-*`、`rounded-*`、`shadow-*`、`text-*`、`bg-*`）可以自由组合，不算"自创样式"。颜色值必须使用 CSS 变量：
+
+```html
+<!-- 正确：Tailwind 布局 + CSS 变量配色 -->
+<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--kt-primary-bg); color: var(--kt-primary);">
+  内容
+</div>
+
+<!-- 错误：硬编码颜色 -->
+<div style="background: #e6f0ff; color: #1a6edb;">内容</div>
+```
+
+**优先级 2 — 用 `style=""` 内联，只用 CSS 变量**
+
+当 Tailwind 工具类不够用时，可以写内联样式，但颜色**只能引用 CSS 变量**，不得硬编码新色值：
+
+```html
+<!-- 正确：引用变量 -->
+<div style="border-left: 3px solid var(--kt-primary); padding: 8px 12px; background: var(--kt-primary-bg);">
+  提示内容
+</div>
+
+<!-- 错误：新增硬编码颜色 -->
+<div style="border-left: 3px solid #4a9eff; background: #e8f2ff;">提示内容</div>
+```
+
+**优先级 3 — 在 `<style>` 块末尾追加，命名必须以 `kt-` 开头**
+
+仅当上述两种方式都无法实现时，在 `base.css` 内联块**末尾**追加新类，**不得插入或修改已有内容**：
+
+```html
+<style>
+  /* ── base.css 内容（原样，不动）── */
+  ...
+
+  /* ── 本页扩展（仅此页需要，命名以 kt- 开头）── */
+  .kt-timeline-item { ... }
+  .kt-tag-group { ... }
+</style>
+```
+
+规则：
+- 类名必须以 `kt-` 开头（与项目命名空间一致）
+- 颜色只用 `var(--kt-*)` 变量
+- 只追加在末尾，不修改 Layer 1-5 任何内容
+- 若该扩展具有通用价值，在文档面板注明「建议将 `.kt-xxx` 补充到 base.css」
+
+**绝对禁止：**
+- 修改 `base.css` Layer 1-5 的任何现有规则
+- 引入项目色板外的新颜色（不在 `--kt-*` 变量中的色值）
+- 覆盖 Ant Design 组件的内部结构样式
 
 ---
 
-## 约束
+### 组件使用示例
 
-- **必须使用 Ant Design 4.x CSS**：`antd.min.css` CDN
-- **必须应用项目配色**：#3e8dff 主色，非 Ant Design 默认 #1890ff
-- **遵循 Ant Design 组件结构**：即使配色被覆盖，HTML 结构和类名遵循 Ant Design 4.x 规范
-- **禁止使用 Emoji**：所有图标使用 Ant Design 图标类名或 CSS 实现
-- **Tailwind 仅用于布局工具类**：flex、grid、间距，不用于组件样式
-- **单文件输出**：每个HTML包含完整原型，可直接打开
-- **Mock数据**：硬编码，无API调用
-- **不使用 @apply**：CDN模式不生效
-- **复刻模式两阶段**：必须先1:1还原，再叠加改动
-- **有需求改动必须有引导层**：不能用文档面板替代
-- **多页面用 Subagent**：同时生成多个页面时，每个页面在独立 subagent 中生成
+**统计卡片（dashboard 页）：**
+```html
+<div class="kt-stat-card">
+  <div class="kt-stat-card-label">今日请求量</div>
+  <div class="kt-stat-card-value is-primary">12,847</div>
+  <div class="kt-stat-card-footer">较昨日 +8.3%</div>
+</div>
+```
+
+**描述列表（detail 页，双列）：**
+```html
+<div class="kt-desc-list">
+  <div class="kt-desc-item">
+    <div class="kt-desc-label">角色名称</div>
+    <div class="kt-desc-value">超级管理员</div>
+  </div>
+  <div class="kt-desc-item">
+    <div class="kt-desc-label">创建时间</div>
+    <div class="kt-desc-value">2024-01-15 10:30:00</div>
+  </div>
+  <div class="kt-desc-item full-width">
+    <div class="kt-desc-label">描述</div>
+    <div class="kt-desc-value">拥有系统所有权限</div>
+  </div>
+</div>
+```
+
+**空状态：**
+```html
+<div class="kt-empty">
+  <div class="kt-empty-icon"></div>
+  <div class="kt-empty-text">暂无数据</div>
+  <div class="kt-empty-sub">请调整筛选条件后重试</div>
+</div>
+```
+
+**代码展示：**
+```html
+<div class="kt-code-block">{"key": "value", "status": 1}</div>
+```
+
+**Tailwind 拼装示例（提示条，base.css 无此组件）：**
+```html
+<div class="flex items-start gap-2 p-3 rounded" style="background: var(--kt-warning-bg);">
+  <span class="anticon anticon-warning" style="color: var(--kt-warning); margin-top: 2px;"></span>
+  <span style="color: var(--kt-text-secondary); font-size: 14px;">此操作不可撤销，请谨慎操作。</span>
+</div>
+```
 
 ---
 
-## 参考资源
+## 输出规范
 
-- **设计规范**：`docs/design-guide.md` — 完整设计规范和组件HTML示例（第8节为引导层实现）
-- **输出格式**：`docs/output-format.md` — HTML输出格式详细规范
-- **页面生成脚本**：`scripts/generate_page.py` — 单页面生成
-- **批量生成脚本**：`scripts/batch_generate.py` — 多页面批量生成
-- **复刻分析脚本**：`scripts/clone_page.py` — .vue 文件结构提取
-
-**项目前端源码参考：** `D:\workspace\Document\input\kt-agent-framework\admin_frontend\src\`
+- **目录：** `.dev/prototype/`
+- **命名：** `prototype-{YYYYMMDD}-{页面名称}.html`，改造版加 `-v{N}`
+- **不覆盖** 已有文件
+- **多页面** 时同时生成 `index.html` 目录页（规范见 `docs/output-format.md`）
+- **多页面** 时每个页面用独立 Subagent 生成，避免上下文污染
 
 ---
 
-## 自检清单
+## 自检清单（生成后逐项核对）
 
-- [ ] HTML文件可在浏览器正常打开
-- [ ] 配色使用项目色值（#3e8dff 主色等）
-- [ ] 侧边栏 #1e202a，顶栏白色
-- [ ] 使用 Ant Design 组件类名（ant-btn、ant-table 等）
-- [ ] 无 emoji 字符，图标使用 anticon 类名或 CSS 实现
-- [ ] 状态标签：简单用 ant-tag，需圆点用 .kt-status
-- [ ] 抽屉/弹窗合并到主页面
-- [ ] 文档面板可切换显示
-- [ ] 文件保存到 `.dev/prototype/`
-- [ ] **复刻模式：源页面所有字段/列/按钮已1:1还原（不遗漏）**
-- [ ] **有需求改动：已包含需求引导层，改动项已全部标注**
-- [ ] Mock数据合理（≥3行，语义正确）
-- [ ] 多页面时已生成 index.html 目录页
-- [ ] 多页面时使用了 subagent 隔离上下文
+**结构与资产**
+- [ ] 骨架完整复制自 `page-skeleton.html`，未自行重写侧边栏/顶栏/脚本等外壳结构
+- [ ] `main_content` 内容来自 `fragments/` 片段组合，未自由生成 HTML 结构
+- [ ] `base.css` 原样内联在 `<style>` 块开头，未修改 Layer 1-5 任何内容
+- [ ] `guide-layer.js` 原样内联，未修改
+
+**样式规范**
+- [ ] 主色为 `#3e8dff`，无 `#1890ff` 作主色
+- [ ] 无 emoji，图标用 `anticon` 类名或首字母色块
+- [ ] 状态标签只用 5 种固定 `kt-status-*` 类名
+- [ ] 扩展样式（若有）：类名以 `kt-` 开头，颜色只用 `var(--kt-*)` 变量，追加在 `<style>` 末尾
+
+**交互与数据**
+- [ ] 抽屉/弹窗已合并到主 HTML
+- [ ] Mock 数据 ≥3 行，字段值符合业务语义
+
+**复刻模式**
+- [ ] 已输出还原确认表并停止等待用户确认
+- [ ] 有改动：每处改动已写入 `GUIDE_STEPS`，selector 在页面中可找到
+- [ ] 无改动：`GUIDE_STEPS = []`
+
+**输出**
+- [ ] 文件保存至 `.dev/prototype/`，未覆盖已有文件
+- [ ] 多页面：已生成 `index.html`
