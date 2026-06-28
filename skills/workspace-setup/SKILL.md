@@ -1,79 +1,111 @@
 ---
 name: workspace-setup
-description: 初始化当前项目的最小研发工作区，创建项目规则、项目级 OKF 知识库，以及真实版本下的需求、方案、任务和验收目录。用于新项目首次建立研发文档结构、为新版本创建空阶段目录或检查既有工作区是否符合 V3 契约；不创建业务文档、不管理同步、技能安装或版本归档。
+description: 用户首次建工作区、开启新迭代、关闭旧迭代、或把本地 AGENTS.md/CLAUDE.md 同步到 FileBrowser 时使用。
 ---
 
-# 工作区初始化
+# 工作区维护
 
-只建立当前项目开展 V3 研发所需的最小结构：
+维护项目工作区的迭代生命周期。同一时间最多一个活跃版本。
 
 ```text
 项目根目录/
-├── AGENTS.md
-├── PROJECT_RULES.md
-├── project-kb/
-│   ├── index.md
-│   ├── log.md
-│   └── code/
-│       └── index.md
+├── AGENTS.md            ← 始终从 FileBrowser 拉最新（覆盖本地）
+├── CLAUDE.md            ← 始终从 FileBrowser 拉最新（覆盖本地）
 └── workplace/
-    └── 3/                 ← 示例，实际使用用户确认的真实版本
-        ├── requirements/
-        ├── tech-design/
-        ├── implementation-planning/
-        └── acceptance/
+    ├── <进行中版本>/     ← 最多 1 个
+    │   ├── requirements/
+    │   ├── tech-design/
+    │   ├── implementation-planning/
+    │   └── acceptance/
+    └── archive/         ← 已关闭的迭代，只增不减
+        └── <旧版本>/
 ```
-
-执行阶段直接复用 `implementation-planning/` 中的任务入口和 `T-*`，不创建执行目录。调研、证据、UI、原型、审查、日志和缺陷由阶段 Skill 在具体入口旁按需创建，不在初始化时预建。
 
 ## 确定项目与版本
 
-项目根目录优先使用用户明确给出的路径；否则使用当前工作区根目录。版本优先使用用户明确给出的数字；未给出时，只有在 `workplace/` 中能够唯一判断当前活跃数字版本时才沿用，否则询问。
+- 项目根目录：用户明确给出 > 当前工作区根目录。
+- 版本号：用户必须显式给出；不允许自动推断。
+- 版本只接受整数或两段数字，例如 `3`、`3.1`。
 
-版本只接受整数或两段数字，例如 `3`、`3.1`。持久化路径必须直接使用这个真实值。
+## 维护动作
 
-## 初始化
+按用户要求执行以下动作之一。每个动作独立完成，中途失败立即停下并报告。
 
-可直接创建目录和入口，也可运行确定性初始化器：
+### A. 开启新迭代（含首次建立）
+
+1. **预检**：`workplace/` 下不存在任何非 archive 子目录则继续；否则停下并告知先调动作 B。
+
+   ```bash
+   [ -z "$(find '<root>/workplace' -mindepth 1 -maxdepth 1 -type d ! -name archive 2>/dev/null)" ] || {
+     echo "error: an active iteration exists under <root>/workplace; archive it first (action B)" >&2
+     exit 1
+   }
+   ```
+
+2. **建目录**：
+
+   ```bash
+   mkdir -p "<root>/workplace/<version>/{requirements,tech-design,implementation-planning,acceptance}"
+   ```
+
+3. **拉两份标准文件**（始终覆盖本地）：
+
+   ```text
+   filebrowser-cli download /AGENTS.md <root>/AGENTS.md
+   filebrowser-cli download /CLAUDE.md <root>/CLAUDE.md
+   ```
+
+   远程根固定 `/`，不询问其他路径。下载失败按 filebrowser-skill 排错，不重试。
+
+4. 报告完成。
+
+### B. 关闭旧迭代（归档）
+
+按顺序执行「抽 → 扫 → 移」三步；任何一步失败立即停下并报告。
+
+1. **抽**：调起负责维护 `project-kb/` 的 skill 的 archive intake 入口；该 skill 自己决定抽取哪些内容到 `project-kb/`。本 skill 不参与判定。
+
+2. **扫垃圾**：删除 `workplace/<version>/` 下匹配以下任一条件的文件：
+   - 文件名匹配 `*.tmp`、`*.bak`、`*.swp`、`*~`
+   - 文件字节数为 0
+
+   文件删除后递归清理变空的子目录（保留 `workplace/<version>/` 顶层目录本身）。
+
+3. **移**：
+
+   ```bash
+   [ -d "<root>/workplace/<version>" ] || { echo "error: iteration <version> not found at <root>/workplace/<version>" >&2; exit 1; }
+   [ ! -e "<root>/workplace/archive/<version>" ] || { echo "error: archive/<version> already exists at <root>/workplace/archive/<version>" >&2; exit 1; }
+   mkdir -p "<root>/workplace/archive"
+   mv "<root>/workplace/<version>" "<root>/workplace/archive/<version>"
+   ```
+
+4. 报告完成。
+
+### C. 上传 AGENTS.md / CLAUDE.md 到云端
+
+仅当用户修改了本地副本、想同步到云端时执行：
 
 ```text
-python skills/workspace-setup/scripts/init_workspace.py --project-root D:\workspace\project --version 3
+filebrowser-cli upload <root>/AGENTS.md /AGENTS.md
+filebrowser-cli upload <root>/CLAUDE.md /CLAUDE.md
 ```
 
-初始化器只执行以下工作：
+## 失败处理
 
-1. 校验真实项目根目录和数字版本。
-2. 创建 `workplace/<实际数字>/` 及四个阶段目录。
-3. 只在缺失时创建最小 `AGENTS.md` 和 `PROJECT_RULES.md`；已有文件保持不变。
-4. 调用 `personal-kb init-project` 创建最小 OKF bundle。
-5. 调用 `personal-kb validate-project` 校验知识库格式和本地链接。
-6. 返回新建、保留、警告和错误。
-
-重复执行不得覆盖已有入口、规则、知识库或阶段文档。旧知识库或旧工作区不符合当前契约时只报告问题，不自动移动、删除或迁移。
-
-## 入口边界
-
-`AGENTS.md` 只负责要求 Agent 先读取同级 `PROJECT_RULES.md`。`PROJECT_RULES.md` 只保存修改当前项目前必须知道的规则、真实验证命令和知识库入口，使用标准 Markdown 链接指向 `project-kb/index.md`。
-
-完整领域、架构、代码、决策和工作流知识归 `personal-kb` 管理，不复制进项目规则。研发阶段入口和支撑材料归对应阶段 Skill 管理。
-
-## 检查与完成
-
-完成前检查：
-
-- 版本目录使用确认过的真实数字。
-- 版本目录只包含四个预建阶段目录，没有额外执行入口。
-- 已有文件内容未被覆盖。
-- `PROJECT_RULES.md` 能进入 `project-kb/index.md`。
-- personal-kb 初始化和校验均成功。
-- 没有生成示例需求、方案、任务、验收或空支撑材料。
-
-只有无法可靠确定项目根目录或真实版本时才提问。问题必须是回复最后的 `## 需要你确认` 区块，一次只问一个并说明推荐处理和影响。
+- 任一命令失败：立刻停下，告知用户哪一步失败、哪些已完成、哪些未完成。
+- 不重试、不回滚、不清除部分完成的状态。
 
 ## 边界
 
+不做的：
+
+- 不创建 `PROJECT_RULES.md`——需要时由调用方按其规则创建。
+- 不初始化 personal-kb——需要时由调用方按其规则调用。
+- 不预建执行目录、任务、需求、方案、验收、调研、证据、UI、原型、审查、日志、缺陷文件。
+- 不校验既有 AGENTS.md / CLAUDE.md 内容。
+- 不替用户决定抽取哪些内容到 `project-kb/`——由负责该目录的 skill 在 archive intake 时自行判定。
 - 不维护项目配置文件。
-- 不同步本地或远程文件。
-- 不搜索、安装或更新 skills。
-- 版本创建、归档和删除由用户在独立操作中明确执行。
-- 不修改研发阶段状态、用户确认或项目代码。
+- 不删除 `workplace/archive/` 下的旧迭代。
+- 不创建 / 删除版本（仅移动到 `workplace/archive/`）。
+- 不修改研发阶段状态、用户确认、项目代码。

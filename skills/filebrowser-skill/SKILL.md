@@ -1,6 +1,6 @@
 ---
 name: filebrowser-skill
-description: 使用 filebrowser-cli 安装、更新、配置和操作 FileBrowser。用户要求上传、下载、浏览、搜索、移动、复制、删除、预览或分享远程文件，管理 FileBrowser 登录与配置，安装或升级 filebrowser-cli，或排查该 CLI 在 PowerShell、Git Bash、MSYS2、Linux、macOS 中的调用问题时使用。
+description: 操作 FileBrowser 远程文件（上传、下载、浏览、搜索、移动、复制、删除、预览、分享）；管理登录与配置；安装或升级 filebrowser-cli；或跨 PowerShell、Git Bash、MSYS2、Linux、macOS 排查调用问题。
 ---
 
 # FileBrowser CLI
@@ -9,14 +9,15 @@ description: 使用 filebrowser-cli 安装、更新、配置和操作 FileBrowse
 
 ## 执行流程
 
-1. 判断当前 shell 和操作系统。
-2. 定位命令并检查是否有多个副本。
-3. 命令不存在时按“安装”处理；用户要求升级时按“更新”处理。
-4. 运行 `config path`、`config validate`，必要时初始化配置。
-5. 对读取操作优先使用 `--json`；解析 stdout，并检查退出码。
-6. 写入、覆盖、移动、删除或创建公开分享前，确认目标路径和用户意图；操作后读取验证。
+1. 直接运行 `filebrowser-cli <subcommand>`；参数不确定时用 `filebrowser-cli <subcommand> --help` 或查阅本文档对应章节。
+2. 命令未找到（PowerShell: `not recognized`；Bash: `command not found`）→ 按“安装”处理。
+3. 命令存在但行为异常、更新后版本未变、或 PATH 中疑有多个副本 → 按“排错”处理。
+4. 对读取操作优先使用 `--json`；解析 stdout，并检查退出码。
+5. 写入、覆盖、移动、删除或创建公开分享前，确认目标路径和用户意图；操作后读取验证。
 
-## 定位和诊断
+## 排错
+
+只在命令未按预期工作或更新未生效时进入；正常流程不需要这一步。
 
 PowerShell：
 
@@ -36,93 +37,13 @@ filebrowser-cli --help
 printf '%s\n' "$?"
 ```
 
-如果存在多个副本，先确定实际执行路径。更新后仍显示旧版本时，通常是 PATH 中较早的旧副本：PowerShell 用 `Get-Command ... -All`，Bash 用 `type -a` 排查。不要在未确认目标的情况下删除副本。
+更新后仍显示旧版本时，多半是 PATH 中较早的旧副本在拦截调用：PowerShell 用 `Get-Command ... -All`，Bash 用 `type -a` 列出所有副本，确认实际执行路径。处理方法是清理旧副本（一般是 PATH 上更靠前的那个），而不是给当前二进制换位置。Windows 上刚替换的副本若已被本进程加载，需关闭当前 shell 后新开会话再验证。
+
+只在确认了实际执行路径后再决定下一步；不要在未确认的情况下删除副本。
 
 ## 安装
 
-优先使用已有的 Go 工具链安装；没有 Go 时下载 Release 二进制。Go 版本要求为 1.21 或更高。
-
-### 使用 Go 安装
-
-两个 shell 都可执行：
-
-```text
-go install github.com/ANIAN0/filebrowser-cli@latest
-```
-
-PowerShell 将 Go bin 加入当前会话：
-
-```powershell
-$goBin = go env GOBIN
-if (-not $goBin) { $goBin = Join-Path (go env GOPATH) 'bin' }
-$env:Path = "$goBin;$env:Path"
-filebrowser-cli --version
-```
-
-Git Bash / Bash：
-
-```bash
-go_bin="$(go env GOBIN)"
-[ -n "$go_bin" ] || go_bin="$(go env GOPATH)/bin"
-export PATH="$go_bin:$PATH"
-filebrowser-cli --version
-```
-
-只在用户要求持久化时修改 PowerShell 用户 PATH 或 `~/.bashrc`。当前会话可用并不代表新终端已持久生效。
-
-### 下载 GitHub Release
-
-Release 资产命名为 `filebrowser-cli-<os>-<arch>`，Windows 带 `.exe`。常见值：`windows-amd64.exe`、`windows-arm64.exe`、`linux-amd64`、`linux-arm64`、`darwin-amd64`、`darwin-arm64`。
-
-PowerShell（示例为 Windows amd64）：
-
-```powershell
-$asset = 'filebrowser-cli-windows-amd64.exe'
-$base = 'https://github.com/ANIAN0/filebrowser-cli/releases/latest/download'
-Invoke-WebRequest "$base/$asset" -OutFile ".\$asset"
-Invoke-WebRequest "$base/checksums.txt" -OutFile '.\checksums.txt'
-$expected = ((Select-String -Path '.\checksums.txt' -Pattern ([regex]::Escape($asset))).Line -split '\s+')[0]
-$actual = (Get-FileHash ".\$asset" -Algorithm SHA256).Hash
-if (-not $expected -or $actual.ToLowerInvariant() -ne $expected.ToLowerInvariant()) { throw 'checksum mismatch' }
-& ".\$asset" install
-```
-
-Git Bash / Bash（Windows Git Bash 示例）：
-
-```bash
-asset='filebrowser-cli-windows-amd64.exe'
-base='https://github.com/ANIAN0/filebrowser-cli/releases/latest/download'
-curl -fL "$base/$asset" -o "$asset"
-curl -fL "$base/checksums.txt" -o checksums.txt
-sha256sum -c checksums.txt --ignore-missing
-"./$asset" install
-```
-
-`install` 把当前二进制复制到默认用户目录：Windows 为 `%LOCALAPPDATA%\Programs\filebrowser-cli`，Linux/macOS 为 `~/.local/bin`。也可使用 `install --dir <目录>`。根据命令输出把该目录加入 PATH，然后重新定位并验证版本。
-
-### 从本地源码安装
-
-仅在用户明确要使用源码版本时进入源码目录。先运行 `git status --short`，保留用户改动，再执行测试和构建。
-
-PowerShell：
-
-```powershell
-go test ./...
-New-Item -ItemType Directory -Force .\bin | Out-Null
-go build -o .\bin\filebrowser-cli.exe .
-& .\bin\filebrowser-cli.exe install
-```
-
-Git Bash / Bash：
-
-```bash
-go test ./...
-mkdir -p ./bin
-go build -o ./bin/filebrowser-cli.exe .   # Windows Git Bash
-./bin/filebrowser-cli.exe install
-```
-
-在 Linux/macOS 将输出名改为 `./bin/filebrowser-cli`。
+命令未找到时进入 [`references/install.md`](references/install.md)。该文件覆盖 Go 安装、GitHub Release 下载、本地源码构建三种方式；Go 版本要求为 1.21 或更高。
 
 ## 更新与卸载
 
@@ -135,15 +56,13 @@ filebrowser-cli uninstall
 filebrowser-cli uninstall --purge
 ```
 
-`update` 从最新 GitHub Release 下载匹配当前 OS/架构的资产，并在提供 `checksums.txt` 时校验。Windows 会安排在当前进程退出后替换文件；关闭或重启 shell，再运行 `Get-Command -All`/`type -a` 和 `--version` 验证。`--purge` 会删除用户配置，仅在用户明确要求时使用。
+`update` 从最新 GitHub Release 下载匹配当前 OS/架构的资产，并在提供 `checksums.txt` 时校验。Windows 会安排在当前进程退出后替换文件；关闭或重启 shell 后再调用命令即可。`--purge` 会删除用户配置，仅在用户明确要求时使用。
 
 如果通过 `go install` 管理源码版本，也可再次执行：
 
 ```text
 go install github.com/ANIAN0/filebrowser-cli@latest
 ```
-
-更新必须作用于 PATH 实际解析到的副本；不要假设刚更新的文件就是当前命令。
 
 ## 配置
 

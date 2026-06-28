@@ -7,6 +7,7 @@
 | 维度 | 合格标准 |
 |---|---|
 | OKF 最低契约 | 每个普通概念有可解析 frontmatter 和非空 `type` |
+| 本 skill 字段契约 | 每个普通概念有非空 `title` 和 `description`；`Project Code` 概念有非空 `source_path` |
 | 入口 | 根 `index.md` 声明 `okf_version: "0.1"` 并能进入所有已有分类 |
 | 渐进导航 | 每个已有分类的 `index.md` 列出实际概念和一句话描述 |
 | 链接 | 使用可解析的标准 Markdown 链接，不使用 wiki link |

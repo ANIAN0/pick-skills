@@ -1,0 +1,1 @@
+# Marks `viz/` as a Python package so generator.py can import from `viz.document`.
