@@ -1,6 +1,6 @@
 ---
 name: <skill-name>
-description: <一句话写清触发条件——什么场景/输入会让 agent 调用本 skill。写成"用户说 X 时调用"，不要写成"本 skill 能做 X、Y、Z"的功能清单。>
+description: <一句话写清触发条件——什么场景/输入会让 agent 调用本 skill。写成"用户说 X 时调用"，不要写成"本 skill 能做 X、Y、Z"的功能清单。第三人称，包含具体触发关键词，宁可写得"主动"一点，避免 agent 该触发时没触发。>
 ---
 
 # <skill-name>
@@ -13,17 +13,17 @@ description: <一句话写清触发条件——什么场景/输入会让 agent �
 
 **不触发**：<什么情况下明确不使用本 skill——例如"已有更专门的 skill 处理该场景"或"输入不在本 skill 的能力范围内"。>
 
-**与其他 skill 的关系**：<如适用——本 skill 调用谁、被谁调用、路由到哪个 skill。引用格式："调用 `<skill-name>`，见其 SKILL.md"。>
+**与其他 skill 的关系**：<如适用——本 skill 调用谁、被谁调用、路由到哪个 skill。引用格式："调用 `<skill-name>`，见其 SKILL.md"。协作是可选增强，不是完成任务的必经前提；写清对方不可用时本 skill 的退化处理。>
 
 ## 环境配置契约（如适用）
 
-读取 `<config 路径>`，字段含义见生成该配置的 setup skill。
+读取 `<config 路径>`，字段含义见生成该配置的 setup skill。机制见 [optional_modules.md](optional_modules.md)。
 
 <如果不需要：删除本节标题，不要留空。>
 
 ## 存储与路径契约
 
-- 本 skill 产出的文件放在：`<路径模板>`
+- 本 skill 产出的文件放在：`<路径模板>`，且必须在本 skill 自己的目录或用户项目目录内——不依赖仓库根目录文件、不依赖另一个 skill 目录内部的文件存在。
 - 命名规则：`<规则>`
 - 复用既有数据的策略：<增量更新还是新建文件；命名重复时如何处理。>
 
@@ -59,7 +59,7 @@ description: <一句话写清触发条件——什么场景/输入会让 agent �
 - [ ] <检查项 2 + 通过的判据>
 - [ ] <检查项 3 + 通过的判据>
 
-<如果涉及多轮迭代循环：补充"质量轨迹"判据，定义相比上一轮是否退步的比较维度与阈值。具体机制见 [references/optional_modules.md](references/optional_modules.md)。>
+<如果涉及多轮迭代循环：补充"质量轨迹"判据，定义相比上一轮是否退步的比较维度与阈值。具体机制见 [optional_modules.md](optional_modules.md)。>
 
 ## 失败与回退
 
@@ -94,7 +94,9 @@ description: <一句话写清触发条件——什么场景/输入会让 agent �
 # 模板使用说明
 
 1. 复制本文件到 `skills/<你的 skill 名>/SKILL.md`。
-2. 修改 frontmatter：`name` 改为实际 skill 名（小写、kebab-case），`description` 写清触发条件。
+2. 修改 frontmatter：`name` 改为实际 skill 名（小写、kebab-case），`description` 写清触发条件、第三人称、包含具体关键词。
 3. 删除不适用的章节标题——不要留空标题等着以后填，空标题本身就是噪音。
 4. 章节顺序按本模板排列，不要为了"看起来更顺"调整顺序；agent 已经习惯按这个顺序走流程。
-5. 写完后用仓库根目录的 `CHANGE_CHECKLIST.md` 过一遍。
+5. 检查本 skill 引用的所有文件路径：只能指向 `skills/<你的 skill 名>/` 目录内部，或用户项目自身的路径；不能指向仓库根目录文件或另一个 skill 目录内部的文件（那属于跨 skill 协作，走"与其他 skill 的关系"一节的引用格式，不是文件路径依赖）。
+6. 写完后用同目录下的 [CHANGE_CHECKLIST.md](CHANGE_CHECKLIST.md) 过一遍——它是 `skill-meta-protocol` 自带的清单，不在仓库根目录，新 skill 本身也不需要依赖仓库根目录的任何文件。
+7. 如果这是把一个已存在、不规范的旧 skill 改造成本模板的结构，先读 [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) 而不是从这里直接开始逐条套模板。
