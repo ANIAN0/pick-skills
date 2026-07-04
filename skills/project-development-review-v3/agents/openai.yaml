@@ -1,4 +1,0 @@
-interface:
-  display_name: "项目研发审查 v3"
-  short_description: "独立审查五阶段入口和真实证据，报告阻塞问题与复审结论"
-  default_prompt: "使用 $project-development-review-v3 独立审查当前阶段入口文档和真实证据。"

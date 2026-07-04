@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目验收"
+  short_description: "基于已确认任务入口验证功能、失败路径、用户路径、回归和交付证据"
+  default_prompt: "使用 $project-acceptance 读取执行状态已确认的任务入口，建立追踪矩阵并进行最终真实验收。"

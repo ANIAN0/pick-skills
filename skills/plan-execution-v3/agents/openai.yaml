@@ -1,4 +1,0 @@
-interface:
-  display_name: "计划执行 v3"
-  short_description: "复用任务入口按方案实施，只在入口回写状态"
-  default_prompt: "使用 $plan-execution-v3 直接复用已确认任务入口，逐项实现并只在入口回写状态。"

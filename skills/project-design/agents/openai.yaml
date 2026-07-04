@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目设计"
+  short_description: "基于已确认需求和真实项目证据形成唯一设计入口"
+  default_prompt: "使用 $project-design 基于已确认需求调查项目，避免复述需求，形成唯一项目设计入口文档。"
