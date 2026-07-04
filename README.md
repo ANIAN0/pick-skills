@@ -7,7 +7,7 @@
 ### v3 图谱化研发套件
 
 - [unattended-development-v3](./skills/unattended-development-v3/SKILL.md) — full/extension/task/bug 统一入口、四个人工确认闸门和可恢复运行记录
-- [requirements-workshop-v3](./skills/requirements-workshop-v3/SKILL.md) — 自适应 Story/Module/Feature 需求文档
+- [requirements-workshop-v3](./skills/requirements-workshop-v3/SKILL.md) — 从 ROADMAP.md 里程碑出发维护需求入口
 - [tech-design-v3](./skills/tech-design-v3/SKILL.md) — 按需求范围生成技术设计
 - [implementation-planning-v3](./skills/implementation-planning-v3/SKILL.md) — 生成同范围任务清单并校验依赖 DAG
 - [plan-execution-v3](./skills/plan-execution-v3/SKILL.md) — 按依赖、运行时资历、执行断言和正负验证执行任务
