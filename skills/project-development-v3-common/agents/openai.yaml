@@ -1,4 +1,0 @@
-interface:
-  display_name: "项目研发 v3 公共协议"
-  short_description: "维护五阶段单入口、支撑材料、审查确认和真实证据公共契约"
-  default_prompt: "使用 $project-development-v3-common 检查或维护项目研发 v3 skill 套件的跨阶段契约。"
