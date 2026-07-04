@@ -1,115 +1,72 @@
-# Condition-Based Waiting
+# 条件等待
 
-## Overview
+当测试或异步流程依赖 `sleep`、`setTimeout`、固定秒数等待而变得不稳定时，使用条件等待。原则：等待真实条件成立，不等待猜测出来的时间。
 
-Flaky tests often guess at timing with arbitrary delays. This creates race conditions where tests pass on fast machines but fail under load or in CI.
+## 适用信号
 
-**Core principle:** Wait for the actual condition you care about, not a guess about how long it takes.
+- 测试偶尔通过、偶尔失败。
+- 并发或 CI 环境下更容易超时。
+- 代码里出现 `sleep(1000)`、`setTimeout`、`time.sleep()` 这类任意等待。
+- 等待的是事件、状态、数量、文件、任务完成等可观察条件。
 
-## When to Use
+不适用：正在测试 debounce、throttle、调度间隔等真实时间行为。此时可以保留固定等待，但必须说明等待依据。
 
-```dot
-digraph when_to_use {
-    "Test uses setTimeout/sleep?" [shape=diamond];
-    "Testing timing behavior?" [shape=diamond];
-    "Document WHY timeout needed" [shape=box];
-    "Use condition-based waiting" [shape=box];
-
-    "Test uses setTimeout/sleep?" -> "Testing timing behavior?" [label="yes"];
-    "Testing timing behavior?" -> "Document WHY timeout needed" [label="yes"];
-    "Testing timing behavior?" -> "Use condition-based waiting" [label="no"];
-}
-```
-
-**Use when:**
-- Tests have arbitrary delays (`setTimeout`, `sleep`, `time.sleep()`)
-- Tests are flaky (pass sometimes, fail under load)
-- Tests timeout when run in parallel
-- Waiting for async operations to complete
-
-**Don't use when:**
-- Testing actual timing behavior (debounce, throttle intervals)
-- Always document WHY if using arbitrary timeout
-
-## Core Pattern
+## 基本模式
 
 ```typescript
-// ❌ BEFORE: Guessing at timing
-await new Promise(r => setTimeout(r, 50));
-const result = getResult();
-expect(result).toBeDefined();
+// 错误：猜时间
+await new Promise(resolve => setTimeout(resolve, 50));
+expect(getResult()).toBeDefined();
 
-// ✅ AFTER: Waiting for condition
-await waitFor(() => getResult() !== undefined);
-const result = getResult();
-expect(result).toBeDefined();
+// 正确：等条件
+await waitFor(() => getResult() !== undefined, 'result to be ready');
+expect(getResult()).toBeDefined();
 ```
 
-## Quick Patterns
+通用实现：
 
-| Scenario | Pattern |
-|----------|---------|
-| Wait for event | `waitFor(() => events.find(e => e.type === 'DONE'))` |
-| Wait for state | `waitFor(() => machine.state === 'ready')` |
-| Wait for count | `waitFor(() => items.length >= 5)` |
-| Wait for file | `waitFor(() => fs.existsSync(path))` |
-| Complex condition | `waitFor(() => obj.ready && obj.value > 10)` |
-
-## Implementation
-
-Generic polling function:
 ```typescript
 async function waitFor<T>(
   condition: () => T | undefined | null | false,
   description: string,
   timeoutMs = 5000
 ): Promise<T> {
-  const startTime = Date.now();
+  const start = Date.now();
 
   while (true) {
-    const result = condition();
-    if (result) return result;
+    const value = condition();
+    if (value) return value;
 
-    if (Date.now() - startTime > timeoutMs) {
+    if (Date.now() - start > timeoutMs) {
       throw new Error(`Timeout waiting for ${description} after ${timeoutMs}ms`);
     }
 
-    await new Promise(r => setTimeout(r, 10)); // Poll every 10ms
+    await new Promise(resolve => setTimeout(resolve, 10));
   }
 }
 ```
 
-See `condition-based-waiting-example.ts` in this directory for complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) from actual debugging session.
+完整示例见 `../scripts/condition-based-waiting-example.ts`。
 
-## Common Mistakes
+## 常见条件
 
-**❌ Polling too fast:** `setTimeout(check, 1)` - wastes CPU
-**✅ Fix:** Poll every 10ms
+| 场景 | 条件示例 |
+|---|---|
+| 等事件 | `events.find(e => e.type === 'DONE')` |
+| 等状态 | `machine.state === 'ready'` |
+| 等数量 | `items.length >= 5` |
+| 等文件 | `fs.existsSync(path)` |
+| 等复杂状态 | `obj.ready && obj.value > 10` |
 
-**❌ No timeout:** Loop forever if condition never met
-**✅ Fix:** Always include timeout with clear error
+## 常见错误
 
-**❌ Stale data:** Cache state before loop
-**✅ Fix:** Call getter inside loop for fresh data
+- 轮询太快：`setTimeout(check, 1)` 会浪费 CPU；通常 10ms 足够。
+- 没有超时：条件永不成立时会卡死；必须带清晰错误信息。
+- 读取旧数据：不要在循环外缓存状态；每轮都重新读取条件。
+- 先 sleep 再断言：改为先等待触发条件，再验证结果。
 
-## When Arbitrary Timeout IS Correct
+## 完成判据
 
-```typescript
-// Tool ticks every 100ms - need 2 ticks to verify partial output
-await waitForEvent(manager, 'TOOL_STARTED'); // First: wait for condition
-await new Promise(r => setTimeout(r, 200));   // Then: wait for timed behavior
-// 200ms = 2 ticks at 100ms intervals - documented and justified
-```
-
-**Requirements:**
-1. First wait for triggering condition
-2. Based on known timing (not guessing)
-3. Comment explaining WHY
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- Fixed 15 flaky tests across 3 files
-- Pass rate: 60% → 100%
-- Execution time: 40% faster
-- No more race conditions
+- 任意等待已替换为条件等待，或保留固定等待时已说明它验证的是时间行为。
+- 超时错误能说明等待的具体条件。
+- 失败时输出足够定位是条件未达成，而不是单纯“超时了”。

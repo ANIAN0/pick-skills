@@ -1,169 +1,53 @@
-# Root Cause Tracing
+# 根因回溯
 
-## Overview
+当错误出现在调用栈深处、数据在中途变坏、或不确定哪个测试/调用触发副作用时，使用本方法。原则：沿调用链或数据流向上追到原始触发点，在源头修复，不在报错位置修补表象。
 
-Bugs often manifest deep in the call stack (git init in wrong directory, file created in wrong location, database opened with wrong path). Your instinct is to fix where the error appears, but that's treating a symptom.
+## 适用信号
 
-**Core principle:** Trace backward through the call chain until you find the original trigger, then fix at the source.
+- 错误发生在底层工具、数据库、文件系统、网络调用或共享服务里。
+- 堆栈很长，直接报错位置看起来只是“最后一跳”。
+- 某个值为空、路径错误、状态异常，但不知道从哪里传入。
+- 测试互相污染，无法确认哪个测试留下了副作用。
 
-## When to Use
+## 回溯步骤
 
-```dot
-digraph when_to_use {
-    "Bug appears deep in stack?" [shape=diamond];
-    "Can trace backwards?" [shape=diamond];
-    "Fix at symptom point" [shape=box];
-    "Trace to original trigger" [shape=box];
-    "BETTER: Also add defense-in-depth" [shape=box];
+1. **记录表象**：保存完整错误、堆栈、文件路径、行号、输入值和当前工作目录。
+2. **找直接原因**：定位哪一行代码直接触发错误，记录它使用的参数。
+3. **向上一层追问**：谁调用了这段代码？传入的参数是什么？参数在上一层是否已经异常？
+4. **持续向上追溯**：重复上一层问题，直到找到第一个把正常数据变成异常数据的位置。
+5. **在源头修复**：修复原始触发点；必要时在下游关键边界增加防御校验。
 
-    "Bug appears deep in stack?" -> "Can trace backwards?" [label="yes"];
-    "Can trace backwards?" -> "Trace to original trigger" [label="yes"];
-    "Can trace backwards?" -> "Fix at symptom point" [label="no - dead end"];
-    "Trace to original trigger" -> "BETTER: Also add defense-in-depth";
-}
-```
+## 加诊断埋点
 
-**Use when:**
-- Error happens deep in execution (not at entry point)
-- Stack trace shows long call chain
-- Unclear where invalid data originated
-- Need to find which test/code triggers the problem
-
-## The Tracing Process
-
-### 1. Observe the Symptom
-```
-Error: git init failed in /Users/jesse/project/packages/core
-```
-
-### 2. Find Immediate Cause
-**What code directly causes this?**
-```typescript
-await execFileAsync('git', ['init'], { cwd: projectDir });
-```
-
-### 3. Ask: What Called This?
-```typescript
-WorktreeManager.createSessionWorktree(projectDir, sessionId)
-  → called by Session.initializeWorkspace()
-  → called by Session.create()
-  → called by test at Project.create()
-```
-
-### 4. Keep Tracing Up
-**What value was passed?**
-- `projectDir = ''` (empty string!)
-- Empty string as `cwd` resolves to `process.cwd()`
-- That's the source code directory!
-
-### 5. Find Original Trigger
-**Where did empty string come from?**
-```typescript
-const context = setupCoreTest(); // Returns { tempDir: '' }
-Project.create('name', context.tempDir); // Accessed before beforeEach!
-```
-
-## Adding Stack Traces
-
-When you can't trace manually, add instrumentation:
+手工追不出来时，在危险操作之前记录上下文：
 
 ```typescript
-// Before the problematic operation
 async function gitInit(directory: string) {
-  const stack = new Error().stack;
-  console.error('DEBUG git init:', {
+  console.error('DEBUG git init', {
     directory,
     cwd: process.cwd(),
     nodeEnv: process.env.NODE_ENV,
-    stack,
+    stack: new Error().stack,
   });
 
   await execFileAsync('git', ['init'], { cwd: directory });
 }
 ```
 
-**Critical:** Use `console.error()` in tests (not logger - may not show)
+测试里优先用 `console.error()`，因为项目 logger 可能被测试框架吞掉。记录必须发生在危险操作之前，而不是失败之后。
 
-**Run and capture:**
-```bash
-npm test 2>&1 | grep 'DEBUG git init'
-```
+## 测试污染定位
 
-**Analyze stack traces:**
-- Look for test file names
-- Find the line number triggering the call
-- Identify the pattern (same test? same parameter?)
-
-## Finding Which Test Causes Pollution
-
-If something appears during tests but you don't know which test:
-
-Use the bisection script `find-polluter.sh` in this directory:
+如果某个副作用只在整套测试中出现，使用二分脚本定位污染源：
 
 ```bash
-./find-polluter.sh '.git' 'src/**/*.test.ts'
+../scripts/find-polluter.sh '.git' 'src/**/*.test.ts'
 ```
 
-Runs tests one-by-one, stops at first polluter. See script for usage.
+脚本会逐步运行测试并在发现污染目标时停止。污染目标和测试匹配规则按实际项目调整。
 
-## Real Example: Empty projectDir
+## 完成判据
 
-**Symptom:** `.git` created in `packages/core/` (source code)
-
-**Trace chain:**
-1. `git init` runs in `process.cwd()` ← empty cwd parameter
-2. WorktreeManager called with empty projectDir
-3. Session.create() passed empty string
-4. Test accessed `context.tempDir` before beforeEach
-5. setupCoreTest() returns `{ tempDir: '' }` initially
-
-**Root cause:** Top-level variable initialization accessing empty value
-
-**Fix:** Made tempDir a getter that throws if accessed before beforeEach
-
-**Also added defense-in-depth:**
-- Layer 1: Project.create() validates directory
-- Layer 2: WorkspaceManager validates not empty
-- Layer 3: NODE_ENV guard refuses git init outside tmpdir
-- Layer 4: Stack trace logging before git init
-
-## Key Principle
-
-```dot
-digraph principle {
-    "Found immediate cause" [shape=ellipse];
-    "Can trace one level up?" [shape=diamond];
-    "Trace backwards" [shape=box];
-    "Is this the source?" [shape=diamond];
-    "Fix at source" [shape=box];
-    "Add validation at each layer" [shape=box];
-    "Bug impossible" [shape=doublecircle];
-    "NEVER fix just the symptom" [shape=octagon, style=filled, fillcolor=red, fontcolor=white];
-
-    "Found immediate cause" -> "Can trace one level up?";
-    "Can trace one level up?" -> "Trace backwards" [label="yes"];
-    "Can trace one level up?" -> "NEVER fix just the symptom" [label="no"];
-    "Trace backwards" -> "Is this the source?";
-    "Is this the source?" -> "Trace backwards" [label="no - keeps going"];
-    "Is this the source?" -> "Fix at source" [label="yes"];
-    "Fix at source" -> "Add validation at each layer";
-    "Add validation at each layer" -> "Bug impossible";
-}
-```
-
-**NEVER fix just where the error appears.** Trace back to find the original trigger.
-
-## Stack Trace Tips
-
-**In tests:** Use `console.error()` not logger - logger may be suppressed
-**Before operation:** Log before the dangerous operation, not after it fails
-**Include context:** Directory, cwd, environment variables, timestamps
-**Capture stack:** `new Error().stack` shows complete call chain
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- Found root cause through 5-level trace
-- Fixed at source (getter validation)
-- Added 4 layers of defense
-- 1847 tests passed, zero pollution
+- 已写出从表象到源头的调用链或数据流链路。
+- 已证明根因出现在源头，而不是中间表象。
+- 修复点位于源头；下游防御只作为补充，不替代源头修复。
