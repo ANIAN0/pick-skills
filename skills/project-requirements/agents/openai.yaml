@@ -1,4 +1,4 @@
 interface:
   display_name: "项目需求"
-  short_description: "维护 ROADMAP.md 里程碑，并确认用户故事、功能点、验收要求和必要 UI 需求"
-  default_prompt: "使用 $project-requirements 从项目路线图里程碑出发，成组确认关键需求缺口，并持续更新 ROADMAP.md 和唯一需求入口文档。"
+  short_description: "维护 ROADMAP.md 里程碑，并把可读需求草稿定稿为正式正文"
+  default_prompt: "使用 $project-requirements 从项目路线图里程碑出发，成组确认关键需求缺口，维护唯一可读需求草稿，并在确认前完成定稿清理。"
