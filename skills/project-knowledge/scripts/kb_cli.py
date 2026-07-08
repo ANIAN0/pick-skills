@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""初始化并校验当前项目的最小 OKF project-kb。"""
+"""初始化并校验本地 OKF bundle 或当前项目的 project-kb profile。"""
 
 from __future__ import annotations
 
@@ -47,7 +47,23 @@ def _minimal_files() -> dict[str, str]:
             "# 项目知识库\n\n"
             "本知识库保存当前项目长期有效、经过验证的知识。\n\n"
             "## 入口\n\n"
+            "- [快速开始](quickstart.md) - 面向人和 coding agent 的项目知识阅读入口。\n"
             "- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。\n"
+        ),
+        "quickstart.md": (
+            "---\n"
+            "type: Project Overview\n"
+            "title: 项目知识快速开始\n"
+            "description: 帮助人和 coding agent 快速理解本项目知识库的入口。\n"
+            "tags: [overview]\n"
+            "---\n\n"
+            "# 项目知识快速开始\n\n"
+            "本页说明这个项目是什么、知识库如何组织，以及不同读者应该从哪里继续阅读。\n\n"
+            "## 知识地图\n\n"
+            "- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。\n\n"
+            "## 阅读建议\n\n"
+            "- 先读本页了解项目知识版图。\n"
+            "- 再进入架构、领域、工作流、代码、决策、运维或测试等相关分类。\n"
         ),
         "log.md": (
             "# 项目知识库更新记录\n\n"
@@ -82,7 +98,7 @@ def init_project(
     rules = root / project_rules_file
     if rules.is_file():
         rules_text = rules.read_text(encoding="utf-8")
-        expected_target = f"{project_kb_dir}/index.md"
+        expected_target = f"{project_kb_dir}/quickstart.md"
         has_entry_link = any(
             _link_target(raw) == expected_target
             for raw in MARKDOWN_LINK.findall(rules_text)
@@ -146,6 +162,7 @@ def validate_project(
     project_root: Path,
     *,
     project_kb_dir: str = "project-kb",
+    profile: str = "okf",
 ) -> dict[str, Any]:
     root = project_root.resolve()
     kb_root = root / project_kb_dir
@@ -160,17 +177,24 @@ def validate_project(
             "errors": [{"path": str(kb_root), "message": "项目知识库目录不存在"}],
             "warnings": [],
             "valid": False,
+            "profile": profile,
         }
 
-    required = (kb_root / "index.md", kb_root / "log.md", kb_root / "code" / "index.md")
-    for path in required:
-        if not path.is_file():
-            errors.append({"path": str(path), "message": "缺少最小 OKF bundle 文件"})
+    if profile == "project":
+        required = (
+            kb_root / "index.md",
+            kb_root / "quickstart.md",
+            kb_root / "log.md",
+            kb_root / "code" / "index.md",
+        )
+        for path in required:
+            if not path.is_file():
+                errors.append({"path": str(path), "message": "缺少项目 profile 文件"})
 
-    legacy = (kb_root / "README.md", kb_root / "changelog.md")
-    for path in legacy:
-        if path.exists():
-            errors.append({"path": str(path), "message": "旧保留文件尚未迁移为 index.md 或 log.md"})
+        legacy = (kb_root / "README.md", kb_root / "changelog.md")
+        for path in legacy:
+            if path.exists():
+                errors.append({"path": str(path), "message": "旧保留文件尚未迁移为 index.md 或 log.md"})
 
     for path in sorted(kb_root.rglob("*.md")):
         checked += 1
@@ -182,11 +206,16 @@ def validate_project(
         match = FRONTMATTER.match(text)
         if path.name == "index.md":
             if path == kb_root / "index.md":
-                metadata, parse_error = _parse_frontmatter(match)
-                if parse_error:
-                    errors.append({"path": relative, "message": parse_error})
-                elif str(metadata.get("okf_version")) != "0.1":
+                if match:
+                    metadata, parse_error = _parse_frontmatter(match)
+                    if parse_error:
+                        errors.append({"path": relative, "message": parse_error})
+                    elif profile == "project" and str(metadata.get("okf_version")) != "0.1":
+                        errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
+                elif profile == "project":
                     errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
+                else:
+                    warnings.append({"path": relative, "message": "根 index.md 未声明 okf_version"})
             if path != kb_root / "index.md" and FRONTMATTER.match(text):
                 errors.append({"path": relative, "message": "子目录 index.md 不应包含 frontmatter"})
         elif path.name == "log.md":
@@ -199,7 +228,8 @@ def validate_project(
             if parse_error:
                 errors.append({"path": relative, "message": parse_error})
             else:
-                for required_field in ("type", "title", "description"):
+                required_fields = ("type", "title", "description") if profile == "project" else ("type",)
+                for required_field in required_fields:
                     value = metadata.get(required_field)
                     if not isinstance(value, str) or not value.strip():
                         errors.append(
@@ -208,7 +238,7 @@ def validate_project(
                                 "message": f"概念文档缺少非空 {required_field}",
                             }
                         )
-                if metadata.get("type") == "Project Code":
+                if profile == "project" and metadata.get("type") == "Project Code":
                     source_path = metadata.get("source_path")
                     if not isinstance(source_path, str) or not source_path.strip():
                         errors.append(
@@ -227,11 +257,12 @@ def validate_project(
                     {"path": relative, "message": f"本地链接目标不存在: {raw_link.strip()}"}
                 )
 
-    if not any(path.name != "index.md" for path in (kb_root / "code").rglob("*.md")):
+    if profile == "project" and not any(path.name != "index.md" for path in (kb_root / "code").rglob("*.md")):
         warnings.append({"path": "code/index.md", "message": "尚无代码概念；按实际需要创建"})
 
     return {
         "root": str(kb_root),
+        "profile": profile,
         "checked_files": checked,
         "errors": errors,
         "warnings": warnings,
@@ -565,7 +596,7 @@ def generate_viz(
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    parser = argparse.ArgumentParser(description="初始化、校验或浏览当前项目的 OKF project-kb。")
+    parser = argparse.ArgumentParser(description="初始化、校验或浏览本地 OKF bundle / project-kb。")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     project = subparsers.add_parser("init-project", help="初始化最小 OKF project-kb")
@@ -576,6 +607,12 @@ def main() -> int:
     validate = subparsers.add_parser("validate-project", help="校验 OKF 格式和本地链接")
     validate.add_argument("--project-root", type=Path, required=True)
     validate.add_argument("--project-kb-dir", default="project-kb")
+    validate.add_argument(
+        "--profile",
+        choices=["okf", "project"],
+        default="okf",
+        help="okf 使用宽容消费契约；project 使用当前项目知识库 profile 的写入质量契约",
+    )
 
     list_cmd = subparsers.add_parser("list-kb", help="列出 project-kb 中的条目")
     list_cmd.add_argument("--project-root", type=Path, required=True)
@@ -638,7 +675,7 @@ def main() -> int:
             project_rules_file=args.project_rules_file,
         ),
         "validate-project": lambda: validate_project(
-            args.project_root, project_kb_dir=args.project_kb_dir
+            args.project_root, project_kb_dir=args.project_kb_dir, profile=args.profile
         ),
         "list-kb": lambda: list_kb(
             args.project_root,

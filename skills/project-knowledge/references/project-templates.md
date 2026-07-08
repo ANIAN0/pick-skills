@@ -2,11 +2,12 @@
 
 只在初始化、迁移、选择概念类型或创建新类型概念时读取。所有链接使用普通 Markdown 链接。
 
-## 最小 bundle
+## 项目 profile 最小 bundle
 
 ```text
 project-kb/
 ├── index.md
+├── quickstart.md
 ├── log.md
 └── code/
     └── index.md
@@ -25,7 +26,33 @@ okf_version: "0.1"
 
 ## 入口
 
+- [快速开始](quickstart.md) - 面向人和 coding agent 的项目知识阅读入口。
 - [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。
+```
+
+`quickstart.md`：
+
+```markdown
+---
+type: Project Overview
+title: 项目知识快速开始
+description: 帮助人和 coding agent 快速理解本项目知识库的入口。
+tags: [overview]
+timestamp: YYYY-MM-DDTHH:MM:SS+08:00
+---
+
+# 项目知识快速开始
+
+本页说明这个项目是什么、知识库如何组织，以及不同读者应该从哪里继续阅读。
+
+## 知识地图
+
+- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。
+
+## 阅读建议
+
+- 先读本页了解项目知识版图。
+- 再进入架构、领域、工作流、代码、决策、运维或测试等相关分类。
 ```
 
 `log.md`：
@@ -61,6 +88,10 @@ okf_version: "0.1"
 | `code/` | `Project Code` | 源码职责、逻辑、关联和测试映射 |
 | `decisions/` | `Project Decision` | 决策、取舍、影响和失效条件 |
 | `workflows/` | `Project Workflow` | 跨文件流程、分支、失败和验证 |
+| `operations/` | `Project Operations` | 配置、部署、凭据边界、定时任务、故障处理 |
+| `integrations/` | `Project Integration` | 外部系统、第三方服务、协议和同步边界 |
+| `testing/` | `Project Testing` | 测试策略、关键验证路径和回归关注点 |
+| 根目录 `quickstart.md` | `Project Overview` | 项目知识阅读入口和主要分类导航 |
 
 ## 通用概念
 
@@ -181,9 +212,19 @@ timestamp: YYYY-MM-DDTHH:MM:SS+08:00
 - 相关测试、验证命令或观测方式。
 - 支撑流程描述的源码、测试、配置或阶段材料。
 
+## OpenWiki 式阅读入口
+
+`quickstart.md` 吸纳 OpenWiki 的阅读层级，但仍按 OKF 普通概念写入。它不替代 `index.md`：
+
+- `index.md` 服务 OKF 渐进导航和应用扫描。
+- `quickstart.md` 服务人和 coding agent，解释项目是什么、知识区如何分布、修改前应该读哪些概念。
+- `quickstart.md` 链接已有主要分类和关键概念，不复制每个概念的正文。
+- 小项目优先把概览、架构、主要工作流和修改注意事项写进 `quickstart.md`；只有内容足够稳定且有持续价值时才拆出新概念。
+
 ## 命名与索引
 
 - 概念使用稳定、简短、能表达主题的英文文件名；代码概念保留完整源码文件名并追加 `.md`。
 - 新增概念后，在最近目录 `index.md` 添加标题、相对链接和一句话描述。
-- 根 `index.md` 只导航到已有分类，不预建空目录。
+- 根 `index.md` 只导航到 `quickstart.md` 和已有分类，不预建空目录。
+- `quickstart.md` 必须从根 `index.md` 可达，并反向链接根 `index.md` 或主要分类入口。
 - 从阶段文档沉淀知识时链接原文，不复制整份文档；能修改原文时补回知识概念链接。
