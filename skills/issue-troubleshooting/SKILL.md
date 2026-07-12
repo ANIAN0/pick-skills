@@ -1,4 +1,4 @@
-﻿---
+---
 name: issue-troubleshooting
 description: |
   当用户遇到 bug、测试失败、构建失败、异常行为、性能问题、集成问题，或用"这个报错了""帮我看看这个问题""这个功能不对"等方式要求排查技术问题时使用本 skill。它按根因调查、模式分析、假设验证、修复规模评估、修复实施五阶段定位根因并完成修复；修复涉及多模块、架构调整、接口变更或预估超过 4 小时时，协同 implementation-planning 和 plan-execution。
