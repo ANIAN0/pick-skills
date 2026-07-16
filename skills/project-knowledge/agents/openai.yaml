@@ -1,4 +1,4 @@
 interface:
-  display_name: "项目知识库"
-  short_description: "维护 OKF bundle，并建设带 quickstart 的项目知识库"
-  default_prompt: "使用 $project-knowledge 基于 OKF 底层契约初始化、查询、迁移或更新项目知识库；项目默认使用 project-kb，并维护 quickstart、索引和长期概念。"
+  display_name: "知识库与 Wiki"
+  short_description: "基于全量来源与真实证据设计、搭建并审查知识库 Wiki"
+  default_prompt: "使用 $project-knowledge 先全量盘点项目文件并建立可验证的事实与覆盖账本，再设计、维护并独立审查知识库。"
