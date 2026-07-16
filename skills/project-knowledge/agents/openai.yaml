@@ -1,4 +1,4 @@
 interface:
   display_name: "知识库与 Wiki"
-  short_description: "基于全量来源与真实证据设计、搭建并审查知识库 Wiki"
-  default_prompt: "使用 $project-knowledge 先全量盘点项目文件并建立可验证的事实与覆盖账本，再设计、维护并独立审查知识库。"
+  short_description: "逐来源建设并持续捕获可追溯的 OKF 知识库"
+  default_prompt: "使用 $project-knowledge 设计 OKF、建立完整来源队列并逐来源验证；对话中新发现的问题或决定先固化为 Capture，不直接改正文或提升为未经证实的事实。"

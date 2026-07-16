@@ -1,68 +1,30 @@
 # 个人知识库 profile
 
-只在建设、迁移、查询或维护个人知识库时读取。
+建设、迁移、查询或维护个人知识库时读取。本 profile 只扩展 OKF。
 
-## 检索目标
+## 回答范围
 
-个人知识库至少能回答：
+- 当前项目的目标、边界、决策和修改风险；
+- 相似历史问题的做法、结果和适用条件；
+- 参考项目的可借鉴机制与限制；
+- 长期主题的结论、争议和待验证问题。
 
-- 某个当前项目的目标、边界、关键决策和下一次修改风险是什么？
-- 过去在哪些项目遇到过类似问题，最终做法、效果和适用条件是什么？
-- 哪些参考项目实现过相似能力，它们值得借鉴和不应照搬的部分是什么？
-- 某个主题有哪些可靠资料、当前结论、争议和待验证问题？
+## 类型
 
-## 推荐结构
+| 目录 / `type` | 核心内容 |
+|---|---|
+| `projects/` / `Personal Project` | 目标、范围、状态、架构入口、决策、成果、相关经验 |
+| `reference-projects/` / `Reference Project` | 位置、观察版本/日期、机制、可借鉴模式、限制、许可证、来源 |
+| `topics/` / `Personal Topic` | 综合结论、概念关系、争议、学习路径 |
+| `lessons/` / `Personal Lesson` | 情境、症状、证据、行动、结果、适用边界 |
+| `decisions/` / `Personal Decision` | 背景、选择、取舍、结果、重评条件 |
+| `sources/` / `Personal Source` | 出处、日期、可信度、贡献页面 |
+| `inbox/` / `Personal Inbox` | 原始 Capture 的可选浏览投影，不作为来源或长期事实入口 |
 
-```text
-<kb-root>/
-├── index.md
-├── INSTRUCTIONS.md
-├── log.md
-├── _meta/
-├── inbox/
-├── projects/
-├── reference-projects/
-├── topics/
-├── lessons/
-├── decisions/
-├── sources/
-└── archive/
-```
+横切维度使用 tags 和关系，不按技术栈、行业或年份复制目录。项目页是知识地图；稳定机制、经验和取舍分别进入 topic、lesson 和 decision。缺少结果或适用边界的 lesson 保持 `draft`。
 
-只在有内容时创建分类目录及其 `index.md`。目录按稳定对象类型组织，技术栈、行业、年份等横切维度使用 tags 和链接表达。
+## 多来源与维护
 
-## 内容类型
+不相交的项目、参考仓库和资料目录分别使用稳定 `source-id` 运行 inventory；manifest 放在 `<okf-root>/_meta/sources/<source-id>/`，并在 `_meta/sources.md` 登记根路径/URI、观察版本和权威范围。每个本地来源独立同步队列并披露进度；外部 URI 只登记快照与访问日期。
 
-| 目录 | `type` | 稳定身份与核心内容 |
-|---|---|---|
-| `projects/` | `Personal Project` | 一个真实项目；目标、范围、状态、架构入口、决策、成果和相关经验 |
-| `reference-projects/` | `Reference Project` | 一个外部参考项目及观察版本；定位、关键机制、适用模式、限制和来源 |
-| `topics/` | `Personal Topic` | 一个长期主题；当前综合结论、概念关系、争议和学习路径 |
-| `lessons/` | `Personal Lesson` | 一个可复用经验；情境、症状、原因、行动、结果、适用边界和证据 |
-| `decisions/` | `Personal Decision` | 一个无法从结果直接推导的重要选择；背景、选择、取舍、结果和复盘条件 |
-| `sources/` | `Personal Source` | 一份外部资料或原始记录的来源卡；出处、日期、可信度和对哪些页面有贡献 |
-| `inbox/` | `Personal Inbox` | 尚未归类和核验的临时捕获；处理后迁移或删除，不长期作为事实入口 |
-
-完成项目不是把整个项目复制进知识库。项目页保留知识地图，稳定机制进入 topics，复用经验进入 lessons，关键取舍进入 decisions，原始材料留在项目或 sources 并被链接。
-
-## 参考项目记录
-
-每个 `Reference Project` 记录：仓库或资料位置、观察的版本/commit/日期、项目定位、关键模块、可借鉴模式、不适用条件、许可证或使用边界、关联主题与经验。版本未知或资料可能变化时设置 `review_after`，回答时不把旧观察描述成当前事实。
-
-## 经验教训记录
-
-一条 lesson 只表达一个可复用判断，正文至少覆盖：
-
-1. **情境与目标**：在什么约束下发生。
-2. **症状与影响**：观察到了什么，不把推测写成原因。
-3. **原因与证据**：如何确认，链接项目、测试、日志或来源。
-4. **有效行动**：采取了什么，结果如何。
-5. **适用边界**：何时复用、何时需要重新验证。
-
-只记录“做法”而没有结果和边界的内容保持 `draft`。
-
-## 查询与维护
-
-接到新开发问题时，按“当前 projects → 相关 topics → lessons → reference-projects → sources”的顺序召回，再沿页面关系扩展。回答必须区分当前项目事实、历史经验和外部参考，不能把参考项目实现当作当前项目事实。
-
-维护时优先处理 inbox、完成项目的知识提炼、到期 `review_after`、失效外链和重复主题。项目结束后将项目页标记为 archived 或移动到 archive，但保留指向已提炼 lessons、decisions 和 topics 的链接。
+查询顺序：当前 project → topic → lesson → reference project → source。回答区分当前事实、历史经验和外部参考。维护优先处理 inbox、到期 `review_after`、失效来源和重复主题；项目结束后保留其到已提炼知识的链接。

@@ -1,92 +1,58 @@
-# 通用知识契约
+# OKF 知识契约
 
-只在设计、初始化、迁移或改变知识库结构时读取。
+任何 OKF 初始化、结构设计、概念写入、迁移或严格校验都读取。
 
-## 最小控制面
-
-新建的文件型知识库至少包含：
+## Bundle
 
 ```text
-<kb-root>/
-├── index.md
-├── INSTRUCTIONS.md
-├── log.md
+<okf-root>/
+├── index.md              # 根 frontmatter: okf_version: "0.1"
+├── purpose.md            # 读者、问题、范围、优先级、可用里程碑
+├── INSTRUCTIONS.md       # Agent 查询、写入和维护规则
+├── log.md                # 日期倒序的有效变更
 └── _meta/
-    ├── schema.md
-    ├── sources.md       # 存在多个来源或优先级时创建
-    └── coverage.json    # 初始化、重建、迁移或批量刷新时创建
+    ├── schema.md         # 类型、字段、关系、状态、路径
+    ├── state.json        # design/growing 阶段与设计门槛
+    ├── sources.md        # 多来源时的范围与优先级
+    ├── coverage.json     # 完整来源清单
+    ├── capture-registry.json # Capture 身份与不可变来源指纹
+    ├── ingest-queue.json # 持久化摄入与 review backlog
+    ├── ingest/           # 逐来源 analysis artifact
+    └── milestones/       # 可用范围、来源指纹与审查证据
 ```
 
-- `index.md`：面向读者的知识地图，按问题和任务导航到已有分类或关键页面。
-- `INSTRUCTIONS.md`：面向 Agent 的读写契约，说明 profile、检索顺序、写入门槛、来源优先级和维护动作。
-- `_meta/schema.md`：内容类型、必填字段、路径、稳定身份、允许关系和状态定义的单一事实源。
-- `_meta/sources.md`：来源范围、权威等级、更新时间、所有者和敏感性；单一且明确的来源可直接写进 `INSTRUCTIONS.md`。
-- `_meta/coverage.json`：项目文件级来源清单、处置结果和目标页；小范围单页查询或写入不要求创建。
-- `log.md`：按日期倒序记录有意义的创建、更新、替代、移动和废弃，不记录读取。
+分类目录及其 `index.md` 只在有内容时创建。现有 Wiki 作为独立发布视图保留；它的导航和 frontmatter 不改变 OKF bundle，发布页与 OKF 概念页维护明确映射。
 
-现有 Wiki 有自己的导航或生成契约时保留它，例如 `nav.json`、侧边栏配置或版本目录。把上述职责映射到现有文件；不要为形式统一建立第二套入口。公开目录无法安全容纳维护说明时，将控制面放在相邻的非发布源目录，并从 skill 明确定位。
+## 概念页
 
-## 概念文档
-
-新写入的普通 Markdown 页面使用可解析 YAML frontmatter：
+普通概念页使用 YAML frontmatter：
 
 ```yaml
 ---
 type: Knowledge Type
-title: 稳定且可检索的标题
-description: 一句话说明页面回答什么问题。
+title: 稳定标题
+description: 页面回答的问题。
 state: active
-tags: [example]
-created_at: 2026-07-15
-updated_at: 2026-07-15
-sources:
-  - ../sources/example.md
-review_after: 2026-10-15
+updated_at: 2026-07-16
+sources: [path/to/source]
 ---
 ```
 
-普通知识页的公共必填字段是 `type`、`title`、`description`、`state`、`updated_at` 和 `sources`。无外部来源的原创经验用项目记录、实验结果或作者声明作为来源，不留空列表。`INSTRUCTIONS.md`、schema 和来源登记等控制面文档可省略 `sources`，但必须记录修改日期和适用范围。`created_at`、`tags`、`review_after` 按 schema 需要使用。profile 可以扩展字段，读取和更新时保留未知字段。
+公共必填字段为 `type/title/description/state/updated_at/sources`。`sources` 使用可访问的精确来源；原创经验使用项目记录、实验结果或作者声明。schema 可增加 `id`、`tags`、`created_at`、`review_after` 和 profile 字段；更新时保留未知字段。
 
-`state` 的公共语义：
+公共 `state`：`draft` 未核验；`active` 当前有效；`superseded` 已被替代并链接替代项；`deprecated` 不再推荐并说明原因；`archived` 仅供历史检索。业务状态使用独立字段。
 
-- `draft`：尚未核验，不作为确定事实使用。
-- `active`：当前有效，可用于回答问题。
-- `superseded`：已被新页面或新版本替代，必须链接替代项。
-- `deprecated`：仍保留历史价值，但不再推荐使用，并说明原因。
-- `archived`：不再维护，仅供历史检索。
+## 身份、关系与来源
 
-profile 的业务状态使用单独字段，例如 `requirement_status`，避免与知识生命周期混用。
+- 一个稳定概念只有一个规范路径；标题变化不改变身份。
+- 原始来源、当前结论和历史版本是不同对象，以普通 Markdown 链接和 schema 定义的强关系连接。
+- 移动概念前更新入链、索引和替代关系；弱相关不机械补反链。
+- `_meta/sources.md` 声明来源的权威范围、版本、日期、所有者和敏感性。冲突先比较适用版本与范围；无法裁决时保留冲突并使用 `draft`。
 
-## 身份与关系
+`purpose.md` 定义主要读者、3–7 个关键问题、来源/知识边界、队列优先级和 operational 条件。`INSTRUCTIONS.md` 让新 Agent 定位根入口、schema、查询顺序、稳定身份、可用状态、单来源事务、索引/日志同步项和公开边界。
 
-- 一个稳定概念只有一个规范路径；标题变化不自动改变身份。
-- 原始来源、当前综合结论和历史版本是不同对象，通过链接关联，不把三者复制到同一正文。
-- 使用普通 Markdown 链接，并在周围写明关系语义，例如“由……替代”“实现……能力”“来源于……”。
-- 强关系按 profile 写入结构化字段或固定的“相关知识”区；导航、普通引用和弱相关不机械补反链。
-- 文件移动前检查所有入链，更新链接和索引后再移动；能通过替代页保持兼容时优先保留跳转说明。
+对话 Capture 属于 OKF 根外的原始来源；registry 在控制面绑定其身份和原始指纹，`inbox/` 只是可选的人类浏览投影。查询时同时检查来源任务状态和 claim 的资格，不能把 `reported` 内容回答成技术事实，也不能用 `normative` 证明当前实现。
 
-## 来源与冲突
+## 读写兼容
 
-在 `_meta/sources.md` 为每类来源声明权威等级和适用范围。默认判断顺序是：当前可运行事实或已发布契约、已确认的一手文档、经过验证的项目材料、带日期的二手资料、未核验笔记。
-
-来源冲突时：
-
-1. 先检查适用版本、环境、受众和日期是否不同。
-2. 能判定当前权威来源时更新综合页，并保留被替代关系。
-3. 无法判定时把冲突并列记录为 `draft` 或显式缺口，不选择更方便的版本。
-
-## Agent 维护说明必须回答的问题
-
-`INSTRUCTIONS.md` 应让新 Agent 无需猜测即可回答：
-
-1. 这个知识库服务谁，主要回答哪些问题？
-2. 根入口、schema 和权威来源在哪里？
-3. 查询时先搜索哪些字段和目录，必须跟随哪些关系？
-4. 新内容如何选择身份和类型，何时更新已有页面？
-5. 哪些状态可以作为事实使用，如何标记替代、废弃和未知？
-6. 每次写入后要同步哪些索引、日志和校验？
-7. 哪些内容禁止进入公开层或知识层？
-
-## OKF 兼容
-
-OKF bundle 的宽容读取最低要求仍是普通概念有可解析 frontmatter 和非空 `type`，`index.md` 与 `log.md` 可选，未知字段和未知类型必须保留，断链只作为消费 warning。上述契约是本 skill 的高质量写入标准，不用于拒绝读取外部 OKF bundle。
+读取外部 OKF 时使用宽容消费契约：概念页只要求可解析 frontmatter 和非空 `type`；未知字段/类型原样保留，缺少入口或断链只报告 warning。本 skill 的写入仍必须通过上述严格契约，宽容读取不能作为交付证据。

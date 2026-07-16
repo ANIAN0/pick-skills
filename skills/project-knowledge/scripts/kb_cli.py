@@ -41,37 +41,55 @@ def _parse_frontmatter(
 
 
 def _minimal_files() -> dict[str, str]:
+    today = _now_date()
     return {
         "index.md": (
             '---\nokf_version: "0.1"\n---\n\n'
-            "# 项目知识库\n\n"
-            "本知识库保存当前项目长期有效、经过验证的知识。\n\n"
+            "# OKF 知识库\n\n"
             "## 入口\n\n"
-            "- [快速开始](quickstart.md) - 面向人和 coding agent 的项目知识阅读入口。\n"
-            "- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。\n"
+            "- [建设目的](purpose.md)\n"
+            "- [维护说明](INSTRUCTIONS.md)\n"
+            "- [知识模型](_meta/schema.md)\n"
+            "- [变更记录](log.md)\n"
         ),
-        "quickstart.md": (
-            "---\n"
-            "type: Project Overview\n"
-            "title: 项目知识快速开始\n"
-            "description: 帮助人和 coding agent 快速理解本项目知识库的入口。\n"
-            "tags: [overview]\n"
-            "---\n\n"
-            "# 项目知识快速开始\n\n"
-            "本页说明这个项目是什么、知识库如何组织，以及不同读者应该从哪里继续阅读。\n\n"
-            "## 知识地图\n\n"
-            "- [代码知识](code/index.md) - 按源码路径维护的职责、逻辑和测试映射。\n\n"
-            "## 阅读建议\n\n"
-            "- 先读本页了解项目知识版图。\n"
-            "- 再进入架构、领域、工作流、代码、决策、运维或测试等相关分类。\n"
+        "INSTRUCTIONS.md": (
+            "# Agent 维护说明\n\n"
+            f"适用范围：当前 OKF bundle。更新时间：{today}。\n\n"
+            "写入概念页前，先根据实际读者问题完善本文件中的查询顺序、"
+            "来源优先级、稳定身份、写入门槛和公开边界。\n"
+        ),
+        "purpose.md": (
+            "# 建设目的\n\n"
+            f"适用范围：当前 OKF bundle。更新时间：{today}。\n\n"
+            "在扫描来源前定义主要读者、关键问题、知识边界、优先队列和可用里程碑。\n"
         ),
         "log.md": (
-            "# 项目知识库更新记录\n\n"
+            "# 知识库变更记录\n\n"
             "<!-- 按 YYYY-MM-DD 倒序记录有意义的知识变化。 -->\n"
         ),
-        "code/index.md": (
-            "# 代码知识\n\n"
-            "按源码相对路径镜像项目代码知识。\n"
+        "_meta/schema.md": (
+            "# OKF Schema\n\n"
+            f"适用范围：当前 OKF bundle。更新时间：{today}。\n\n"
+            "在写入概念页前定义实际内容类型、稳定身份、扩展字段和强关系。\n"
+        ),
+        "_meta/state.json": (
+            "{\n"
+            '  "version": 1,\n'
+            '  "phase": "design",\n'
+            '  "design": {\n'
+            '    "readers": [],\n'
+            '    "questions": [],\n'
+            '    "boundaries": [],\n'
+            '    "source_priorities": [],\n'
+            '    "operational_conditions": []\n'
+            "  }\n"
+            "}\n"
+        ),
+        "_meta/capture-registry.json": (
+            "{\n"
+            '  "version": 1,\n'
+            '  "entries": {}\n'
+            "}\n"
         ),
     }
 
@@ -98,7 +116,7 @@ def init_project(
     rules = root / project_rules_file
     if rules.is_file():
         rules_text = rules.read_text(encoding="utf-8")
-        expected_target = f"{project_kb_dir}/quickstart.md"
+        expected_target = f"{project_kb_dir}/index.md"
         has_entry_link = any(
             _link_target(raw) == expected_target
             for raw in MARKDOWN_LINK.findall(rules_text)
@@ -180,21 +198,16 @@ def validate_project(
             "profile": profile,
         }
 
-    if profile == "project":
-        required = (
+    if profile == "write":
+        for path in (
             kb_root / "index.md",
-            kb_root / "quickstart.md",
+            kb_root / "INSTRUCTIONS.md",
+            kb_root / "purpose.md",
             kb_root / "log.md",
-            kb_root / "code" / "index.md",
-        )
-        for path in required:
+            kb_root / "_meta" / "schema.md",
+        ):
             if not path.is_file():
-                errors.append({"path": str(path), "message": "缺少项目 profile 文件"})
-
-        legacy = (kb_root / "README.md", kb_root / "changelog.md")
-        for path in legacy:
-            if path.exists():
-                errors.append({"path": str(path), "message": "旧保留文件尚未迁移为 index.md 或 log.md"})
+                errors.append({"path": str(path), "message": "缺少 OKF 必需控制面文件"})
 
     for path in sorted(kb_root.rglob("*.md")):
         checked += 1
@@ -210,9 +223,9 @@ def validate_project(
                     metadata, parse_error = _parse_frontmatter(match)
                     if parse_error:
                         errors.append({"path": relative, "message": parse_error})
-                    elif profile == "project" and str(metadata.get("okf_version")) != "0.1":
+                    elif profile == "write" and str(metadata.get("okf_version")) != "0.1":
                         errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
-                elif profile == "project":
+                elif profile == "write":
                     errors.append({"path": relative, "message": "根 index.md 缺少 okf_version: \"0.1\""})
                 else:
                     warnings.append({"path": relative, "message": "根 index.md 未声明 okf_version"})
@@ -223,12 +236,19 @@ def validate_project(
                 errors.append({"path": relative, "message": "log.md 不应包含 frontmatter"})
             if "## " in text and not DATE_HEADING.search(text):
                 errors.append({"path": relative, "message": "log.md 日期标题必须使用 YYYY-MM-DD"})
+        elif path.name in {"INSTRUCTIONS.md", "purpose.md"} or relative.startswith("_meta/"):
+            # OKF 控制面不是概念页；其字段由 coverage/profile 校验。
+            pass
         else:
             metadata, parse_error = _parse_frontmatter(match)
             if parse_error:
                 errors.append({"path": relative, "message": parse_error})
             else:
-                required_fields = ("type", "title", "description") if profile == "project" else ("type",)
+                required_fields = (
+                    ("type", "title", "description")
+                    if profile == "write"
+                    else ("type",)
+                )
                 for required_field in required_fields:
                     value = metadata.get(required_field)
                     if not isinstance(value, str) or not value.strip():
@@ -238,16 +258,6 @@ def validate_project(
                                 "message": f"概念文档缺少非空 {required_field}",
                             }
                         )
-                if profile == "project" and metadata.get("type") == "Project Code":
-                    source_path = metadata.get("source_path")
-                    if not isinstance(source_path, str) or not source_path.strip():
-                        errors.append(
-                            {
-                                "path": relative,
-                                "message": "Project Code 概念缺少非空 source_path",
-                            }
-                        )
-
         for raw_link in MARKDOWN_LINK.findall(text):
             target = _resolve_local_link(path, raw_link, kb_root)
             if target is not None and not target.exists():
@@ -256,9 +266,6 @@ def validate_project(
                 warnings.append(
                     {"path": relative, "message": f"本地链接目标不存在: {raw_link.strip()}"}
                 )
-
-    if profile == "project" and not any(path.name != "index.md" for path in (kb_root / "code").rglob("*.md")):
-        warnings.append({"path": "code/index.md", "message": "尚无代码概念；按实际需要创建"})
 
     return {
         "root": str(kb_root),
@@ -609,9 +616,9 @@ def main() -> int:
     validate.add_argument("--project-kb-dir", default="project-kb")
     validate.add_argument(
         "--profile",
-        choices=["okf", "project"],
+        choices=["okf", "write"],
         default="okf",
-        help="okf 使用宽容消费契约；project 使用当前项目知识库 profile 的写入质量契约",
+        help="okf 使用外部 bundle 宽容消费契约；write 使用本 skill 的 OKF 严格写入契约",
     )
 
     list_cmd = subparsers.add_parser("list-kb", help="列出 project-kb 中的条目")
