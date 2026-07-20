@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI 需求文档"
+  short_description: "把界面目标、页面信息和关键交互聊清楚并形成正文"
+  default_prompt: "使用 $ui-requirements-doc 和我聊清楚这项 UI 需求，并写成设计师和原型开发者都能理解的正文。"

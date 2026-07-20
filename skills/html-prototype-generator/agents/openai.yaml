@@ -1,0 +1,4 @@
+interface:
+  display_name: "HTML 原型"
+  short_description: "把界面需求制作成可打开、可操作和可评审的 HTML 原型"
+  default_prompt: "使用 $html-prototype-generator 根据这些界面需求制作一个可直接操作和评审的 HTML 原型。"

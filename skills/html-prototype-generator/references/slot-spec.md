@@ -1,11 +1,13 @@
-# SLOT 与片段规范
+# KT Admin 默认模板的 SLOT 与片段
 
-## 固定原则
+仅在原型选择本 skill 自带的 KT Admin 模板时使用本文件。项目已有视觉与交互依据时以项目为准，不加载或套用这些规则。
 
-- 外壳骨架来自 `assets/page-skeleton.html`，机械复制，只填 SLOT。
-- 主内容区来自 `assets/fragments/`，按页面类型组合。
-- 样式来自 `assets/base.css`，原样内联。
-- 引导层逻辑来自 `assets/guide-layer.js`，原样内联。
+## 使用原则
+
+- 可以复制 `assets/page-skeleton.html` 作为标准后台页面起点。
+- 优先复用 `assets/fragments/` 中适合当前页面的主内容片段。
+- 可以复制 `assets/base.css` 和 `assets/guide-layer.js` 到输出中使用。
+- 不修改 skill 自带的源资产。片段不能准确表达需求时，在原型输出中补充或调整结构。
 
 ## 骨架 SLOT
 
@@ -15,7 +17,7 @@
 | `SLOT:page_title` | 顶栏标题 |
 | `SLOT:base_css` | `assets/base.css` 全文，原样复制 |
 | `SLOT:sidebar_items` | 侧边栏 `<li>` 列表 |
-| `SLOT:main_content` | 从 `assets/fragments/` 组合出的主内容 |
+| `SLOT:main_content` | 适合时组合现有片段，否则使用当前原型需要的主内容 |
 | `SLOT:drawer` | 复制 `fragments/drawer.html`；无抽屉时留空 |
 | `SLOT:confirm_modal` | 复制 `fragments/confirm-modal.html`；无删除操作时留空 |
 | `SLOT:doc_content` | 文档面板内容 |

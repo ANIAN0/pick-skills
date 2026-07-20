@@ -28,6 +28,8 @@ description: 维护项目级共享工作环境，使开发者和 Agent 使用一
 └── workplace/
     ├── <版本>/
     │   ├── requirements/
+    │   ├── ui-requirements/
+    │   ├── prototypes/
     │   ├── tech-design/
     │   └── implementation-planning/
     └── archive/
@@ -66,7 +68,7 @@ description: 维护项目级共享工作环境，使开发者和 Agent 使用一
 
 ## 创建和检查版本工作区
 
-创建版本时先确认项目根目录和版本名称，再建立 `workplace/<版本>/` 以及当前体系需要的 `requirements/`、`tech-design/` 和 `implementation-planning/`。已有目录和文件原样保留，不覆盖或重建。
+创建版本时先确认项目根目录和版本名称，再建立 `workplace/<版本>/` 以及当前体系需要的 `requirements/`、`ui-requirements/`、`prototypes/`、`tech-design/` 和 `implementation-planning/`。已有目录和文件原样保留，不覆盖或重建。
 
 检查结构时只关注本 skill 管辖的项目级文件、`workplace/` 和 `archive/`，不把普通源码、产品文档、依赖或构建目录当作违规项。发现放错位置、重复版本或链接失效时，先列出准确路径和拟调整动作；会移动、覆盖或删除现有内容且用户没有明确授权时，取得确认后再执行。
 
