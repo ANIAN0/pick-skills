@@ -1,4 +1,4 @@
 interface:
   display_name: "项目工作区维护"
-  short_description: "维护迭代目录、检查工作区结构、维护 PROJECT_RULES.md"
-  default_prompt: "使用 $project-workspace 在当前项目中开启或归档真实版本的迭代目录，检查工作区结构，维护 PROJECT_RULES.md，并从 FileBrowser 同步 AGENTS.md 与 CLAUDE.md。"
+  short_description: "同步项目指令，维护规则、路线图及版本工作区生命周期"
+  default_prompt: "使用 $project-workspace 维护当前项目的共享指令、规则、Roadmap 和版本工作目录。"
