@@ -1,4 +1,4 @@
 interface:
-  display_name: "项目研发审查"
-  short_description: "独立审查五阶段入口和真实证据，报告阻塞问题与复审结论"
-  default_prompt: "使用 $project-review 独立审查当前阶段入口文档和真实证据。"
+  display_name: "项目实现审查"
+  short_description: "独立验收代码是否正确、完整落实技术设计并判断回退阶段"
+  default_prompt: "使用 $project-review 对照技术设计审查当前实现，完成技术验收并列出所有问题。"
