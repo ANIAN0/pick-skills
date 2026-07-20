@@ -1,4 +1,4 @@
 interface:
   display_name: "项目设计"
-  short_description: "基于已确认需求和真实项目证据形成唯一可读技术方案"
-  default_prompt: "使用 $project-design 基于已确认需求调查项目，先确定顶层设计、系统边界和关键取舍，再形成唯一可读技术方案入口文档。"
+  short_description: "聊清整体技术方案、关键修改文件及职责，让多名开发人员达成实现共识"
+  default_prompt: "使用 $project-design 和我聊清楚这次改动的最佳技术方案，并写成开发人员容易理解的方案正文。"
