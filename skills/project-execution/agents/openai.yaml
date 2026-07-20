@@ -1,4 +1,4 @@
 interface:
   display_name: "项目执行"
-  short_description: "复用任务入口按方案实施，只在入口回写状态"
-  default_prompt: "使用 $project-execution 直接复用已确认任务入口，逐项实现并只在入口回写状态。"
+  short_description: "完整理解改动目标与方案，编写正确简洁代码并完成匹配范围的自测"
+  default_prompt: "使用 $project-execution 完整实现这次改动，并通过合适的自测确认功能达到预期。"

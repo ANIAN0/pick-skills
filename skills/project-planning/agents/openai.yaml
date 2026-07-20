@@ -1,4 +1,4 @@
 interface:
   display_name: "项目规划"
-  short_description: "生成简洁审查入口和完整自含的实现任务契约"
-  default_prompt: "使用 $project-planning 将已确认方案转成简洁任务入口和可直接执行的 T-* 任务文档。"
+  short_description: "创建精简任务清单，持续记录实现范围、先后关系、完成状态和遗漏"
+  default_prompt: "使用 $project-planning 把这次改动整理成精简、可持续更新的任务清单。"
