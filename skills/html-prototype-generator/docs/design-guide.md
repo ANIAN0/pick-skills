@@ -61,21 +61,6 @@
 
 ---
 
-## 引导层改动类型速查
-
-| type | 高亮色 | 标签 | 适用场景 |
-|------|--------|------|---------|
-| `new` | `#3e8dff` 蓝色实线 | 新增 | 新增按钮、新增列、新增功能区 |
-| `modified` | `#ffb71d` 橙色实线 | 修改 | 现有元素的文案/样式/行为变化 |
-| `removed` | `#ff8b78` 红色虚线 | 移除 | 已删除的元素位置 |
-
-移除占位元素写法：
-```html
-<div class="guide-removed-1" style="height:0;overflow:hidden;" aria-hidden="true"></div>
-```
-
----
-
 ## 页面类型说明
 
 | 类型 | 典型结构 | 抽屉宽度 |
@@ -84,20 +69,6 @@
 | `form` | 独立表单页，无表格 | 不需要 |
 | `detail` | 描述列表，字段展示为只读 | `640px` |
 | `dashboard` | 统计卡片 + 图表 | 不需要 |
-
----
-
-## 需求引导层 GUIDE_STEPS 字段说明
-
-```javascript
-{
-  id: Number,        // 序号，从 1 开始，页面内唯一
-  selector: String,  // CSS 选择器，必须能被 document.querySelector() 找到
-  type: String,      // 'new' | 'modified' | 'removed'
-  title: String,     // 格式：「类型：元素名」，如「新增：导出按钮」
-  desc: String,      // 一句话说明改了什么 + 为什么 / 权限 / 注意事项
-}
-```
 
 ---
 

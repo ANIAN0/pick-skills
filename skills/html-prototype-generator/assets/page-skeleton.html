@@ -47,20 +47,7 @@
 <!-- ⑤ 确认弹窗：固定，不得修改；无删除操作时整块删除 -->
 <!--SLOT:confirm_modal-->
 
-<!-- ⑥ 文档面板：只修改 SLOT:doc_content -->
-<button onclick="toggleDoc()" style="position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 1001; background: #3e8dff; color: #fff; border: none; padding: 12px 4px; border-radius: 4px 0 0 4px; cursor: pointer; writing-mode: vertical-rl; font-size: 13px; letter-spacing: 2px;">交互说明</button>
-<div id="docPanel" style="position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: #fafafa; border-left: 1px solid #e8e8e8; padding: 24px; overflow-y: auto; z-index: 1000; transition: right .3s;">
-  <!--SLOT:doc_content-->
-</div>
-
-<!-- ⑦ 引导层数据：只修改 window.GUIDE_STEPS 数组，无改动时为空数组 [] -->
-<script>
-window.GUIDE_STEPS = [
-  <!--SLOT:guide_steps-->
-];
-</script>
-
-<!-- ⑧ 固定交互脚本：不得修改 -->
+<!-- ⑥ 固定交互脚本：不得修改 -->
 <script>
 function openDrawer(t, m) {
   var el = document.getElementById('drawer');
@@ -78,16 +65,7 @@ function openDrawer(t, m) {
 function closeDrawer() { var el = document.getElementById('drawer'); if (el) el.style.display = 'none'; }
 function openConfirmModal() { var el = document.getElementById('confirmModal'); if (el) el.style.display = 'block'; }
 function closeConfirmModal() { var el = document.getElementById('confirmModal'); if (el) el.style.display = 'none'; }
-function toggleDoc() {
-  var p = document.getElementById('docPanel');
-  p.style.right = (p.style.right === '0px' || p.style.right === '0') ? '-400px' : '0px';
-}
 function mockAction(a, d) { console.log('[Mock]', a, d || ''); }
-</script>
-
-<!-- ⑨ guide-layer.js 原样内联，不得修改 -->
-<script>
-<!--SLOT:guide_layer_js (从 assets/guide-layer.js 原样复制)-->
 </script>
 
 </body>

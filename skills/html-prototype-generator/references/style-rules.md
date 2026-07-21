@@ -4,7 +4,7 @@
 
 ## 默认资源
 
-- 复制 `assets/base.css`、`assets/guide-layer.js` 或 `assets/page-skeleton.html` 使用，不修改 skill 内的源文件。
+- 复制 `assets/base.css` 或 `assets/page-skeleton.html` 使用，不修改 skill 内的源文件。
 - 使用默认骨架时沿用其中的 CDN 依赖；依赖无法访问时应改为可离线运行的方案并完成验证。
 
 ## 颜色与图标
