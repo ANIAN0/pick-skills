@@ -1,4 +1,4 @@
 interface:
   display_name: "项目需求"
-  short_description: "把功能需求聊清楚，并写成准确易懂的需求正文"
-  default_prompt: "使用 $project-requirements 和我聊清楚这项功能需求，并写成准确、易懂的需求正文。"
+  short_description: "高效澄清功能需求，形成产品、开发和测试都易读的需求正文"
+  default_prompt: "使用 $project-requirements 批量澄清关键需求问题，并写成产品、开发和测试都能准确理解的正文。"

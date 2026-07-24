@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目下一步"
+  short_description: "调查项目现状并比较候选方向，帮助确定最值得推进的下一步"
+  default_prompt: "使用 $project-next-step 调查当前项目，比较已有事项和新发现机会，并帮助我决定下一步做什么。"

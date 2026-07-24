@@ -1,4 +1,4 @@
 interface:
   display_name: "项目设计"
-  short_description: "聊清整体技术方案、关键修改文件及职责，让多名开发人员达成实现共识"
-  default_prompt: "使用 $project-design 和我聊清楚这次改动的最佳技术方案，并写成开发人员容易理解的方案正文。"
+  short_description: "基于真实项目证据形成产品、开发和测试都易读的技术方案"
+  default_prompt: "使用 $project-design 批量澄清关键技术决策，并写成产品、开发和测试都能理解的技术方案。"
