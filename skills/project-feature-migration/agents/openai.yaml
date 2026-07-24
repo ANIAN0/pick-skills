@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目功能迁移"
+  short_description: "完整还原参考功能并在目标项目中建立可验证的迁移闭环"
+  default_prompt: "使用 $project-feature-migration 将参考项目中的指定功能完整迁移到当前项目。"
