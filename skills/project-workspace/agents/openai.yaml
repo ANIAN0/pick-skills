@@ -1,4 +1,4 @@
 interface:
   display_name: "项目工作区维护"
-  short_description: "同步项目指令，维护规则、路线图及版本工作区生命周期"
-  default_prompt: "使用 $project-workspace 维护当前项目的共享指令、规则、Roadmap 和版本工作目录。"
+  short_description: "同步项目指令与 Skill，维护规则、路线图及版本工作区"
+  default_prompt: "使用 $project-workspace 维护当前项目的共享指令、项目级 Skill、规则、Roadmap 和版本工作目录。"
