@@ -1,4 +1,4 @@
 interface:
   display_name: "项目需求"
-  short_description: "澄清和审查需求，只识别会阻塞设计的产品分叉"
-  default_prompt: "使用 $project-requirements 先调查已有事实，再判断是否存在不先决定就无法形成自洽方案的产品分叉；不要把 Agent 内部判断、实现选择或文档形式当成需求问题。"
+  short_description: "核实产品决定来源，澄清真正阻塞设计的需求分叉"
+  default_prompt: "使用 $project-requirements 核实每条产品结论的决定来源，只将真正阻塞设计的产品分叉交给用户决定，并保持修订与确认状态可追溯。"
