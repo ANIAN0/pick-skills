@@ -1,4 +1,4 @@
 interface:
   display_name: "项目设计"
-  short_description: "基于真实项目证据形成产品、开发和测试都易读的技术方案"
-  default_prompt: "使用 $project-design 批量澄清关键技术决策，并写成产品、开发和测试都能理解的技术方案。"
+  short_description: "基于真实证据形成易读、可执行、可验证的技术方案"
+  default_prompt: "使用 $project-design 根据当前问题灵活调查、建模、起草与核对，保留已有方案中的有效内容，形成有真实证据且可验证的技术方案。"

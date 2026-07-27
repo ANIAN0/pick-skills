@@ -1,4 +1,4 @@
 interface:
   display_name: "项目执行"
-  short_description: "完整理解改动目标与方案，编写正确简洁代码并完成匹配范围的自测"
-  default_prompt: "使用 $project-execution 完整实现这次改动，并通过合适的自测确认功能达到预期。"
+  short_description: "按方案原子化实现并真实验证，不在执行中重写上游"
+  default_prompt: "使用 $project-execution 按当前方案逐个闭合原子结果并完成真实验证；发现方案变化时停止报告，不在执行中改写上游文档。"

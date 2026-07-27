@@ -1,4 +1,4 @@
 interface:
   display_name: "项目功能迁移"
-  short_description: "限定参考行为范围，建立可验证的双向迁移闭环"
-  default_prompt: "使用 $project-feature-migration 先固定用户选定的行为基线，再完整调查该范围并建立源证据、目标决定与验证闭环。"
+  short_description: "限定参考行为范围，阻止下游设计反向扩大迁移基线"
+  default_prompt: "使用 $project-feature-migration 固定用户选定的行为基线，建立源证据、目标决定与兼容闭环，并拒绝下游自造机制反向扩大范围。"

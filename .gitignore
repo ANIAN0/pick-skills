@@ -23,3 +23,5 @@ skills-lock.json
 # Python 运行缓存
 __pycache__/
 *.py[cod]
+
+archive

@@ -1,4 +1,4 @@
 interface:
   display_name: "项目需求"
-  short_description: "核实产品决定来源，澄清真正阻塞设计的需求分叉"
-  default_prompt: "使用 $project-requirements 核实每条产品结论的决定来源，只将真正阻塞设计的产品分叉交给用户决定，并保持修订与确认状态可追溯。"
+  short_description: "按证据澄清产品含义，不用固定流程代替理解"
+  default_prompt: "使用 $project-requirements 根据当前问题灵活调查、建模、起草与核对，守住产品决定来源和阶段边界，只澄清真正阻塞设计的产品分叉。"

@@ -1,4 +1,4 @@
 interface:
   display_name: "项目规划"
-  short_description: "创建精简任务清单，持续记录实现范围、先后关系、完成状态和遗漏"
-  default_prompt: "使用 $project-planning 把这次改动整理成精简、可持续更新的任务清单。"
+  short_description: "按真实交付结果和依赖形成精简任务清单"
+  default_prompt: "使用 $project-planning 判断是否真的需要计划；需要时根据当前改动的真实交付结果、依赖和验证边界灵活拆分，不套用固定步骤或层级。"
